@@ -1,0 +1,271 @@
+// import mongoose, { Document, Schema } from 'mongoose';
+
+// export interface IMaternity extends Document {
+//   clientName: string;
+//   address: {
+//     street: string;
+//     city: string;
+//     state: string;
+//     zipCode: string;
+//   };
+//   phoneNumber: string;
+//   birthDate?: Date;
+//   babyName?: string;
+//   package?: string;
+//   expenses?: number;
+//   advance?: number;
+//   total?: number;
+//   extras?: number;
+//   shootDateAndTime?: Date;
+// }
+
+// const MaternitySchema: Schema = new Schema(
+//   {
+//     clientName: { type: String, required: true },
+//     address: {
+//       street: { type: String, default: '' },
+//       city: { type: String, default: '' },
+//       state: { type: String, default: '' },
+//       zipCode: { type: String, default: '' },
+//     },
+//     phoneNumber: { type: String, required: true },
+//     birthDate: { type: Date },
+//     babyName: { type: String },
+//     package: { type: String },
+//     expenses: { type: Number, default: 0 },
+//     advance: { type: Number, default: 0 },
+//     total: { type: Number, default: 0 },
+//     extras: { type: Number, default: 0 },
+//     shootDateAndTime: { type: Date },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model<IMaternity>('Maternity', MaternitySchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import mongoose, { Document, Schema } from 'mongoose';
+
+// ─── Package Definitions ───────────────────────────────────────────────────────
+// Define your packages and their base prices here.
+// Clients pick a package → base price auto-fills → total auto-calculates.
+export const MATERNITY_PACKAGES: Record<string, number> = {
+  'Basic': 5000,   // e.g. ₹5,000 — adjust to your real pricing
+  'Standard': 9000,
+  'Premium': 15000,
+  'Deluxe': 22000,
+};
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+export interface IExtra {
+  description: string; // e.g. "Extra printed album", "Drone shots"
+  amount: number;
+}
+
+export interface IPayment {
+  amount: number;
+  date: Date;
+  note?: string;       // e.g. "UPI", "Cash", "Bank transfer"
+}
+
+export interface IMaternity extends Document {
+  // ── Client Info
+  clientName: string;
+  phoneNumber: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+
+  // ── Shoot Info
+  shootDateAndTime?: Date;
+  deliveryDeadline?: Date;
+  birthDate?: Date;
+  babyName?: string;
+
+  // ── Package & Pricing
+  package?: string;           // Must be a key from MATERNITY_PACKAGES
+  packagePrice: number;       // Auto-filled from package selection
+
+  // ── Extras (itemized)
+  extras: IExtra[];           // Array of extra items with descriptions
+  extrasTotal: number;        // Auto-calculated: sum of all extras
+
+  // ── Expenses (your costs, e.g. travel, props)
+  expenses: number;           // Your out-of-pocket costs (optional, for your records)
+
+  // ── Payment Tracking
+  payments: IPayment[];       // Every payment the client makes
+  advance: number;            // Auto-calculated: sum of all payments
+  total: number;              // Auto-calculated: packagePrice + extrasTotal
+  balance: number;            // Auto-calculated: total - advance (amount still due)
+
+  // ── Status
+  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  googleCalendarEventId?: string;
+  notes?: string;
+}
+
+// ─── Schema ────────────────────────────────────────────────────────────────────
+const ExtraSchema = new Schema<IExtra>(
+  {
+    description: { type: String, required: true },
+    amount: { type: Number, required: true, min: 0 },
+  },
+  { _id: false }
+);
+
+const PaymentSchema = new Schema<IPayment>(
+  {
+    amount: { type: Number, required: true, min: 0 },
+    date: { type: Date, default: Date.now },
+    note: { type: String },
+  },
+  { _id: false }
+);
+
+const MaternitySchema = new Schema<IMaternity>(
+  {
+    // ── Client Info
+    clientName: { type: String, required: true, trim: true },
+    phoneNumber: { type: String, required: true, trim: true },
+    address: {
+      street: { type: String, default: '' },
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
+      zipCode: { type: String, default: '' },
+    },
+
+    // ── Shoot Info
+    shootDateAndTime: { type: Date },
+    deliveryDeadline: { type: Date },
+    birthDate: { type: Date },
+    babyName: { type: String, trim: true },
+
+    // ── Package & Pricing
+    package: { type: String, enum: Object.keys(MATERNITY_PACKAGES) },
+    packagePrice: { type: Number, default: 0, min: 0 },
+
+    // ── Extras (itemized)
+    extras: { type: [ExtraSchema], default: [] },
+    extrasTotal: { type: Number, default: 0, min: 0 },
+
+    // ── Expenses
+    expenses: { type: Number, default: 0, min: 0 },
+
+    // ── Payment Tracking
+    payments: { type: [PaymentSchema], default: [] },
+    advance: { type: Number, default: 0, min: 0 },  // sum of payments
+    total: { type: Number, default: 0, min: 0 },  // packagePrice + extrasTotal
+    balance: { type: Number, default: 0 },           // total - advance (can be negative = overpaid)
+
+    // ── Status
+    status: {
+      type: String,
+      enum: ['Pending', 'Confirmed', 'Completed', 'Cancelled'],
+      default: 'Pending',
+    },
+    googleCalendarEventId: { type: String },
+    notes: { type: String },
+  },
+  { timestamps: true }
+);
+
+// ─── Auto-Calculate Before Save ────────────────────────────────────────────────
+// This runs every time a record is saved or updated.
+// You never manually set total/advance/balance — they're always derived.
+MaternitySchema.pre('save', function (next) {
+  // 1. If a package is selected, auto-fill its base price
+  if (this.package && MATERNITY_PACKAGES[this.package] !== undefined) {
+    this.packagePrice = MATERNITY_PACKAGES[this.package];
+  }
+
+  // 2. Sum all extras
+  this.extrasTotal = this.extras.reduce((sum, e) => sum + e.amount, 0);
+
+  // 3. Total = package base + extras (expenses are YOUR cost, not client's bill)
+  this.total = this.packagePrice + this.extrasTotal;
+
+  // 4. Advance = sum of all payments received
+  this.advance = this.payments.reduce((sum, p) => sum + p.amount, 0);
+
+  // 5. Balance = what client still owes (negative = overpaid)
+  this.balance = this.total - this.advance;
+
+  // 6. Auto-update status based on payment
+  if (this.status !== 'Cancelled' && this.status !== 'Completed') {
+    if (this.advance === 0) {
+      this.status = 'Pending';
+    } else if (this.balance <= 0) {
+      this.status = 'Completed';
+    } else {
+      this.status = 'Confirmed'; // partial payment received
+    }
+  }
+
+  next();
+});
+
+// ─── Also run calculations on findByIdAndUpdate ────────────────────────────────
+// This middleware handles the update path (not just save)
+MaternitySchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate() as any;
+  if (!update) return next();
+
+  // Pull the update fields to recalculate
+  const packageName = update.package ?? update['$set']?.package;
+  const extras = update.extras ?? update['$set']?.extras ?? [];
+  const payments = update.payments ?? update['$set']?.payments ?? [];
+
+  let packagePrice = 0;
+  if (packageName && MATERNITY_PACKAGES[packageName] !== undefined) {
+    packagePrice = MATERNITY_PACKAGES[packageName];
+  } else {
+    packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
+  }
+
+  const extrasTotal = extras.reduce((sum: number, e: IExtra) => sum + e.amount, 0);
+  const total = packagePrice + extrasTotal;
+  const advance = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
+  const balance = total - advance;
+
+  // Inject calculated fields into the update
+  this.setUpdate({
+    ...update,
+    $set: {
+      ...(update['$set'] || {}),
+      packagePrice,
+      extrasTotal,
+      total,
+      advance,
+      balance,
+    },
+  });
+
+  next();
+});
+
+export default mongoose.model<IMaternity>('Maternity', MaternitySchema);

@@ -1,0 +1,1 @@
+src/pages/InfluencerPage.tsx(1,142): error TS6133: 'LinkIcon' is declared but its value is never read.
