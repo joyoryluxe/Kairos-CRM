@@ -15,9 +15,22 @@ const app: Application = express();
 
 // ─── Security Middleware ───────────────────────────────────────────────────────
 app.use(helmet());
+
+// CORS configuration to allow multiple origins
+const allowedOrigins = env.CLIENT_ORIGIN.split(",").map(origin => origin.trim().replace(/\/$/, ""));
+
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
