@@ -106,7 +106,7 @@ export default function MaternityFormPage() {
         package: m.package ?? "",
         extras: Array.isArray(m.extras) ? m.extras : [],
         expenses: m.expenses ?? 0,
-        payments: Array.isArray(m.payments) ? m.payments : [],
+        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
         notes: m.notes ?? "",
         status: m.status ?? "Pending",
       });
@@ -139,10 +139,16 @@ export default function MaternityFormPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const payload: any = {
+      ...form,
+      total,
+      advance: paid,
+      balance,
+    };
     if (isEdit) {
-      updateMutation.mutate({ payload: form as any });
+      updateMutation.mutate({ payload });
     } else {
-      createMutation.mutate(form as any);
+      createMutation.mutate(payload);
     }
   };
 

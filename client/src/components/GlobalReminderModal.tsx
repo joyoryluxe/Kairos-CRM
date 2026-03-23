@@ -89,6 +89,51 @@ function injectStyles() {
       transform-origin: left;
       transition: transform 0.05s linear;
     }
+    .kairos-banner-content {
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      min-height: 56px;
+      gap: 0.75rem;
+      position: relative;
+      z-index: 1;
+    }
+    .kairos-banner-client {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 600px) {
+      .kairos-banner-content {
+        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+        height: auto;
+      }
+      .kairos-banner-tier {
+        display: none !important;
+      }
+      .kairos-banner-divider {
+        display: none !important;
+      }
+      .kairos-banner-client {
+        font-size: 0.85rem;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .kairos-banner-badge {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.4rem !important;
+      }
+      .kairos-banner-controls {
+        margin-left: auto;
+        justify-content: flex-end;
+      }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -217,9 +262,9 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
         setIsHovering(false);
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", padding: "0 1rem", height: 56, gap: "0.75rem", position: "relative", zIndex: 1 }}>
+      <div className="kairos-banner-content">
         {/* Tier icon + label */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0 }}>
+        <div className="kairos-banner-tier" style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexShrink: 0 }}>
           <Icon size={14} color={cfg.soft} strokeWidth={2.5} />
           <span style={{ fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.08em", color: cfg.soft, textTransform: "uppercase", whiteSpace: "nowrap" }}>
             {cfg.label}
@@ -227,7 +272,7 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
+        <div className="kairos-banner-divider" style={{ width: 1, height: 28, background: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
 
         {/* Type icon */}
         <div style={{
@@ -240,7 +285,7 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
 
         {/* Name + meta */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div className="kairos-banner-client">
             {n.clientName}
           </div>
           <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.55)", marginTop: "2px", display: "flex", gap: "0.5rem" }}>
@@ -251,7 +296,7 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
         </div>
 
         {/* Badge */}
-        <span style={{
+        <span className="kairos-banner-badge" style={{
           background: cfg.accent,
           color: "#fff",
           fontSize: "0.65rem",
@@ -270,7 +315,7 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
         <ChevronRight size={14} style={{ color: hov ? cfg.soft : "rgba(255,255,255,0.35)", transition: "color 0.2s", flexShrink: 0 }} />
 
         {/* Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.2rem", flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+        <div className="kairos-banner-controls" style={{ display: "flex", alignItems: "center", gap: "0.2rem", flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           {total > 1 && (
             <button onClick={onPrev} style={ctrlBtn}>
               <ChevronLeft size={12} />
@@ -389,20 +434,21 @@ export default function GlobalReminderModal({ notifications }: { notifications: 
     const urgent = notifications.filter(n => ["Expired", "Critical", "High", "Moderate"].includes(n.priority));
     if (!urgent.length) return;
 
-    if (location.pathname === "/dashboard") {
-      const t = setTimeout(() => openToast(urgent), 400);
-      return () => clearTimeout(t);
-    }
     const check = () => {
       const last = parseInt(localStorage.getItem("kairos_last_reminder_shown") || "0", 10);
-      if (Date.now() - last > 3_600_000) {
+      // Wait 10 minutes (600,000 ms) before showing again
+      if (Date.now() - last > 600_000) {
         openToast(urgent);
         localStorage.setItem("kairos_last_reminder_shown", Date.now().toString());
       }
     };
-    check();
+    // Small delay on mount/route change to not interrupt navigation
+    const t = setTimeout(check, 400);
     const iv = setInterval(check, 60_000);
-    return () => clearInterval(iv);
+    return () => {
+      clearTimeout(t);        
+      clearInterval(iv);
+    };
   }, [notifications, location.pathname, openToast]);
 
   if (!visible || !sorted.length) return null;

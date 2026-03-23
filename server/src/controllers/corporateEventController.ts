@@ -7,6 +7,8 @@ import { AuthRequest } from '../middleware/authenticate';
 // Create a new Corporate Event record
 export const createCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
+    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
     const corporateEvent = await CorporateEvent.create(req.body);
 
     // Google Calendar Sync
@@ -60,6 +62,8 @@ export const getCorporateEventById = async (req: AuthRequest, res: Response): Pr
 // Update a Corporate Event record
 export const updateCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
+    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
     const corporateEvent = await CorporateEvent.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

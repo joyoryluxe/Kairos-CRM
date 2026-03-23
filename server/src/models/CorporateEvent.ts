@@ -16,7 +16,9 @@ export interface ICorporateEvent extends Document {
   total?: number;
   advance?: number;
   expenses?: number;
-  extras?: number;
+  extras?: Array<{ description: string; amount: number }>;
+  payments?: Array<{ amount: number; date: Date; note?: string }>;
+  notes?: string;
   referenceByName?: string;
   googleCalendarEventId?: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
@@ -39,7 +41,20 @@ const CorporateEventSchema: Schema = new Schema(
     total: { type: Number, default: 0 },
     advance: { type: Number, default: 0 },
     expenses: { type: Number, default: 0 },
-    extras: { type: Number, default: 0 },
+    extras: [
+      {
+        description: { type: String, default: '' },
+        amount: { type: Number, default: 0 },
+      }
+    ],
+    payments: [
+      {
+        amount: { type: Number, required: true },
+        date: { type: Date, required: true },
+        note: { type: String, default: '' },
+      }
+    ],
+    notes: { type: String, default: '' },
     referenceByName: { type: String },
     googleCalendarEventId: { type: String },
     status: {

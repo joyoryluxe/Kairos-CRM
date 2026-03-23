@@ -5,10 +5,26 @@ export type CorporateEvent = {
   _id: string;
   clientName: string;
   phoneNumber: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
   eventName?: string;
   eventDateAndTime?: string;
   deliveryDeadline?: string;
   package?: string;
+  packagePrice?: number;
+  extras?: Array<{ description: string; amount: number }>;
+  extrasTotal?: number;
+  expenses?: number;
+  payments?: Array<{ amount: number; date: string; note?: string }>;
+  advance?: number;
+  total?: number;
+  balance?: number;
+  status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  notes?: string;
   createdAt?: string;
   updatedAt?: string;
 };

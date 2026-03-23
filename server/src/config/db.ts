@@ -5,6 +5,7 @@ export const connectDB = async (): Promise<void> => {
   try {
     const conn = await mongoose.connect(env.MONGO_URI, {
       dbName: "kairos-crm",
+      family: 4,
     });
     console.log(`✅  MongoDB connected: ${conn.connection.host}`);
   } catch (error) {

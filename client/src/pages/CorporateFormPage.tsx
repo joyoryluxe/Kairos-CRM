@@ -84,7 +84,7 @@ export default function CorporateFormPage() {
         package: m.package ?? "",
         notes: m.notes ?? "",
         extras: Array.isArray(m.extras) ? m.extras : [],
-        payments: Array.isArray(m.payments) ? m.payments : [],
+        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
         expenses: m.expenses ?? 0,
       });
       setLoaded(true);
@@ -107,13 +107,13 @@ export default function CorporateFormPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const payload: CorporateEventInput = {
-      clientName: form.clientName,
-      phoneNumber: form.phoneNumber,
-      eventName: form.eventName,
-      eventDateAndTime: form.eventDateAndTime,
-      deliveryDeadline: form.deliveryDeadline,
-      package: form.package,
+    const payload: any = {
+      ...form,
+      eventDateAndTime: form.eventDateAndTime || null,
+      deliveryDeadline: form.deliveryDeadline || null,
+      total,
+      advance: paid,
+      balance,
     };
     if (isEdit) updateMutation.mutate({ payload });
     else createMutation.mutate(payload);
