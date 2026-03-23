@@ -790,15 +790,13 @@
 
 
 import { Baby, Phone, Calendar, User, MapPin, Package, Search, X, Plus, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
-  createMaternity,
   deleteMaternity,
   getMaternities,
-  updateMaternity,
   type Maternity,
-  type MaternityInput,
 } from "@/api/maternity";
 
 // Shared currency formatter for this page
@@ -814,151 +812,13 @@ const formatCurrency = (value?: number) => {
 // ----------------------------------------------------------------------
 // Types (should match your updated api/maternity)
 // ----------------------------------------------------------------------
-// Local form state interface
-interface MaternityFormState {
-  clientName: string;
-  phoneNumber: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  shootDateAndTime?: string;
-  deliveryDeadline?: string;
-  birthDate?: string;
-  babyName?: string;
-  package?: string;
-  extras: Array<{ description: string; amount: number }>;
-  expenses: number;
-  payments: Array<{ amount: number; date: string; note?: string }>;
-  notes?: string;
-  status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
-}
-
-// Package definitions (should match backend)
-const MATERNITY_PACKAGES: Record<string, number> = {
-  'Basic': 5000,
-  'Standard': 9000,
-  'Premium': 15000,
-  'Deluxe': 22000,
-};
-
-// ----------------------------------------------------------------------
-// Modal Component
-// ----------------------------------------------------------------------
-const Modal = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.addEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        backdropFilter: "blur(4px)",
-      }}
-    >
-      <div
-        ref={modalRef}
-        style={{
-          background: "var(--bg-surface)",
-          borderRadius: "var(--radius-lg)",
-          padding: "2rem",
-          maxWidth: 900,
-          width: "90%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "var(--shadow-xl)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <h2 style={{ fontSize: "1.5rem", margin: 0 }}>{title}</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "0.25rem",
-              borderRadius: "var(--radius-sm)",
-            }}
-          >
-            <X size={24} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
 
 // ----------------------------------------------------------------------
 // Main Component
 // ----------------------------------------------------------------------
 export default function MaternityPage() {
   const queryClient = useQueryClient();
-
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Maternity | null>(null);
-
-  // Form state
-  const [form, setForm] = useState<MaternityFormState>({
-    clientName: "",
-    phoneNumber: "",
-    address: { street: "", city: "", state: "", zipCode: "" },
-    shootDateAndTime: "",
-    deliveryDeadline: "",
-    birthDate: "",
-    babyName: "",
-    package: "",
-    extras: [],
-    expenses: 0,
-    payments: [],
-    notes: "",
-    status: "Pending",
-  });
+  const navigate = useNavigate();
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -983,91 +843,12 @@ export default function MaternityPage() {
     queryFn: getMaternities,
   });
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: createMaternity,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["maternity"] });
-      closeModal();
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<MaternityInput> }) =>
-      updateMaternity(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["maternity"] });
-      closeModal();
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteMaternity(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["maternity"] });
     },
   });
-
-  // Open modal for new record
-  const openModalForNew = () => {
-    setEditing(null);
-    setForm({
-      clientName: "",
-      phoneNumber: "",
-      address: { street: "", city: "", state: "", zipCode: "" },
-      shootDateAndTime: "",
-      deliveryDeadline: "",
-      birthDate: "",
-      babyName: "",
-      package: "",
-      extras: [],
-      expenses: 0,
-      payments: [],
-      notes: "",
-      status: "Pending",
-    });
-    setIsModalOpen(true);
-  };
-
-  // Open modal for edit
-  const openModalForEdit = (m: Maternity) => {
-    setEditing(m);
-    setForm({
-      clientName: m.clientName,
-      phoneNumber: m.phoneNumber,
-      address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
-      shootDateAndTime: m.shootDateAndTime ?? "",
-      deliveryDeadline: m.deliveryDeadline ?? "",
-      birthDate: m.birthDate ?? "",
-      babyName: m.babyName ?? "",
-      package: m.package ?? "",
-      extras: m.extras ?? [],
-      expenses: m.expenses ?? 0,
-      payments: m.payments ?? [],
-      notes: m.notes ?? "",
-      status: m.status ?? 'Pending',
-    });
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditing(null);
-  };
-
-  // Submit handler
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (editing) {
-      updateMutation.mutate({
-        id: editing._id,
-        payload: form,
-      });
-    } else {
-      createMutation.mutate(form as any);
-    }
-  };
-
   // Clear filters
   const clearFilters = () => {
     setFilters({
@@ -1116,66 +897,66 @@ export default function MaternityPage() {
             Manage client records, packages, extras, and payments.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openModalForNew} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <button className="btn btn-primary" onClick={() => navigate("/dashboard/maternity/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Plus size={20} /> Add Record
         </button>
       </header>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Total Records</div>
-          <div style={{ fontSize: "2rem", fontWeight: 600 }}>{summary.totalRecords}</div>
+      <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+        <div className="card" style={{ padding: "1rem", background: "var(--bg-surface-2)" }}>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Total Records</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{summary.totalRecords}</div>
         </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Total Revenue</div>
-          <div style={{ fontSize: "2rem", fontWeight: 600 }}>{formatCurrency(summary.totalRevenue)}</div>
+        <div className="card" style={{ padding: "1rem", background: "var(--bg-surface-2)" }}>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Total Revenue</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{formatCurrency(summary.totalRevenue)}</div>
         </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Received</div>
-          <div style={{ fontSize: "2rem", fontWeight: 600 }}>{formatCurrency(summary.totalReceived)}</div>
+        <div className="card" style={{ padding: "1rem", background: "var(--bg-surface-2)" }}>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Received</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{formatCurrency(summary.totalReceived)}</div>
         </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Due</div>
-          <div style={{ fontSize: "2rem", fontWeight: 600 }}>{formatCurrency(summary.totalDue)}</div>
+        <div className="card" style={{ padding: "1rem", background: "var(--bg-surface-2)" }}>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Due</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{formatCurrency(summary.totalDue)}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div style={{ padding: "1.5rem", backgroundColor: "var(--bg-surface-2)", borderRadius: "var(--radius-lg)", marginBottom: "1.5rem", border: "1px solid var(--border)" }}>
+      <div style={{ padding: "1.25rem", backgroundColor: "var(--bg-surface-2)", borderRadius: "var(--radius-lg)", marginBottom: "1.5rem", border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-          <Search size={20} color="var(--text-muted)" />
-          <h2 style={{ fontSize: "1.2rem", margin: 0 }}>Filters</h2>
+          <Search size={18} color="var(--text-muted)" />
+          <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Filters</h2>
           {Object.values(filters).some((v) => v !== "") && (
-            <button type="button" onClick={clearFilters} className="btn" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-              <X size={16} /> Clear all
+            <button type="button" onClick={clearFilters} className="btn-ghost" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}>
+              <X size={14} /> Clear
             </button>
           )}
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ flex: "1 1 180px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Client name</label>
-            <input placeholder="Filter by client" value={filters.clientName} onChange={(e) => setFilters((f) => ({ ...f, clientName: e.target.value }))} style={{ width: "100%" }} />
+        <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Client Name</label>
+            <input placeholder="Search client..." value={filters.clientName} onChange={(e) => setFilters((f) => ({ ...f, clientName: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
-          <div style={{ flex: "1 1 160px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Phone</label>
-            <input placeholder="Filter by phone" value={filters.phoneNumber} onChange={(e) => setFilters((f) => ({ ...f, phoneNumber: e.target.value }))} style={{ width: "100%" }} />
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Phone</label>
+            <input placeholder="Search phone..." value={filters.phoneNumber} onChange={(e) => setFilters((f) => ({ ...f, phoneNumber: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
-          <div style={{ flex: "1 1 160px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Baby name</label>
-            <input placeholder="Filter by baby" value={filters.babyName} onChange={(e) => setFilters((f) => ({ ...f, babyName: e.target.value }))} style={{ width: "100%" }} />
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Baby Name</label>
+            <input placeholder="Search baby..." value={filters.babyName} onChange={(e) => setFilters((f) => ({ ...f, babyName: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
-          <div style={{ flex: "1 1 160px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Birth date</label>
-            <input type="date" value={filters.birthDate} onChange={(e) => setFilters((f) => ({ ...f, birthDate: e.target.value }))} style={{ width: "100%" }} />
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Birth date</label>
+            <input type="date" value={filters.birthDate} onChange={(e) => setFilters((f) => ({ ...f, birthDate: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
-          <div style={{ flex: "1 1 200px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Shoot date/time</label>
-            <input type="datetime-local" value={filters.shootDateAndTime} onChange={(e) => setFilters((f) => ({ ...f, shootDateAndTime: e.target.value }))} style={{ width: "100%" }} />
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Shoot date</label>
+            <input type="datetime-local" value={filters.shootDateAndTime} onChange={(e) => setFilters((f) => ({ ...f, shootDateAndTime: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
-          <div style={{ flex: "1 1 200px" }}>
-            <label style={{ fontSize: "0.8rem", fontWeight: 500 }}>Delivery Deadline</label>
-            <input type="date" value={filters.deliveryDeadline} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ width: "100%" }} />
+          <div>
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Deadline</label>
+            <input type="date" value={filters.deliveryDeadline} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
           </div>
         </div>
       </div>
@@ -1212,7 +993,7 @@ export default function MaternityPage() {
                 <RecordCard
                   key={m._id}
                   record={m}
-                  onEdit={() => openModalForEdit(m)}
+                  onEdit={() => navigate(`/dashboard/maternity/${m._id}/edit`)}
                   onDelete={() => deleteMutation.mutate(m._id)}
                   isDeleting={deleteMutation.isPending}
                 />
@@ -1222,18 +1003,6 @@ export default function MaternityPage() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editing ? "Edit Record" : "Add New Record"}>
-        <Form
-          form={form}
-          setForm={setForm}
-          onSubmit={handleSubmit}
-          onCancel={closeModal}
-          isPending={createMutation.isPending || updateMutation.isPending}
-          error={createMutation.error || updateMutation.error}
-          isEditing={Boolean(editing)}
-        />
-      </Modal>
     </div>
   );
 }
@@ -1268,15 +1037,15 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
       </div>
 
       {/* Main Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1.5rem" }}>
+      <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem" }}>
         {/* Contact & Address */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Phone size={16} /> <span>{record.phoneNumber}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            <Phone size={14} /> <span>{record.phoneNumber}</span>
           </div>
           {record.address && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)" }}>
-              <MapPin size={16} style={{ marginTop: 2 }} />
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+              <MapPin size={14} style={{ marginTop: 2 }} />
               <div>
                 {record.address.street && <div>{record.address.street}</div>}
                 {(record.address.city || record.address.state || record.address.zipCode) && (
@@ -1288,34 +1057,33 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
         </div>
 
         {/* Baby & Shoot */}
-        <div>
+        <div style={{ fontSize: "0.9rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <Baby size={16} color="var(--text-muted)" />
+            <Baby size={14} color="var(--text-muted)" />
             <span style={{ fontWeight: 500 }}>{record.babyName ? `Baby: ${record.babyName}` : "Baby name not set"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={16} /> <span>Born: {record.birthDate ? new Date(record.birthDate).toLocaleDateString() : "â€”"}</span>
+            <Calendar size={14} /> <span>Born: {record.birthDate ? new Date(record.birthDate).toLocaleDateString() : "â€”"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={16} /> <span>Shoot: {record.shootDateAndTime ? new Date(record.shootDateAndTime).toLocaleString() : "â€”"}</span>
+            <Calendar size={14} /> <span>Shoot: {record.shootDateAndTime ? new Date(record.shootDateAndTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "â€”"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-warning)" }}>
-            <Calendar size={16} /> <span>Deadline: {record.deliveryDeadline ? new Date(record.deliveryDeadline).toLocaleDateString() : "Not set"}</span>
+            <Calendar size={14} /> <span>Deadline: {record.deliveryDeadline ? new Date(record.deliveryDeadline).toLocaleDateString() : "Not set"}</span>
           </div>
         </div>
 
         {/* Package & Financial Summary */}
-        <div>
+        <div style={{ fontSize: "0.9rem" }}>
           {record.package && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-              <Package size={16} /> <span>Package: {record.package} ({formatCurrency(record.packagePrice)})</span>
+              <Package size={14} /> <span>Package: {record.package}</span>
             </div>
           )}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem 1rem", marginTop: "0.25rem" }}>
-            <span style={{ color: "var(--text-muted)" }}>Expenses:</span> <span style={{ fontWeight: 500 }}>{formatCurrency(record.expenses)}</span>
-            <span style={{ color: "var(--text-muted)" }}>Advance:</span> <span style={{ fontWeight: 500 }}>{formatCurrency(record.advance)}</span>
-            <span style={{ color: "var(--text-muted)" }}>Total:</span> <span style={{ fontWeight: 500 }}>{formatCurrency(record.total)}</span>
-            <span style={{ color: "var(--text-muted)" }}>Balance:</span> <span style={{ fontWeight: 500, color: (record.balance || 0) > 0 ? "var(--color-danger)" : "inherit" }}>{formatCurrency(record.balance)}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.25rem 0.75rem" }}>
+            <span style={{ color: "var(--text-muted)" }}>Total:</span> <span style={{ fontWeight: 600 }}>{formatCurrency(record.total)}</span>
+            <span style={{ color: "var(--text-muted)" }}>Paid:</span> <span style={{ fontWeight: 600, color: "var(--color-success)" }}>{formatCurrency(record.advance)}</span>
+            <span style={{ color: "var(--text-muted)" }}>Balance:</span> <span style={{ fontWeight: 600, color: (record.balance || 0) > 0 ? "var(--color-danger)" : "inherit" }}>{formatCurrency(record.balance)}</span>
           </div>
         </div>
       </div>
@@ -1365,205 +1133,11 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
 
           {record.notes && (
             <div style={{ color: "var(--text-muted)", fontSize: "0.9rem", fontStyle: "italic" }}>
-              ðŸ“ {record.notes}
+              {record.notes}
             </div>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-// ----------------------------------------------------------------------
-// Form Component (inside Modal)
-// ----------------------------------------------------------------------
-function Form({
-  form,
-  setForm,
-  onSubmit,
-  onCancel,
-  isPending,
-  error,
-  isEditing,
-}: {
-  form: MaternityFormState;
-  setForm: React.Dispatch<React.SetStateAction<MaternityFormState>>;
-  onSubmit: (e: FormEvent) => void;
-  onCancel: () => void;
-  isPending: boolean;
-  error: unknown;
-  isEditing: boolean;
-}) {
-  // Handlers for dynamic arrays
-  const addExtra = () => {
-    setForm(f => ({ ...f, extras: [...f.extras, { description: "", amount: 0 }] }));
-  };
-  const updateExtra = (index: number, field: "description" | "amount", value: string | number) => {
-    setForm(f => {
-      const newExtras = [...f.extras];
-      newExtras[index] = { ...newExtras[index], [field]: value };
-      return { ...f, extras: newExtras };
-    });
-  };
-  const removeExtra = (index: number) => {
-    setForm(f => ({ ...f, extras: f.extras.filter((_, i) => i !== index) }));
-  };
-
-  const addPayment = () => {
-    setForm(f => ({ ...f, payments: [...f.payments, { amount: 0, date: new Date().toISOString().split('T')[0], note: "" }] }));
-  };
-  const updatePayment = (index: number, field: "amount" | "date" | "note", value: string | number) => {
-    setForm(f => {
-      const newPayments = [...f.payments];
-      newPayments[index] = { ...newPayments[index], [field]: value };
-      return { ...f, payments: newPayments };
-    });
-  };
-  const removePayment = (index: number) => {
-    setForm(f => ({ ...f, payments: f.payments.filter((_, i) => i !== index) }));
-  };
-
-  // Calculate derived values for preview
-  const packagePrice = form.package && MATERNITY_PACKAGES[form.package] ? MATERNITY_PACKAGES[form.package] : 0;
-  const extrasTotal = form.extras.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const total = packagePrice + extrasTotal;
-  const advance = form.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const balance = total - advance;
-
-  return (
-    <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      {/* Client Info */}
-      <section>
-        <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>Client Information</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-          <div>
-            <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Client name <span style={{ color: "var(--color-danger)" }}>*</span></label>
-            <input required value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Jane Smith" style={{ width: "100%" }} />
-          </div>
-          <div>
-            <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
-            <input required value={form.phoneNumber} onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))} placeholder="(555) 123-4567" style={{ width: "100%" }} />
-          </div>
-        </div>
-      </section>
-
-      {/* Address */}
-      <section>
-        <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>Address</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Street</label><input value={form.address.street} onChange={e => setForm(f => ({ ...f, address: { ...f.address, street: e.target.value } }))} placeholder="Street" style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>City</label><input value={form.address.city} onChange={e => setForm(f => ({ ...f, address: { ...f.address, city: e.target.value } }))} placeholder="City" style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>State</label><input value={form.address.state} onChange={e => setForm(f => ({ ...f, address: { ...f.address, state: e.target.value } }))} placeholder="State" style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Zip Code</label><input value={form.address.zipCode} onChange={e => setForm(f => ({ ...f, address: { ...f.address, zipCode: e.target.value } }))} placeholder="Zip Code" style={{ width: "100%" }} /></div>
-        </div>
-      </section>
-
-      {/* Baby & Shoot */}
-      <section>
-        <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>Baby & Shoot Details</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Baby name</label><input value={form.babyName} onChange={e => setForm(f => ({ ...f, babyName: e.target.value }))} placeholder="e.g. Olivia" style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Birth date</label><input type="date" value={form.birthDate} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Shoot date & time</label><input type="datetime-local" value={form.shootDateAndTime} onChange={e => setForm(f => ({ ...f, shootDateAndTime: e.target.value }))} style={{ width: "100%" }} /></div>
-          <div><label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Delivery Deadline</label><input type="date" value={form.deliveryDeadline} onChange={e => setForm(f => ({ ...f, deliveryDeadline: e.target.value }))} style={{ width: "100%" }} /></div>
-          <div>
-            <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Package</label>
-            <select value={form.package} onChange={e => setForm(f => ({ ...f, package: e.target.value }))} style={{ width: "100%" }}>
-              <option value="">Select package</option>
-              {Object.keys(MATERNITY_PACKAGES).map(pkg => (
-                <option key={pkg} value={pkg}>{pkg} (â‚¹{MATERNITY_PACKAGES[pkg]})</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {/* Extras */}
-      <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-          <h3 style={{ fontSize: "1.1rem", margin: 0 }}>Extras</h3>
-          <button type="button" className="btn" onClick={addExtra} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Plus size={16} /> Add Extra</button>
-        </div>
-        {form.extras.map((extra, index) => (
-          <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center" }}>
-            <input placeholder="Description" value={extra.description} onChange={e => updateExtra(index, 'description', e.target.value)} style={{ flex: 2 }} />
-            <input type="number" placeholder="Amount" value={extra.amount} onChange={e => updateExtra(index, 'amount', e.target.valueAsNumber || 0)} style={{ flex: 1 }} />
-            <button type="button" onClick={() => removeExtra(index)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger)" }}><X size={18} /></button>
-          </div>
-        ))}
-        {form.extras.length > 0 && (
-          <div style={{ textAlign: "right", fontWeight: 500, marginTop: "0.5rem" }}>Extras Total: {formatCurrency(extrasTotal)}</div>
-        )}
-      </section>
-
-      {/* Payments */}
-      <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-          <h3 style={{ fontSize: "1.1rem", margin: 0 }}>Payments</h3>
-          <button type="button" className="btn" onClick={addPayment} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Plus size={16} /> Add Payment</button>
-        </div>
-        {form.payments.map((payment, index) => (
-          <div key={index} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-            <input type="number" placeholder="Amount" value={payment.amount} onChange={e => updatePayment(index, 'amount', e.target.valueAsNumber || 0)} style={{ width: 120 }} />
-            <input type="date" value={payment.date} onChange={e => updatePayment(index, 'date', e.target.value)} style={{ width: 140 }} />
-            <input placeholder="Note (optional)" value={payment.note} onChange={e => updatePayment(index, 'note', e.target.value)} style={{ flex: 1 }} />
-            <button type="button" onClick={() => removePayment(index)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-danger)" }}><X size={18} /></button>
-          </div>
-        ))}
-        {form.payments.length > 0 && (
-          <div style={{ textAlign: "right", fontWeight: 500, marginTop: "0.5rem" }}>Total Advance: {formatCurrency(advance)}</div>
-        )}
-      </section>
-
-      {/* Expenses & Notes */}
-      <section>
-        <h3 style={{ fontSize: "1.1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>Other</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem", alignItems: "center" }}>
-          <div>
-            <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Expenses (â‚¹)</label>
-            <input type="number" min="0" value={form.expenses} onChange={e => setForm(f => ({ ...f, expenses: e.target.valueAsNumber || 0 }))} style={{ width: "100%" }} />
-          </div>
-          <div>
-            <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Notes</label>
-            <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any additional notes" style={{ width: "100%" }} />
-          </div>
-        </div>
-      </section>
-
-      {/* Calculated Totals Preview */}
-      <div style={{ background: "var(--bg-surface-3)", padding: "1rem", borderRadius: "var(--radius-md)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem" }}>
-        <div><span style={{ color: "var(--text-muted)" }}>Package Price:</span> {formatCurrency(packagePrice)}</div>
-        <div><span style={{ color: "var(--text-muted)" }}>Extras Total:</span> {formatCurrency(extrasTotal)}</div>
-        <div><span style={{ color: "var(--text-muted)" }}>Total:</span> {formatCurrency(total)}</div>
-        <div><span style={{ color: "var(--text-muted)" }}>Advance:</span> {formatCurrency(advance)}</div>
-        <div><span style={{ color: "var(--text-muted)" }}>Balance:</span> <span style={{ color: balance > 0 ? "var(--color-danger)" : "inherit" }}>{formatCurrency(balance)}</span></div>
-      </div>
-
-      {/* Status (optional) */}
-      <div>
-        <label style={{ fontSize: "0.9rem", marginBottom: 4, fontWeight: 500 }}>Status (optional, backend may autoâ€‘set)</label>
-        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))} style={{ width: "100%" }}>
-          <option value="Pending">Pending</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
-      </div>
-
-      {/* Error */}
-      {!!error && (
-        <div style={{ fontSize: "0.9rem", color: "var(--color-danger)" }}>
-          {(error as Error)?.message || "Failed to save record"}
-        </div>
-      )}
-
-      {/* Buttons */}
-      <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "1rem" }}>
-        <button type="button" className="btn" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={isPending}>
-          {isEditing ? "Update" : "Add"} Record
-        </button>
-      </div>
-    </form>
   );
 }

@@ -92,6 +92,40 @@ export const getMe = async (
   res.json({ success: true, user });
 };
 
+// ─── Update Profile ───────────────────────────────────────────────────────────
+export const updateProfile = async (
+  req: Request & { user?: { id: string } },
+  res: Response
+): Promise<void> => {
+  const user = await User.findById(req.user?.id);
+  if (!user) {
+    res.status(404).json({ success: false, message: "User not found" });
+    return;
+  }
+
+  if (req.body.name) user.name = req.body.name;
+  if (req.body.email) user.email = req.body.email;
+  if (req.body.password) {
+    if (req.body.password.length < 8) {
+      res.status(400).json({ success: false, message: "Password must be at least 8 characters long" });
+      return;
+    }
+    user.password = req.body.password;
+  }
+
+  await user.save();
+
+  res.json({
+    success: true,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  });
+};
+
 // ─── Forgot Password ──────────────────────────────────────────────────────────
 export const forgotPassword = async (
   req: Request,

@@ -38,8 +38,8 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "2rem", backgroundColor: "var(--bg-page)" }}>
-      <div className="card" style={{ width: "100%", maxWidth: 420, padding: "3rem 2rem" }}>
+    <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "1.5rem", backgroundColor: "var(--bg-page)" }}>
+      <div className="card" style={{ width: "100%", maxWidth: 420, padding: "clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem)" }}>
         <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
           <h1 style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>Forgot Password</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>

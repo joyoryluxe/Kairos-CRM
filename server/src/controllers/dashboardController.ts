@@ -75,10 +75,12 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
           const diffTime = deadline.getTime() - today.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-          let priority: 'Normal' | 'Moderate' | 'High' | 'Critical' = 'Normal';
-          if (diffDays <= 1) priority = 'Critical';
-          else if (diffDays <= 2) priority = 'Moderate';
-          else if (diffDays <= 7) priority = 'Normal';
+          let priority: 'Moderate' | 'High' | 'Critical' | 'Expired' = 'Moderate';
+          
+          if (diffDays < 0) priority = 'Expired';
+          else if (diffDays <= 1) priority = 'Critical';
+          else if (diffDays <= 3) priority = 'High';
+          else if (diffDays <= 7) priority = 'Moderate';
           else return null;
 
           return {
