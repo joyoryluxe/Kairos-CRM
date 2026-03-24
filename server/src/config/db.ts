@@ -1,19 +1,30 @@
 import mongoose from "mongoose";
 import { env } from "./env";
 
+let isConnected = false;
+
 export const connectDB = async (): Promise<void> => {
+  if (isConnected) return;
+
   try {
-    const conn = await mongoose.connect(env.MONGO_URI, {
-      dbName: "kairos-crm",
-      family: 4,
+    mongoose.set("strictQuery", false);
+
+    await mongoose.connect(env.MONGO_URI, {
+      maxPoolSize: 20,
+      minPoolSize: 5,
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 60000,
     });
-    console.log(`✅  MongoDB connected: ${conn.connection.host}`);
+
+    isConnected = true;
+    console.log(`✅  MongoDB connected: ${mongoose.connection.host}`);
   } catch (error) {
-    console.error("❌  MongoDB connection failed:", error);
-    process.exit(1);
+    console.error("❌  MongoDB connection failed:", error instanceof Error ? error.message : error);
+    // Don't process.exit — let the app stay up and retry
   }
 
   mongoose.connection.on("disconnected", () => {
+    isConnected = false;
     console.warn("⚠️   MongoDB disconnected. Retrying...");
   });
 

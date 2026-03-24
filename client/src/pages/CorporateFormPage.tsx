@@ -4,10 +4,11 @@ import {
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCorporateEvent,
-  getCorporateEvents,
+  getCorporateEventById,
   updateCorporateEvent,
   type CorporateEventInput,
 } from "@/api/corporateEvents";
@@ -40,6 +41,7 @@ interface FormState extends CorporateEventInput {
   extras?: Array<{ description: string; amount: number }>;
   payments?: Array<{ amount: number; date: string; note?: string }>;
   expenses?: number;
+  status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
 }
 
 const EMPTY: FormState = {
@@ -53,6 +55,7 @@ const EMPTY: FormState = {
   extras: [],
   payments: [],
   expenses: 0,
+  status: "Pending",
 };
 
 export default function CorporateFormPage() {
@@ -66,10 +69,9 @@ export default function CorporateFormPage() {
 
   // Load existing record for edit
   const { data: existingRecord, isSuccess } = useQuery({
-    queryKey: ["corporate-events"],
-    queryFn: getCorporateEvents,
+    queryKey: ["corporate-events", id],
+    queryFn: () => getCorporateEventById(id!),
     enabled: isEdit,
-    select: (data: any[]) => data.find((m) => m._id === id),
   });
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export default function CorporateFormPage() {
         extras: Array.isArray(m.extras) ? m.extras : [],
         payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
         expenses: m.expenses ?? 0,
+        status: m.status ?? "Pending",
       });
       setLoaded(true);
     }
@@ -111,6 +114,7 @@ export default function CorporateFormPage() {
       ...form,
       eventDateAndTime: form.eventDateAndTime || null,
       deliveryDeadline: form.deliveryDeadline || null,
+      packagePrice,
       total,
       advance: paid,
       balance,
@@ -145,7 +149,7 @@ export default function CorporateFormPage() {
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
-
+      {isPending && <Loader fullPage message="Saving corporate event..." />}
       {/* ─── Header ──────────────────────────────────────────────────── */}
       <div style={{ marginBottom: "2rem" }}>
         <button type="button" onClick={() => navigate("/dashboard/corporate")}
@@ -223,6 +227,15 @@ export default function CorporateFormPage() {
               <input readOnly value={packagePrice ? `₹${packagePrice.toLocaleString("en-IN")}` : "—"}
                 style={{ ...inputCls, background: "var(--bg-surface-3)", cursor: "not-allowed", color: "var(--color-primary)", fontWeight: 700 }} />
             </div>
+            <div>
+              <label style={labelStyle}>Status</label>
+              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={inputCls}>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
           </div>
         </Section>
 
@@ -285,7 +298,7 @@ export default function CorporateFormPage() {
                 { label: "Package", value: formatCurrency(packagePrice), color: "var(--color-primary)" },
                 { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
                 { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-                { label: "Advance Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
+                { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
                 { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
               ].map(({ label, value, color, bold }) => (
                 <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>

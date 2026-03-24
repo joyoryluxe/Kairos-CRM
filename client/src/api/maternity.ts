@@ -25,14 +25,24 @@ export type Maternity = {
   total?: number;
   balance?: number;
   status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
+  referredBy?: string;
   notes?: string;
   createdAt?: string;
   updatedAt?: string;
 };
 
-export async function getMaternities(): Promise<Maternity[]> {
-  const res = await api.get<ApiResponse<Maternity[]>>("/maternity");
+export async function getMaternities(params?: Record<string, any>): Promise<{ data: Maternity[]; summary: any }> {
+  const res = await api.get<ApiResponse<Maternity[]>>("/maternity", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load maternities");
+  return {
+    data: res.data.data,
+    summary: (res.data as any).summary
+  };
+}
+
+export async function getMaternityById(id: string): Promise<Maternity> {
+  const res = await api.get<ApiResponse<Maternity>>(`/maternity/${id}`);
+  if (!res.data.success) throw new Error(res.data.message || "Failed to load maternity record");
   return res.data.data;
 }
 

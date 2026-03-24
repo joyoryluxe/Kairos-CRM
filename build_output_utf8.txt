@@ -1,0 +1,8 @@
+﻿
+> kairos-crm@1.0.0 build
+> npm run build --prefix server && npm run build --prefix client
+
+
+> kairos-crm-server@1.0.0 build
+> tsc
+

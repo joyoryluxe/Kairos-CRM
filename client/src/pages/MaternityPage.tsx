@@ -791,6 +791,7 @@
 
 import { Baby, Phone, Calendar, User, MapPin, Package, Search, X, Plus, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -801,12 +802,33 @@ import {
 
 // Shared currency formatter for this page
 const formatCurrency = (value?: number) => {
-  if (value === undefined || value === null) return "â€”";
+  if (value === undefined || value === null) return "—";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
     minimumFractionDigits: 0,
   }).format(value);
+};
+
+const formatDate = (dateStr?: string | Date) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day} - ${month} - ${year}`;
+};
+
+const formatDateTime = (dateStr?: string | Date) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${day} - ${month} - ${year}, ${time}`;
 };
 
 // ----------------------------------------------------------------------
@@ -820,28 +842,42 @@ export default function MaternityPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  // UI state
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   // Filter state
   const [filters, setFilters] = useState({
     clientName: "",
     phoneNumber: "",
     babyName: "",
     birthDate: "",
-    shootDateAndTime: "",
-    deliveryDeadline: "",
+    referredBy: "",
+    city: "",
+    notes: "",
+    shootDateFrom: "",
+    shootDateTo: "",
+    deliveryDeadlineFrom: "",
+    deliveryDeadlineTo: "",
+    status: "",
+    package: "",
+    paymentStatus: "",
   });
 
-  // Fetch data
+  // Fetch data with server-side filtering
   const {
-    data,
+    data: response,
     isLoading,
     isError,
     error,
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["maternity"],
-    queryFn: getMaternities,
+    queryKey: ["maternity", filters],
+    queryFn: () => getMaternities(filters),
   });
+
+  const data = response?.data || [];
+  const apiSummary = response?.summary || {};
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteMaternity(id),
@@ -849,6 +885,7 @@ export default function MaternityPage() {
       queryClient.invalidateQueries({ queryKey: ["maternity"] });
     },
   });
+
   // Clear filters
   const clearFilters = () => {
     setFilters({
@@ -856,28 +893,24 @@ export default function MaternityPage() {
       phoneNumber: "",
       babyName: "",
       birthDate: "",
-      shootDateAndTime: "",
-      deliveryDeadline: "",
+      referredBy: "",
+      city: "",
+      notes: "",
+      shootDateFrom: "",
+      shootDateTo: "",
+      deliveryDeadlineFrom: "",
+      deliveryDeadlineTo: "",
+      status: "",
+      package: "",
+      paymentStatus: "",
     });
   };
 
-  // Filter data
-  const filteredData = data?.filter((item: Maternity) => {
-    const matchClient = item.clientName.toLowerCase().includes(filters.clientName.toLowerCase());
-    const matchPhone = item.phoneNumber.toLowerCase().includes(filters.phoneNumber.toLowerCase());
-    const matchBaby = (item.babyName ?? "").toLowerCase().includes(filters.babyName.toLowerCase());
-    const matchBirth = (item.birthDate ?? "").toLowerCase().includes(filters.birthDate.toLowerCase());
-    const matchShoot = (item.shootDateAndTime ?? "").toLowerCase().includes(filters.shootDateAndTime.toLowerCase());
-    const matchDeadline = (item.deliveryDeadline ?? "").toLowerCase().includes(filters.deliveryDeadline.toLowerCase());
-    return matchClient && matchPhone && matchBaby && matchBirth && matchShoot && matchDeadline;
-  });
-
-  // Calculate summary totals
   const summary = {
-    totalRecords: data?.length ?? 0,
-    totalRevenue: data?.reduce((sum, m) => sum + (m.total ?? 0), 0) ?? 0,
-    totalReceived: data?.reduce((sum, m) => sum + (m.advance ?? 0), 0) ?? 0,
-    totalDue: data?.reduce((sum, m) => sum + (m.balance ?? 0), 0) ?? 0,
+    totalRecords: apiSummary.total ?? 0,
+    totalRevenue: apiSummary.totalRevenue ?? 0,
+    totalReceived: apiSummary.totalReceived ?? 0,
+    totalDue: apiSummary.totalDue ?? 0,
   };
 
 
@@ -922,57 +955,210 @@ export default function MaternityPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ padding: "1.25rem", backgroundColor: "var(--bg-surface-2)", borderRadius: "var(--radius-lg)", marginBottom: "1.5rem", border: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
-          <Search size={18} color="var(--text-muted)" />
-          <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Filters</h2>
+      {/* Filters Section */}
+      <div style={{
+        padding: "1.5rem",
+        backgroundColor: "var(--bg-surface-2)",
+        borderRadius: "var(--radius-lg)",
+        marginBottom: "1.5rem",
+        border: "1px solid var(--border)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+          <Search size={20} color="var(--text-muted)" />
+          <h2 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 700 }}>Filters</h2>
           {Object.values(filters).some((v) => v !== "") && (
-            <button type="button" onClick={clearFilters} className="btn-ghost" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}>
-              <X size={14} /> Clear
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="btn-ghost"
+              style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", color: "var(--color-danger)" }}
+            >
+              <X size={16} /> Clear All
             </button>
           )}
         </div>
-        <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+
+        {/* Basic Filters: 4-column-like grid for desktop */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "1.25rem",
+          alignItems: "end"
+        }}>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Client Name</label>
-            <input placeholder="Search client..." value={filters.clientName} onChange={(e) => setFilters((f) => ({ ...f, clientName: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Client Name</label>
+            <input
+              placeholder="Search by name..."
+              value={filters.clientName}
+              onChange={(e) => setFilters(f => ({ ...f, clientName: e.target.value }))}
+              style={{ width: "100%" }}
+            />
           </div>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Phone</label>
-            <input placeholder="Search phone..." value={filters.phoneNumber} onChange={(e) => setFilters((f) => ({ ...f, phoneNumber: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Phone Number</label>
+            <input
+              placeholder="Search by phone..."
+              value={filters.phoneNumber}
+              onChange={(e) => setFilters(f => ({ ...f, phoneNumber: e.target.value }))}
+              style={{ width: "100%" }}
+            />
           </div>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Baby Name</label>
-            <input placeholder="Search baby..." value={filters.babyName} onChange={(e) => setFilters((f) => ({ ...f, babyName: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Shoot Date From</label>
+            <input
+              type="date"
+              value={filters.shootDateFrom}
+              onChange={(e) => setFilters(f => ({ ...f, shootDateFrom: e.target.value }))}
+              style={{ width: "100%" }}
+            />
           </div>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Birth date</label>
-            <input type="date" value={filters.birthDate} onChange={(e) => setFilters((f) => ({ ...f, birthDate: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Shoot Date To</label>
+            <input
+              type="date"
+              value={filters.shootDateTo}
+              onChange={(e) => setFilters(f => ({ ...f, shootDateTo: e.target.value }))}
+              style={{ width: "100%" }}
+            />
           </div>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Shoot date</label>
-            <input type="datetime-local" value={filters.shootDateAndTime} onChange={(e) => setFilters((f) => ({ ...f, shootDateAndTime: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
-          </div>
-          <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Deadline</label>
-            <input type="date" value={filters.deliveryDeadline} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: "0.8rem", marginBottom: "0.5rem", visibility: "hidden" }}>Placeholder</div>
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="btn"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                whiteSpace: "nowrap",
+                height: "42px",
+                backgroundColor: "var(--bg-surface-3)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showAdvanced ? "Hide Filters" : "Show All Filters"}
+            </button>
           </div>
         </div>
+
+        {/* Advanced Filters (Collapsible) */}
+        {showAdvanced && (
+          <div style={{
+            marginTop: "1.5rem",
+            paddingTop: "1.5rem",
+            borderTop: "1px solid var(--border)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "1.25rem",
+            animation: "fadeDown 0.2s ease-out"
+          }}>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Baby Name</label>
+              <input
+                placeholder="Search baby..."
+                value={filters.babyName}
+                onChange={(e) => setFilters(f => ({ ...f, babyName: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Birth Date</label>
+              <input
+                type="date"
+                value={filters.birthDate}
+                onChange={(e) => setFilters(f => ({ ...f, birthDate: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+                style={{ width: "100%" }}
+              >
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Payment Status</label>
+              <select
+                value={filters.paymentStatus}
+                onChange={(e) => setFilters(f => ({ ...f, paymentStatus: e.target.value }))}
+                style={{ width: "100%" }}
+              >
+                <option value="">All Payments</option>
+                <option value="pending">Pending Balance</option>
+                <option value="paid">Fully Paid</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>City</label>
+              <input
+                placeholder="Search city..."
+                value={filters.city}
+                onChange={(e) => setFilters(f => ({ ...f, city: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Referred By</label>
+              <input
+                placeholder="Search referrer..."
+                value={filters.referredBy}
+                onChange={(e) => setFilters(f => ({ ...f, referredBy: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Deadline From</label>
+              <input
+                type="date"
+                value={filters.deliveryDeadlineFrom}
+                onChange={(e) => setFilters(f => ({ ...f, deliveryDeadlineFrom: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Deadline To</label>
+              <input
+                type="date"
+                value={filters.deliveryDeadlineTo}
+                onChange={(e) => setFilters(f => ({ ...f, deliveryDeadlineTo: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ fontSize: "0.8rem", fontWeight: 600, display: "block", marginBottom: "0.5rem", color: "var(--text-secondary)" }}>Notes Search</label>
+              <input
+                placeholder="Search in notes..."
+                value={filters.notes}
+                onChange={(e) => setFilters(f => ({ ...f, notes: e.target.value }))}
+                style={{ width: "100%" }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Records List */}
       <div className="card" style={{ padding: "1.5rem", backgroundColor: "var(--bg-surface-2)", borderRadius: "var(--radius-lg)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <div style={{ color: "var(--text-secondary)" }}>
-            {isLoading ? "Loading records..." : (
+            {isLoading ? "Fetching data..." : (
               <>
-                <strong>{filteredData?.length ?? 0}</strong> {filteredData?.length === 1 ? "record" : "records"} shown
-                {isFetching && !isLoading && " (refreshing...)"}
+                <strong>{data.length}</strong> {data.length === 1 ? "record" : "records"} shown
+                {isFetching && !isLoading && " (updating...)"}
               </>
             )}
           </div>
-          <button className="btn" onClick={() => refetch()} disabled={isLoading || isFetching}>Refresh</button>
+          <button className="btn" onClick={() => { clearFilters(); refetch(); }} disabled={isLoading || isFetching}>Refresh</button>
         </div>
 
         {isError ? (
@@ -980,16 +1166,16 @@ export default function MaternityPage() {
             <p style={{ fontWeight: 600, color: "var(--color-danger)" }}>Failed to load records</p>
             <p style={{ color: "var(--text-muted)" }}>{(error as Error)?.message ?? "Unknown error"}</p>
           </div>
-        ) : isLoading ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>Fetching maternity dataâ€¦</div>
+        ) : isLoading || isFetching ? (
+          <Loader message={isLoading ? "Loading records..." : "Updating filters..."} />
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
-            {filteredData?.length === 0 ? (
+            {data.length === 0 ? (
               <div style={{ padding: "2rem", textAlign: "center", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", color: "var(--text-muted)" }}>
                 No records match your filters.
               </div>
             ) : (
-              filteredData?.map((m: Maternity) => (
+              data.map((m: Maternity) => (
                 <RecordCard
                   key={m._id}
                   record={m}
@@ -1063,13 +1249,13 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
             <span style={{ fontWeight: 500 }}>{record.babyName ? `Baby: ${record.babyName}` : "Baby name not set"}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={14} /> <span>Born: {record.birthDate ? new Date(record.birthDate).toLocaleDateString() : "â€”"}</span>
+            <Calendar size={14} /> <span>Born: {formatDate(record.birthDate)}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={14} /> <span>Shoot: {record.shootDateAndTime ? new Date(record.shootDateAndTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "â€”"}</span>
+            <Calendar size={14} /> <span>Shoot: {formatDateTime(record.shootDateAndTime)}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-warning)" }}>
-            <Calendar size={14} /> <span>Deadline: {record.deliveryDeadline ? new Date(record.deliveryDeadline).toLocaleDateString() : "Not set"}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: (record.deliveryDeadline && new Date(record.deliveryDeadline) < new Date()) ? "var(--color-danger)" : "var(--text-muted)" }}>
+            <Calendar size={14} /> <span>Deadline: {formatDate(record.deliveryDeadline)}</span>
           </div>
         </div>
 
@@ -1121,7 +1307,7 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
                     <div key={idx} style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span>{formatCurrency(p.amount)}</span>
-                        <span>{new Date(p.date).toLocaleDateString()}</span>
+                        <span>{formatDate(p.date)}</span>
                       </div>
                       {p.note && <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{p.note}</div>}
                     </div>

@@ -3,6 +3,7 @@ import {
   ChevronDown, ChevronUp, Instagram, Clock,
 } from "lucide-react";
 import { useState } from "react";
+import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,11 +11,33 @@ import {
   getInfluencers,
   type Influencer,
 } from "@/api/influencer";
+import { getActivePackages } from "@/api/packages";
 
-// ─── Currency formatter ────────────────────────────────────────────────────────
+// ─── Formatting Helpers ───────────────────────────────────────────────────────
 const formatCurrency = (value?: number) => {
   if (value === undefined || value === null) return "—";
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(value);
+};
+
+const formatDate = (dateStr?: string | Date) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day} - ${month} - ${year}`;
+};
+
+const formatDateTime = (dateStr?: string | Date) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${day} - ${month} - ${year}, ${time}`;
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -23,12 +46,31 @@ export default function InfluencerPage() {
   const navigate = useNavigate();
 
   // Filters
-  const [filters, setFilters] = useState({ clientName: "", phoneNumber: "", shootDateAndTime: "" });
+  const [filters, setFilters] = useState({
+    clientName: "",
+    phoneNumber: "",
+    instaId: "",
+    status: "",
+    package: "",
+    city: "",
+    shootDateFrom: "",
+    shootDateTo: "",
+    deliveryDeadlineFrom: "",
+    deliveryDeadlineTo: "",
+    paymentStatus: "",
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Fetch
+  // Fetch Packages for dropdown
+  const { data: packages } = useQuery({
+    queryKey: ["packages", "Influencer"],
+    queryFn: () => getActivePackages("Influencer"),
+  });
+
+  // Fetch Influencers with filters
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ["influencer"],
-    queryFn: getInfluencers,
+    queryKey: ["influencer", filters],
+    queryFn: () => getInfluencers(filters as any),
   });
 
   // Delete
@@ -37,15 +79,22 @@ export default function InfluencerPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["influencer"] }); },
   });
 
-  const clearFilters = () => setFilters({ clientName: "", phoneNumber: "", shootDateAndTime: "" });
-
-  // Filter data
-  const filteredData = data?.filter((item: Influencer) => {
-    const matchClient = item.clientName.toLowerCase().includes(filters.clientName.toLowerCase());
-    const matchPhone = item.phoneNumber.toLowerCase().includes(filters.phoneNumber.toLowerCase());
-    const matchShoot = (item.shootDateAndTime ?? "").toLowerCase().includes(filters.shootDateAndTime.toLowerCase());
-    return matchClient && matchPhone && matchShoot;
+  const clearFilters = () => setFilters({
+    clientName: "",
+    phoneNumber: "",
+    instaId: "",
+    status: "",
+    package: "",
+    city: "",
+    shootDateFrom: "",
+    shootDateTo: "",
+    deliveryDeadlineFrom: "",
+    deliveryDeadlineTo: "",
+    paymentStatus: "",
   });
+
+  // Since we are doing server-side filtering, filteredData is just data
+  const filteredData = data;
 
   // Summary totals
   const summary = {
@@ -94,38 +143,122 @@ export default function InfluencerPage() {
           <Search size={18} color="var(--text-muted)" />
           <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Filters</h2>
           {Object.values(filters).some((v) => v !== "") && (
-            <button type="button" onClick={clearFilters} className="btn-ghost" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}>
-              <X size={14} /> Clear
+            <button type="button" onClick={clearFilters} className="btn-ghost" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.25rem", padding: "0.25rem 0.5rem", fontSize: "0.85rem", color: "var(--color-danger)" }}>
+              <X size={14} /> Clear All
             </button>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
+
+        {/* Basic Filters */}
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+          gap: "1.25rem",
+          alignItems: "end"
+        }}>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Influencer Name</label>
-            <input placeholder="Search name..." value={filters.clientName} onChange={(e) => setFilters((f) => ({ ...f, clientName: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Influencer Name</label>
+            <input placeholder="Search name..." value={filters.clientName} onChange={(e) => setFilters((f) => ({ ...f, clientName: e.target.value }))} style={{ width: "100%", padding: "0.6rem" }} />
           </div>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Phone</label>
-            <input placeholder="Search phone..." value={filters.phoneNumber} onChange={(e) => setFilters((f) => ({ ...f, phoneNumber: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Phone Number</label>
+            <input placeholder="Search phone..." value={filters.phoneNumber} onChange={(e) => setFilters((f) => ({ ...f, phoneNumber: e.target.value }))} style={{ width: "100%", padding: "0.6rem" }} />
           </div>
           <div>
-            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem" }}>Shoot Date</label>
-            <input type="datetime-local" value={filters.shootDateAndTime} onChange={(e) => setFilters((f) => ({ ...f, shootDateAndTime: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Status</label>
+            <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} style={{ width: "100%", padding: "0.6rem" }}>
+              <option value="">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: "0.75rem", marginBottom: "0.25rem", visibility: "hidden" }}>Placeholder</div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="btn-ghost"
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                gap: "0.4rem", 
+                fontSize: "0.9rem",
+                padding: "0.6rem 1rem",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "var(--bg-surface-3)",
+                height: "100%",
+                minHeight: "38px"
+              }}
+            >
+              {showAdvanced ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              {showAdvanced ? "Hide Advanced" : "Show All Filters"}
+            </button>
           </div>
         </div>
+
+        {/* Advanced Filters */}
+        {showAdvanced && (
+          <div style={{ marginTop: "1.25rem", paddingTop: "1.25rem", borderTop: "1px dashed var(--border)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Instagram ID</label>
+              <input placeholder="@username" value={filters.instaId} onChange={(e) => setFilters((f) => ({ ...f, instaId: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Package</label>
+              <select value={filters.package} onChange={(e) => setFilters((f) => ({ ...f, package: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }}>
+                <option value="">All Packages</option>
+                {packages?.map((pkg) => (
+                  <option key={pkg._id} value={pkg.name}>{pkg.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Payment Status</label>
+              <select value={filters.paymentStatus} onChange={(e) => setFilters((f) => ({ ...f, paymentStatus: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }}>
+                <option value="">All Payments</option>
+                <option value="pending">Due Balance</option>
+                <option value="paid">Fully Paid</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>City</label>
+              <input placeholder="Search city..." value={filters.city} onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Shoot Date (From)</label>
+              <input type="date" value={filters.shootDateFrom} onChange={(e) => setFilters((f) => ({ ...f, shootDateFrom: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Shoot Date (To)</label>
+              <input type="date" value={filters.shootDateTo} onChange={(e) => setFilters((f) => ({ ...f, shootDateTo: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Deadline (From)</label>
+              <input type="date" value={filters.deliveryDeadlineFrom} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadlineFrom: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Deadline (To)</label>
+              <input type="date" value={filters.deliveryDeadlineTo} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadlineTo: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Records List */}
       <div className="card" style={{ padding: "1.5rem", backgroundColor: "var(--bg-surface-2)", borderRadius: "var(--radius-lg)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <div style={{ color: "var(--text-secondary)" }}>
-            {isLoading ? "Loading..." : (
+            {isLoading ? "Fetching data..." : (
               <><strong>{filteredData?.length ?? 0}</strong> {filteredData?.length === 1 ? "record" : "records"} shown
-                {isFetching && !isLoading && " (refreshing...)"}
+                {isFetching && !isLoading && " (updating...)"}
               </>
             )}
           </div>
-          <button className="btn" onClick={() => refetch()} disabled={isLoading || isFetching}>Refresh</button>
+          <button className="btn" onClick={() => { clearFilters(); refetch(); }} disabled={isLoading || isFetching}>Refresh</button>
         </div>
 
         {isError ? (
@@ -133,8 +266,8 @@ export default function InfluencerPage() {
             <p style={{ fontWeight: 600, color: "var(--color-danger)" }}>Failed to load records</p>
             <p style={{ color: "var(--text-muted)" }}>{(error as Error)?.message ?? "Unknown error"}</p>
           </div>
-        ) : isLoading ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>Fetching influencer data…</div>
+        ) : isLoading || isFetching ? (
+          <Loader message={isLoading ? "Loading influencers..." : "Updating filters..."} />
         ) : (
           <div style={{ display: "grid", gap: "1rem" }}>
             {filteredData?.length === 0 ? (
@@ -219,11 +352,11 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
             </div>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={14} /> <span>Shoot: {record.shootDateAndTime ? new Date(record.shootDateAndTime).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "—"}</span>
+            <Calendar size={14} /> <span>Shoot: {formatDateTime(record.shootDateAndTime)}</span>
           </div>
           {record.deliveryDeadline && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-muted)" }}>
-              <Clock size={14} /> <span>Due: {new Date(record.deliveryDeadline).toLocaleDateString()}</span>
+              <Clock size={14} /> <span>Due: {formatDate(record.deliveryDeadline)}</span>
             </div>
           )}
           {record.package && (
@@ -281,7 +414,7 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
                 <div key={idx} style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(p.amount)}</span>
-                    <span>{new Date(p.date).toLocaleDateString()}</span>
+                    <span>{formatDate(p.date)}</span>
                   </div>
                   {p.note && <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{p.note}</div>}
                 </div>

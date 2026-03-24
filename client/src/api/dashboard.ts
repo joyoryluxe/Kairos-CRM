@@ -18,7 +18,32 @@ export interface DashboardStats {
     type: string;
     deadline: string;
     daysRemaining: number;
-    priority: 'Normal' | 'Moderate' | 'High' | 'Critical';
+    priority: "Normal" | "Moderate" | "High" | "Critical" | "Expired";
+  }>;
+  calendarEvents: any[];
+  upcomingShoots: Array<{
+    id: string;
+    clientName: string;
+    type: string;
+    date: string;
+    daysRemaining: number;
+  }>;
+  upcomingDeadlines: Array<{
+    id: string;
+    clientName: string;
+    type: string;
+    date: string;
+    daysRemaining: number;
+  }>;
+  recentlyCompleted: Array<{
+    id: string;
+    clientName: string;
+    type: string;
+    status: string;
+    total: number;
+    balance: number;
+    paymentStatus: "Done" | "Due";
+    date: string;
   }>;
 }
 

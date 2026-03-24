@@ -7,8 +7,21 @@ import { AuthRequest } from '../middleware/authenticate';
 // Create a new Corporate Event record
 export const createCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
     if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
     if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
+
+    // Ensure extras and payments are arrays if provided
+    if (req.body.extras === "") req.body.extras = [];
+    if (req.body.payments === "") req.body.payments = [];
+    
+    // Normalize dates inside payments array
+    if (Array.isArray(req.body.payments)) {
+      req.body.payments.forEach((p: any) => {
+        if (p.date === "") p.date = null;
+      });
+    }
+
     const corporateEvent = await CorporateEvent.create(req.body);
 
     // Google Calendar Sync
@@ -35,11 +48,69 @@ export const createCorporateEvent = async (req: AuthRequest, res: Response): Pro
   }
 };
 
-// Get all Corporate Event records
 export const getCorporateEvents = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const corporateEvents = await CorporateEvent.find().sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: corporateEvents.length, data: corporateEvents });
+    const {
+      clientName,
+      phoneNumber,
+      eventName,
+      city,
+      notes,
+      eventDateFrom,
+      eventDateTo,
+      deliveryDeadlineFrom,
+      deliveryDeadlineTo,
+      status,
+      package: packageName,
+      paymentStatus
+    } = req.query;
+
+    const filter: Record<string, any> = {};
+
+    // 1. Case-insensitive regex filters
+    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+    if (phoneNumber) filter.phoneNumber = { $regex: phoneNumber, $options: 'i' };
+    if (eventName) filter.eventName = { $regex: eventName, $options: 'i' };
+    if (notes) filter.notes = { $regex: notes, $options: 'i' };
+    if (city) {
+      filter['address.city'] = { $regex: city, $options: 'i' };
+    }
+
+    // 2. Exact match filters
+    if (status) filter.status = status;
+    if (packageName) filter.package = packageName;
+
+    // 3. Date range filters
+    if (eventDateFrom || eventDateTo) {
+      filter.eventDateAndTime = {};
+      if (eventDateFrom) filter.eventDateAndTime.$gte = new Date(eventDateFrom as string);
+      if (eventDateTo) filter.eventDateAndTime.$lte = new Date(eventDateTo as string);
+    }
+
+    if (deliveryDeadlineFrom || deliveryDeadlineTo) {
+      filter.deliveryDeadline = {};
+      if (deliveryDeadlineFrom) filter.deliveryDeadline.$gte = new Date(deliveryDeadlineFrom as string);
+      if (deliveryDeadlineTo) filter.deliveryDeadline.$lte = new Date(deliveryDeadlineTo as string);
+    }
+
+    // 4. Payment Status
+    if (paymentStatus === 'pending') {
+      filter.balance = { $gt: 0 };
+    } else if (paymentStatus === 'paid') {
+      filter.balance = { $lte: 0 };
+    }
+
+    const corporateEvents = await CorporateEvent.find(filter).sort({ createdAt: -1 });
+
+    // Summary calculation based on FILTERED data
+    const summary = {
+      total: corporateEvents.length,
+      totalRevenue: corporateEvents.reduce((sum, e) => sum + (e.total || 0), 0),
+      totalReceived: corporateEvents.reduce((sum, e) => sum + (e.advance || 0), 0),
+      totalDue: corporateEvents.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+    };
+
+    res.status(200).json({ success: true, summary, data: corporateEvents });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -62,8 +133,17 @@ export const getCorporateEventById = async (req: AuthRequest, res: Response): Pr
 // Update a Corporate Event record
 export const updateCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
     if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
     if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
+
+    // Normalize dates inside payments array if it's being updated
+    if (Array.isArray(req.body.payments)) {
+      req.body.payments.forEach((p: any) => {
+        if (p.date === "") p.date = null;
+      });
+    }
+
     const corporateEvent = await CorporateEvent.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

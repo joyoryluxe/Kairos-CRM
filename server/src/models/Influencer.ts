@@ -1,12 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-
-// ─── Package Definitions ───────────────────────────────────────────────────────
-export const INFLUENCER_PACKAGES: Record<string, number> = {
-  'Basic Collab': 3000,
-  'Standard Reel': 7500,
-  'Premium Campaign': 15000,
-  'Brand Ambassador': 30000,
-};
+import Package from './Package';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface IExtra {
@@ -34,20 +27,20 @@ export interface IInfluencer extends Document {
   shootName?: string;
   shootDateAndTime?: Date;
   deliveryDeadline?: Date;
-  
+
   package?: string;
   packagePrice: number;
-  
+
   extras: IExtra[];
   extrasTotal: number;
-  
+
   expenses: number;
-  
+
   payments: IPayment[];
   advance: number;
   total: number;
   balance: number;
-  
+
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   googleCalendarEventId?: string;
   notes?: string;
@@ -57,7 +50,7 @@ export interface IInfluencer extends Document {
 const ExtraSchema = new Schema<IExtra>(
   {
     description: { type: String, required: true },
-    amount:      { type: Number, required: true, min: 0 },
+    amount: { type: Number, required: true, min: 0 },
   },
   { _id: false }
 );
@@ -65,41 +58,42 @@ const ExtraSchema = new Schema<IExtra>(
 const PaymentSchema = new Schema<IPayment>(
   {
     amount: { type: Number, required: true, min: 0 },
-    date:   { type: Date, default: Date.now },
-    note:   { type: String },
+    date: { type: Date, default: Date.now },
+    note: { type: String },
   },
   { _id: false }
 );
 
 const InfluencerSchema = new Schema<IInfluencer>(
   {
-    clientName:  { type: String, required: true, trim: true },
+    clientName: { type: String, required: true, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
-    instaId:     { type: String, trim: true },
-    referredBy:  { type: String, trim: true },
+    instaId: { type: String, trim: true },
+    referredBy: { type: String, trim: true },
     address: {
-      street:  { type: String, default: '' },
-      city:    { type: String, default: '' },
-      state:   { type: String, default: '' },
+      street: { type: String, default: '' },
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
       zipCode: { type: String, default: '' },
     },
-    shootName:        { type: String, trim: true },
+    shootName: { type: String, trim: true },
     shootDateAndTime: { type: Date },
     deliveryDeadline: { type: Date },
-    
-    package:      { type: String, enum: Object.keys(INFLUENCER_PACKAGES) },
+
+    // ── Package & Pricing
+    package: { type: String, trim: true },
     packagePrice: { type: Number, default: 0, min: 0 },
-    
-    extras:      { type: [ExtraSchema], default: [] },
+
+    extras: { type: [ExtraSchema], default: [] },
     extrasTotal: { type: Number, default: 0, min: 0 },
-    
+
     expenses: { type: Number, default: 0, min: 0 },
-    
+
     payments: { type: [PaymentSchema], default: [] },
-    advance:  { type: Number, default: 0, min: 0 },
-    total:    { type: Number, default: 0, min: 0 },
-    balance:  { type: Number, default: 0 },
-    
+    advance: { type: Number, default: 0, min: 0 },
+    total: { type: Number, default: 0, min: 0 },
+    balance: { type: Number, default: 0 },
+
     status: {
       type: String,
       enum: ['Pending', 'Confirmed', 'Completed', 'Cancelled'],
@@ -112,47 +106,46 @@ const InfluencerSchema = new Schema<IInfluencer>(
 );
 
 // ─── Auto-Calculate Before Save ────────────────────────────────────────────────
-InfluencerSchema.pre('save', function (next) {
-  if (this.package && INFLUENCER_PACKAGES[this.package] !== undefined) {
-    this.packagePrice = INFLUENCER_PACKAGES[this.package];
+InfluencerSchema.pre('save', async function (next) {
+  // 1. If a package is selected but price is 0, auto-fill its base price from DB
+  if (this.package && (this.packagePrice === 0 || this.isModified('package'))) {
+    const pkg = await Package.findOne({ name: this.package, category: 'Influencer', isActive: true });
+    if (pkg) {
+      this.packagePrice = pkg.price;
+    }
   }
+
   this.extrasTotal = this.extras.reduce((sum, e) => sum + e.amount, 0);
   this.total = this.packagePrice + this.extrasTotal;
   this.advance = this.payments.reduce((sum, p) => sum + p.amount, 0);
   this.balance = this.total - this.advance;
-  
-  if (this.status !== 'Cancelled' && this.status !== 'Completed') {
-    if (this.advance === 0) {
-      this.status = 'Pending';
-    } else if (this.balance <= 0) {
-      this.status = 'Completed';
-    } else {
-      this.status = 'Confirmed';
-    }
-  }
+
   next();
 });
 
-// ─── Also run calculations on findByIdAndUpdate ────────────────────────────────
-InfluencerSchema.pre('findOneAndUpdate', function (next) {
+// ─── Also run calculations on findOneAndUpdate ────────────────────────────────
+InfluencerSchema.pre('findOneAndUpdate', async function (next) {
   const update = this.getUpdate() as any;
   if (!update) return next();
 
-  const packageName  = update.package      ?? update['$set']?.package;
-  const extras       = update.extras       ?? update['$set']?.extras       ?? [];
-  const payments     = update.payments     ?? update['$set']?.payments     ?? [];
+  const packageName = update.package ?? update['$set']?.package;
+  let packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
 
-  let packagePrice = 0;
-  if (packageName && INFLUENCER_PACKAGES[packageName] !== undefined) {
-    packagePrice = INFLUENCER_PACKAGES[packageName];
-  } else {
-    packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
+  // Resolve packagePrice: prefer explicitly sent value, fall back to DB lookup
+  if (packageName && packagePrice === 0) {
+    const pkg = await Package.findOne({ name: packageName, category: 'Influencer', isActive: true });
+    if (pkg) {
+      packagePrice = pkg.price;
+    }
   }
 
+  const extras = update.extras ?? update['$set']?.extras ?? [];
+  const payments = update.payments ?? update['$set']?.payments ?? [];
+
   const extrasTotal = extras.reduce((sum: number, e: IExtra) => sum + e.amount, 0);
-  const total       = packagePrice + extrasTotal;
-  const advance     = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
-  const balance     = total - advance;
+  const total = packagePrice + extrasTotal;
+  const advance = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
+  const balance = total - advance;
 
   this.setUpdate({
     ...update,

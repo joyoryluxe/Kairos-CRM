@@ -31,9 +31,15 @@ export type Influencer = {
   updatedAt?: string;
 };
 
-export async function getInfluencers(): Promise<Influencer[]> {
-  const res = await api.get<ApiResponse<Influencer[]>>("/influencer");
+export async function getInfluencers(params?: Record<string, string>): Promise<Influencer[]> {
+  const res = await api.get<ApiResponse<Influencer[]>>("/influencer", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load influencers");
+  return res.data.data;
+}
+
+export async function getInfluencerById(id: string): Promise<Influencer> {
+  const res = await api.get<ApiResponse<Influencer>>(`/influencer/${id}`);
+  if (!res.data.success) throw new Error(res.data.message || "Failed to load influencer record");
   return res.data.data;
 }
 

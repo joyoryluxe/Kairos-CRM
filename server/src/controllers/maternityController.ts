@@ -75,18 +75,20 @@
 
 
 import { Response } from 'express';
-import Maternity, { MATERNITY_PACKAGES } from '../models/Maternity';
+import Maternity from '../models/Maternity';
+import Package from '../models/Package';
 import { User } from '../models/User';
 import { googleCalendarService } from '../services/googleCalendarService';
 import { AuthRequest } from '../middleware/authenticate';
 
 // ─── Get all package options (for frontend dropdowns) ──────────────────────────
-export const getPackages = (_req: AuthRequest, res: Response): void => {
-  const packages = Object.entries(MATERNITY_PACKAGES).map(([name, price]) => ({
-    name,
-    price,
-  }));
-  res.status(200).json({ success: true, data: packages });
+export const getPackages = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const packages = await Package.find({ category: 'Maternity', isActive: true }).sort({ name: 1 });
+    res.status(200).json({ success: true, data: packages });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // ─── Create a new Maternity record ────────────────────────────────────────────
@@ -102,6 +104,22 @@ export const getPackages = (_req: AuthRequest, res: Response): void => {
 // }
 export const createMaternity = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
+    if (req.body.shootDateAndTime === "") req.body.shootDateAndTime = null;
+    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
+    if (req.body.birthDate === "") req.body.birthDate = null;
+
+    // Ensure extras and payments are arrays if provided
+    if (req.body.extras === "") req.body.extras = [];
+    if (req.body.payments === "") req.body.payments = [];
+    
+    // Normalize dates inside payments array
+    if (Array.isArray(req.body.payments)) {
+      req.body.payments.forEach((p: any) => {
+        if (p.date === "") p.date = null;
+      });
+    }
+
     const maternity = new Maternity(req.body);
     await maternity.save(); // triggers pre-save calculations
 
@@ -135,26 +153,68 @@ export const createMaternity = async (req: AuthRequest, res: Response): Promise<
 //   ?balance=due            → only show records with balance > 0 (money pending)
 export const getMaternities = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const {
+      clientName,
+      phoneNumber,
+      babyName,
+      birthDate,
+      referredBy,
+      city,
+      notes,
+      shootDateFrom,
+      shootDateTo,
+      deliveryDeadlineFrom,
+      deliveryDeadlineTo,
+      status,
+      package: packageName,
+      paymentStatus
+    } = req.query;
+
     const filter: Record<string, any> = {};
 
-    if (req.query.status) {
-      filter.status = req.query.status;
+    // 1. Case-insensitive regex filters
+    if (clientName) filter.clientName = { $regex: clientName, $options: 'i' };
+    if (phoneNumber) filter.phoneNumber = { $regex: phoneNumber, $options: 'i' };
+    if (babyName) filter.babyName = { $regex: babyName, $options: 'i' };
+    if (birthDate) filter.birthDate = birthDate;
+    if (referredBy) filter.referredBy = { $regex: referredBy, $options: 'i' };
+    if (notes) filter.notes = { $regex: notes, $options: 'i' };
+    if (city) {
+      filter['address.city'] = { $regex: city, $options: 'i' };
     }
-    if (req.query.balance === 'due') {
-      filter.balance = { $gt: 0 }; // client still owes money
+
+    // 2. Exact match filters
+    if (status) filter.status = status;
+    if (packageName) filter.package = packageName;
+
+    // 3. Date range filters
+    if (shootDateFrom || shootDateTo) {
+      filter.shootDateAndTime = {};
+      if (shootDateFrom) filter.shootDateAndTime.$gte = new Date(shootDateFrom as string);
+      if (shootDateTo) filter.shootDateAndTime.$lte = new Date(shootDateTo as string);
     }
-    if (req.query.balance === 'clear') {
-      filter.balance = { $lte: 0 }; // fully paid
+
+    if (deliveryDeadlineFrom || deliveryDeadlineTo) {
+      filter.deliveryDeadline = {};
+      if (deliveryDeadlineFrom) filter.deliveryDeadline.$gte = new Date(deliveryDeadlineFrom as string);
+      if (deliveryDeadlineTo) filter.deliveryDeadline.$lte = new Date(deliveryDeadlineTo as string);
+    }
+
+    // 4. Payment Status
+    if (paymentStatus === 'pending') {
+      filter.balance = { $gt: 0 };
+    } else if (paymentStatus === 'paid') {
+      filter.balance = { $lte: 0 };
     }
 
     const maternities = await Maternity.find(filter).sort({ createdAt: -1 });
 
-    // Attach a summary to the response for quick overview
+    // Summary calculation based on FILTERED data
     const summary = {
-      total:       maternities.length,
-      totalRevenue: maternities.reduce((sum, m) => sum + m.total, 0),
-      totalReceived: maternities.reduce((sum, m) => sum + m.advance, 0),
-      totalDue:    maternities.reduce((sum, m) => sum + Math.max(m.balance, 0), 0),
+      total: maternities.length,
+      totalRevenue: maternities.reduce((sum, m) => sum + (m.total || 0), 0),
+      totalReceived: maternities.reduce((sum, m) => sum + (m.advance || 0), 0),
+      totalDue: maternities.reduce((sum, m) => sum + Math.max(m.balance || 0, 0), 0),
     };
 
     res.status(200).json({ success: true, summary, data: maternities });
@@ -190,6 +250,18 @@ export const updateMaternity = async (req: AuthRequest, res: Response): Promise<
     }
 
     // Apply only the fields sent in the request
+    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
+    if (req.body.shootDateAndTime === "") req.body.shootDateAndTime = null;
+    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
+    if (req.body.birthDate === "") req.body.birthDate = null;
+
+    // Normalize dates inside payments array if it's being updated
+    if (Array.isArray(req.body.payments)) {
+      req.body.payments.forEach((p: any) => {
+        if (p.date === "") p.date = null;
+      });
+    }
+
     Object.assign(maternity, req.body);
     await maternity.save(); // triggers pre-save recalculation
 

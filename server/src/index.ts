@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import http from "http";
 
 import { connectDB } from "./config/db";
 import { env } from "./config/env";
@@ -12,6 +13,11 @@ import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
 
 const app: Application = express();
+const server = http.createServer(app);
+
+// ─── Connect DB ───────────────────────────────────────────────────────────────
+// Connect DB in background — Mongoose buffers any incoming requests
+connectDB();
 
 // ─── Security Middleware ───────────────────────────────────────────────────────
 app.use(helmet());
@@ -24,7 +30,7 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
         callback(null, true);
       } else {
@@ -34,6 +40,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -59,18 +66,15 @@ app.get("/health", (_req, res) => {
   });
 });
 
+app.get("/", (req, res) => res.send("✅ KAIROS CRM API is running"));
+
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
-const start = async (): Promise<void> => {
-  await connectDB();
-  app.listen(env.PORT, () => {
-    console.log(
-      `\n🚀  KAIROS CRM Server running on http://localhost:${env.PORT} [${env.NODE_ENV}]\n`
-    );
-  });
-};
+// ─── Start Server ─────────────────────────────────────────────────────────────
+const PORT = env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`\n🚀  KAIROS CRM running on http://localhost:${PORT} [${env.NODE_ENV}]\n`);
+});
 
-start();

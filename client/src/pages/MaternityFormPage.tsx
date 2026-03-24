@@ -4,10 +4,11 @@ import {
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createMaternity,
-  getMaternities,
+  getMaternityById,
   updateMaternity,
   type MaternityInput,
 } from "@/api/maternity";
@@ -82,10 +83,9 @@ export default function MaternityFormPage() {
 
   // Fetch existing record if editing
   const { data: existingRecord, isSuccess } = useQuery({
-    queryKey: ["maternity"],
-    queryFn: getMaternities,
+    queryKey: ["maternity", id],
+    queryFn: () => getMaternityById(id!),
     enabled: isEdit,
-    select: (data) => data.find((m) => m._id === id),
   });
 
   useEffect(() => {
@@ -141,6 +141,7 @@ export default function MaternityFormPage() {
     e.preventDefault();
     const payload: any = {
       ...form,
+      packagePrice,
       total,
       advance: paid,
       balance,
@@ -182,7 +183,7 @@ export default function MaternityFormPage() {
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
-
+      {isPending && <Loader fullPage message={isEdit ? "Updating record..." : "Creating record..."} />}
       {/* ─── Breadcrumb Header ─────────────────────────────────────── */}
       <div style={{ marginBottom: "2rem" }}>
         <button
@@ -408,7 +409,7 @@ export default function MaternityFormPage() {
               { label: "Package", value: formatCurrency(packagePrice), color: "var(--color-primary)" },
               { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
               { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-              { label: "Advance Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
+              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
               { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
             ].map(({ label, value, color, bold }) => (
               <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>

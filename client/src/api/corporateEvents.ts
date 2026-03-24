@@ -29,9 +29,18 @@ export type CorporateEvent = {
   updatedAt?: string;
 };
 
-export async function getCorporateEvents(): Promise<CorporateEvent[]> {
-  const res = await api.get<ApiResponse<CorporateEvent[]>>("/corporate-events");
+export async function getCorporateEvents(params?: Record<string, any>): Promise<{ data: CorporateEvent[]; summary: any }> {
+  const res = await api.get<ApiResponse<CorporateEvent[]>>("/corporate-events", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load corporate events");
+  return {
+    data: res.data.data,
+    summary: (res.data as any).summary
+  };
+}
+
+export async function getCorporateEventById(id: string): Promise<CorporateEvent> {
+  const res = await api.get<ApiResponse<CorporateEvent>>(`/corporate-events/${id}`);
+  if (!res.data.success) throw new Error(res.data.message || "Failed to load corporate event");
   return res.data.data;
 }
 

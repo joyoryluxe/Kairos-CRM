@@ -4,10 +4,11 @@ import {
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createInfluencer,
-  getInfluencers,
+  getInfluencerById,
   updateInfluencer,
   type InfluencerInput,
 } from "@/api/influencer";
@@ -82,10 +83,9 @@ export default function InfluencerFormPage() {
 
   // Load existing record for edit
   const { data: existingRecord, isSuccess } = useQuery({
-    queryKey: ["influencer"],
-    queryFn: getInfluencers,
+    queryKey: ["influencer", id],
+    queryFn: () => getInfluencerById(id!),
     enabled: isEdit,
-    select: (data: any[]) => data.find((m) => m._id === id),
   });
 
   useEffect(() => {
@@ -129,6 +129,7 @@ export default function InfluencerFormPage() {
     e.preventDefault();
     const payload: any = {
       ...form,
+      packagePrice,
       total,
       advance: paid,
       balance,
@@ -163,7 +164,7 @@ export default function InfluencerFormPage() {
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
-
+      {isPending && <Loader fullPage message="Saving influencer data..." />}
       {/* ─── Header ──────────────────────────────────────────────────── */}
       <div style={{ marginBottom: "2rem" }}>
         <button type="button" onClick={() => navigate("/dashboard/influencer")}
@@ -343,7 +344,7 @@ export default function InfluencerFormPage() {
               { label: "Package", value: formatCurrency(packagePrice), color: "var(--color-primary)" },
               { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
               { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-              { label: "Advance Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
+              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
               { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
             ].map(({ label, value, color, bold }) => (
               <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>

@@ -66,16 +66,7 @@
 
 
 import mongoose, { Document, Schema } from 'mongoose';
-
-// ─── Package Definitions ───────────────────────────────────────────────────────
-// Define your packages and their base prices here.
-// Clients pick a package → base price auto-fills → total auto-calculates.
-export const MATERNITY_PACKAGES: Record<string, number> = {
-  'Basic': 5000,   // e.g. ₹5,000 — adjust to your real pricing
-  'Standard': 9000,
-  'Premium': 15000,
-  'Deluxe': 22000,
-};
+import Package from './Package';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface IExtra {
@@ -107,8 +98,8 @@ export interface IMaternity extends Document {
   babyName?: string;
 
   // ── Package & Pricing
-  package?: string;           // Must be a key from MATERNITY_PACKAGES
-  packagePrice: number;       // Auto-filled from package selection
+  package?: string;           // Name of the package from the Package collection
+  packagePrice: number;       // Auto-filled or manually provided
 
   // ── Extras (itemized)
   extras: IExtra[];           // Array of extra items with descriptions
@@ -166,7 +157,7 @@ const MaternitySchema = new Schema<IMaternity>(
     babyName: { type: String, trim: true },
 
     // ── Package & Pricing
-    package: { type: String, enum: Object.keys(MATERNITY_PACKAGES) },
+    package: { type: String, trim: true },
     packagePrice: { type: Number, default: 0, min: 0 },
 
     // ── Extras (itemized)
@@ -194,13 +185,15 @@ const MaternitySchema = new Schema<IMaternity>(
   { timestamps: true }
 );
 
-// ─── Auto-Calculate Before Save ────────────────────────────────────────────────
 // This runs every time a record is saved or updated.
 // You never manually set total/advance/balance — they're always derived.
-MaternitySchema.pre('save', function (next) {
-  // 1. If a package is selected, auto-fill its base price
-  if (this.package && MATERNITY_PACKAGES[this.package] !== undefined) {
-    this.packagePrice = MATERNITY_PACKAGES[this.package];
+MaternitySchema.pre('save', async function (next) {
+  // 1. If a package is selected but price is 0, auto-fill its base price from DB
+  if (this.package && (this.packagePrice === 0 || this.isModified('package'))) {
+    const pkg = await Package.findOne({ name: this.package, category: 'Maternity', isActive: true });
+    if (pkg) {
+      this.packagePrice = pkg.price;
+    }
   }
 
   // 2. Sum all extras
@@ -215,43 +208,34 @@ MaternitySchema.pre('save', function (next) {
   // 5. Balance = what client still owes (negative = overpaid)
   this.balance = this.total - this.advance;
 
-  // 6. Auto-update status based on payment
-  if (this.status !== 'Cancelled' && this.status !== 'Completed') {
-    if (this.advance === 0) {
-      this.status = 'Pending';
-    } else if (this.balance <= 0) {
-      this.status = 'Completed';
-    } else {
-      this.status = 'Confirmed'; // partial payment received
-    }
-  }
-
   next();
 });
 
-// ─── Also run calculations on findByIdAndUpdate ────────────────────────────────
 // This middleware handles the update path (not just save)
-MaternitySchema.pre('findOneAndUpdate', function (next) {
+MaternitySchema.pre('findOneAndUpdate', async function (next) {
   const update = this.getUpdate() as any;
   if (!update) return next();
 
   // Pull the update fields to recalculate
   const packageName = update.package ?? update['$set']?.package;
+  let packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
+
+  // If package is changed but price is not set, look it up
+  if (packageName && packagePrice === 0) {
+    const pkg = await Package.findOne({ name: packageName, category: 'Maternity', isActive: true });
+    if (pkg) {
+      packagePrice = pkg.price;
+    }
+  }
+
   const extras = update.extras ?? update['$set']?.extras ?? [];
   const payments = update.payments ?? update['$set']?.payments ?? [];
-
-  let packagePrice = 0;
-  if (packageName && MATERNITY_PACKAGES[packageName] !== undefined) {
-    packagePrice = MATERNITY_PACKAGES[packageName];
-  } else {
-    packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
-  }
 
   const extrasTotal = extras.reduce((sum: number, e: IExtra) => sum + e.amount, 0);
   const total = packagePrice + extrasTotal;
   const advance = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
   const balance = total - advance;
-
+  
   // Inject calculated fields into the update
   this.setUpdate({
     ...update,

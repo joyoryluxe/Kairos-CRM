@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import Package from './Package';
 
 export interface ICorporateEvent extends Document {
   clientName: string;
@@ -13,11 +14,14 @@ export interface ICorporateEvent extends Document {
   eventDateAndTime?: Date;
   deliveryDeadline?: Date;
   package?: string;
-  total?: number;
-  advance?: number;
-  expenses?: number;
-  extras?: Array<{ description: string; amount: number }>;
-  payments?: Array<{ amount: number; date: Date; note?: string }>;
+  packagePrice: number;
+  total: number;
+  extrasTotal: number;
+  advance: number;
+  balance: number;
+  expenses: number;
+  extras: Array<{ description: string; amount: number }>;
+  payments: Array<{ amount: number; date: Date; note?: string }>;
   notes?: string;
   referenceByName?: string;
   googleCalendarEventId?: string;
@@ -38,8 +42,11 @@ const CorporateEventSchema: Schema = new Schema(
     eventDateAndTime: { type: Date },
     deliveryDeadline: { type: Date },
     package: { type: String },
+    packagePrice: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
+    extrasTotal: { type: Number, default: 0 },
     advance: { type: Number, default: 0 },
+    balance: { type: Number, default: 0 },
     expenses: { type: Number, default: 0 },
     extras: [
       {
@@ -67,21 +74,70 @@ const CorporateEventSchema: Schema = new Schema(
 );
 
 // ─── Auto-Calculate Before Save ────────────────────────────────────────────────
-CorporateEventSchema.pre('save', function (next) {
+// This runs every time a record is saved or updated.
+CorporateEventSchema.pre('save', async function (next) {
   const self = this as any;
-  const total = self.total || 0;
-  const advance = self.advance || 0;
-  const balance = total - advance;
-
-  if (self.status !== 'Cancelled' && self.status !== 'Completed') {
-    if (advance === 0) {
-      self.status = 'Pending';
-    } else if (balance <= 0) {
-      self.status = 'Completed';
-    } else {
-      self.status = 'Confirmed';
+  
+  // 0. If a package is selected but price is 0, auto-fill its base price from DB
+  if (self.package && (self.packagePrice === 0 || self.isModified('package'))) {
+    const pkg = await Package.findOne({ name: self.package, category: 'Corporate', isActive: true });
+    if (pkg) {
+      self.packagePrice = pkg.price;
     }
   }
+
+  // 1. Calculate extrasTotal
+  self.extrasTotal = (self.extras || []).reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+  
+  // 2. Calculate advance (sum of payments)
+  self.advance = (self.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+  
+  // 3. Assume total is packagePrice + extrasTotal
+  self.total = self.packagePrice + self.extrasTotal;
+  
+  // 4. Calculate balance
+  self.balance = self.total - self.advance;
+
+  next();
+});
+
+// ─── Also run calculations on findByIdAndUpdate ────────────────────────────────
+CorporateEventSchema.pre('findOneAndUpdate', async function (next) {
+  const update = this.getUpdate() as any;
+  if (!update) return next();
+
+  const packageName = update.package ?? update['$set']?.package;
+  let packagePrice = update.packagePrice ?? update['$set']?.packagePrice ?? 0;
+  
+  // If package is changed but price is not set, look it up
+  if (packageName && packagePrice === 0) {
+    const pkg = await Package.findOne({ name: packageName, category: 'Corporate', isActive: true });
+    if (pkg) {
+      packagePrice = pkg.price;
+    }
+  }
+
+  const extras = update.extras ?? update['$set']?.extras ?? [];
+  const payments = update.payments ?? update['$set']?.payments ?? [];
+  
+  const extrasTotal = extras.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+  const advance = payments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+  
+  const total = packagePrice + extrasTotal;
+  const balance = total - advance;
+  
+  this.setUpdate({
+    ...update,
+    $set: {
+      ...(update['$set'] || {}),
+      packagePrice,
+      extrasTotal,
+      advance,
+      total,
+      balance,
+    },
+  });
+
   next();
 });
 
