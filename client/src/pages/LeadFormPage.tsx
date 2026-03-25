@@ -884,7 +884,7 @@
 
 // //   /* ── Card section ── */
 // //   .form-card {
-// //     background: var(--bg-surface-1);
+// //     background: var(--bg-surface);
 // //     border: 1px solid var(--border);
 // //     border-radius: 16px;
 // //     padding: 1.5rem;
@@ -1610,7 +1610,7 @@
 
 //   /* ── Card section ── */
 //   .form-card {
-//     background: var(--bg-surface-1);
+//     background: var(--bg-surface);
 //     border: 1px solid var(--border);
 //     border-radius: 16px;
 //     padding: 1.5rem;
@@ -2365,7 +2365,7 @@ const STYLES = `
 
   /* ── Card section ── */
   .form-card {
-    background: var(--bg-surface-1);
+    background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 1.5rem;

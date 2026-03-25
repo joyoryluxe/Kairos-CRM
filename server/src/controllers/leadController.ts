@@ -19,7 +19,7 @@ export const createLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Get All Leads (Scoped to User) ───────────────────────────────────────────
 export const getLeads = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const leads = await Lead.find({ user: req.user?.id }).sort({ createdAt: -1 });
+    const leads = await Lead.find({}).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: leads.length, data: leads });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -29,7 +29,7 @@ export const getLeads = async (req: AuthRequest, res: Response): Promise<void> =
 // ─── Get Single Lead ──────────────────────────────────────────────────────────
 export const getLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lead = await Lead.findOne({ _id: req.params.id, user: req.user?.id });
+    const lead = await Lead.findById(req.params.id);
     if (!lead) {
       res.status(404).json({ success: false, message: 'Lead not found' });
       return;
@@ -44,7 +44,7 @@ export const getLead = async (req: AuthRequest, res: Response): Promise<void> =>
 export const updateLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const lead = await Lead.findOneAndUpdate(
-      { _id: req.params.id, user: req.user?.id },
+      { _id: req.params.id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -61,7 +61,7 @@ export const updateLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Delete Lead ──────────────────────────────────────────────────────────────
 export const deleteLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lead = await Lead.findOneAndDelete({ _id: req.params.id, user: req.user?.id });
+    const lead = await Lead.findByIdAndDelete(req.params.id);
     if (!lead) {
       res.status(404).json({ success: false, message: 'Lead not found' });
       return;
@@ -75,9 +75,8 @@ export const deleteLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Lead Stats (for dashboard) ───────────────────────────────────────────────
 export const getLeadStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.id;
     const stats = await Lead.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      { $match: {} },
       {
         $group: {
           _id: '$status',
@@ -87,7 +86,7 @@ export const getLeadStats = async (req: AuthRequest, res: Response): Promise<voi
     ]);
 
     const sourceStats = await Lead.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      { $match: {} },
       {
         $group: {
           _id: '$source',

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { 
-  FileText, 
   User, 
   Tag, 
   Calendar, 
@@ -277,7 +276,7 @@ const EditFormPage: React.FC = () => {
         .form-page-container {
           min-height: 100vh;
           position: relative;
-          background: var(--bg-surface-1);
+          background: var(--bg-page);
           overflow-x: hidden;
         }
         .bg-glow {
@@ -432,7 +431,7 @@ const EditFormPage: React.FC = () => {
         .form-group-premium textarea, 
         .form-group-premium select {
           width: 100%;
-          background: var(--bg-surface-1);
+          background: var(--bg-page);
           border: 2px solid var(--border);
           padding: 1rem 1.25rem;
           border-radius: 16px;
@@ -441,12 +440,16 @@ const EditFormPage: React.FC = () => {
           color: var(--text-primary);
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           outline: none;
+          color-scheme: dark;
+        }
+        .form-group-premium select option {
+          background: var(--bg-surface-2);
+          color: var(--text-primary);
         }
         .form-group-premium input:focus, 
         .form-group-premium textarea:focus,
         .form-group-premium select:focus {
           border-color: var(--color-primary);
-          background: white;
           box-shadow: 0 0 0 5px var(--color-primary-glow);
         }
 

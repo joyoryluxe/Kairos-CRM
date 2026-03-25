@@ -924,9 +924,7 @@ export default function DashboardOverviewPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
-  const [visibleShoots, setVisibleShoots] = useState(3);
-  const [visibleDeadlines, setVisibleDeadlines] = useState(3);
-  const [visibleCompleted, setVisibleCompleted] = useState(3);
+  const [visibleShoots] = useState(3);
   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
 
   // Studio Expense State
