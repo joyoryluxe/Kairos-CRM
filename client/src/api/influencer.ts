@@ -31,10 +31,13 @@ export type Influencer = {
   updatedAt?: string;
 };
 
-export async function getInfluencers(params?: Record<string, string>): Promise<Influencer[]> {
+export async function getInfluencers(params?: Record<string, string>): Promise<{ data: Influencer[]; summary: any }> {
   const res = await api.get<ApiResponse<Influencer[]>>("/influencer", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load influencers");
-  return res.data.data;
+  return {
+    data: res.data.data,
+    summary: (res.data as any).summary
+  };
 }
 
 export async function getInfluencerById(id: string): Promise<Influencer> {

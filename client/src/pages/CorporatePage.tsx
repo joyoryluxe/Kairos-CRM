@@ -1,6 +1,7 @@
 import {
   Building2, Phone, Calendar, Plus, Edit, Trash2,
   Search, X, ChevronDown, ChevronUp, MapPin, Package,
+  TrendingUp, CreditCard, AlertCircle, CheckCircle2
 } from "lucide-react";
 import { useState } from "react";
 import Loader from "../components/Loader";
@@ -11,6 +12,7 @@ import {
   getCorporateEvents,
   type CorporateEvent,
 } from "@/api/corporateEvents";
+import StatCard from "@/components/StatCard";
 
 // Shared currency formatter
 const formatCurrency = (value?: number) => {
@@ -82,6 +84,15 @@ export default function CorporatePage() {
   const data = response?.data || [];
   const apiSummary = response?.summary || {};
 
+  const summary = {
+    totalRecords: apiSummary.total || 0,
+    totalRevenue: apiSummary.totalRevenue || 0,
+    totalReceived: apiSummary.totalReceived || 0,
+    totalDue: apiSummary.totalDue || 0,
+    totalExpenses: apiSummary.totalExpenses || 0,
+    totalProfit: apiSummary.totalProfit || 0
+  };
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteCorporateEvent(id),
     onSuccess: () => {
@@ -107,12 +118,7 @@ export default function CorporatePage() {
     });
   };
 
-  const summary = {
-    totalRecords: apiSummary.total ?? 0,
-    totalRevenue: apiSummary.totalRevenue ?? 0,
-    totalReceived: apiSummary.totalReceived ?? 0,
-    totalDue: apiSummary.totalDue ?? 0,
-  };
+  // Summary calculations now consolidated at the top
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 1rem" }}>
@@ -135,23 +141,54 @@ export default function CorporatePage() {
       </header>
 
       {/* Summary Cards */}
-      <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Records</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--text-primary)" }}>{summary.totalRecords}</div>
-        </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Revenue</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--color-primary)" }}>{formatCurrency(summary.totalRevenue)}</div>
-        </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Received</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "hsl(142,71%,45%)" }}>{formatCurrency(summary.totalReceived)}</div>
-        </div>
-        <div className="card" style={{ padding: "1.25rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Due</div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, color: summary.totalDue > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)" }}>{formatCurrency(summary.totalDue)}</div>
-        </div>
+      <div className="grid-responsive" style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(6, 1fr)",
+        gap: "1.5rem",
+        marginBottom: "2.5rem"
+      }}>
+        <StatCard
+          title="Total Records"
+          value={summary.totalRecords}
+          icon={<Package size={24} />}
+          color="var(--color-primary)"
+          description="Total entries"
+        />
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(summary.totalRevenue)}
+          icon={<TrendingUp size={24} />}
+          color="#f472b6"
+          description="Gross value"
+        />
+        <StatCard
+          title="Received"
+          value={formatCurrency(summary.totalReceived)}
+          icon={<CheckCircle2 size={24} />}
+          color="#34d399"
+          description="Collected"
+        />
+        <StatCard
+          title="Total Due"
+          value={formatCurrency(summary.totalDue)}
+          icon={<AlertCircle size={24} />}
+          color="#f87171"
+          description="Pending"
+        />
+        <StatCard
+          title="Total Expenses"
+          value={formatCurrency(summary.totalExpenses)}
+          icon={<CreditCard size={24} />}
+          color="#fbbf24"
+          description="Costs"
+        />
+        <StatCard
+          title="Estimated Profit"
+          value={formatCurrency(summary.totalProfit)}
+          icon={<TrendingUp size={24} />}
+          color="#60a5fa"
+          description="Net profit"
+        />
       </div>
 
       {/* Filters Section */}
@@ -382,7 +419,7 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Corporat
 
   return (
     <div style={{ padding: "1.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", transition: "all 0.2s" }}
-         className="record-card-hover"
+      className="record-card-hover"
     >
       {/* Card Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>

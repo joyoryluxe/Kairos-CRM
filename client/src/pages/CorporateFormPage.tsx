@@ -41,6 +41,7 @@ interface FormState extends CorporateEventInput {
   extras?: Array<{ description: string; amount: number }>;
   payments?: Array<{ amount: number; date: string; note?: string }>;
   expenses?: number;
+  packagePrice: number;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
 }
 
@@ -55,6 +56,7 @@ const EMPTY: FormState = {
   extras: [],
   payments: [],
   expenses: 0,
+  packagePrice: 0,
   status: "Pending",
 };
 
@@ -66,6 +68,13 @@ export default function CorporateFormPage() {
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [loaded, setLoaded] = useState(false);
+  const [isCustomPackage, setIsCustomPackage] = useState(false);
+
+  // Dynamic packages
+  const { data: packages = [] } = useQuery<PackageType[]>({
+    queryKey: ["packages", "Corporate"],
+    queryFn: () => getActivePackages("Corporate"),
+  });
 
   // Load existing record for edit
   const { data: existingRecord, isSuccess } = useQuery({
@@ -84,20 +93,22 @@ export default function CorporateFormPage() {
         eventDateAndTime: m.eventDateAndTime ? new Date(m.eventDateAndTime).toISOString().slice(0, 16) : "",
         deliveryDeadline: m.deliveryDeadline ? new Date(m.deliveryDeadline).toISOString().slice(0, 10) : "",
         package: m.package ?? "",
+        packagePrice: m.packagePrice ?? 0,
         notes: m.notes ?? "",
         extras: Array.isArray(m.extras) ? m.extras : [],
         payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
         expenses: m.expenses ?? 0,
         status: m.status ?? "Pending",
       });
+      // If the package is not in the list (and not empty), it's custom
+      if (m.package && !packages.some(p => p.name === m.package)) {
+        setIsCustomPackage(true);
+      }
       setLoaded(true);
     }
-  }, [isEdit, isSuccess, existingRecord, loaded]);
+  }, [isEdit, isSuccess, existingRecord, loaded, packages]);
 
-  const { data: packages = [] } = useQuery<PackageType[]>({
-    queryKey: ["packages", "Corporate"],
-    queryFn: () => getActivePackages("Corporate"),
-  });
+
 
   const createMutation = useMutation({
     mutationFn: createCorporateEvent,
@@ -114,7 +125,6 @@ export default function CorporateFormPage() {
       ...form,
       eventDateAndTime: form.eventDateAndTime || null,
       deliveryDeadline: form.deliveryDeadline || null,
-      packagePrice,
       total,
       advance: paid,
       balance,
@@ -141,9 +151,8 @@ export default function CorporateFormPage() {
     setForm((f) => { const a = [...(f.payments ?? [])]; a[i] = { ...a[i], [k]: v }; return { ...f, payments: a }; });
 
   // Totals
-  const packagePrice = packages.find((p) => p.name === form.package)?.price ?? 0;
   const extrasTotal = extras.reduce((s, e) => s + (e.amount || 0), 0);
-  const total = packagePrice + extrasTotal;
+  const total = (form.packagePrice || 0) + extrasTotal;
   const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const balance = total - paid;
 
@@ -214,18 +223,51 @@ export default function CorporateFormPage() {
         <Section title="Package" icon={<Package size={18} />}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>Select Package</label>
-              <select value={form.package ?? ""} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} style={inputCls}>
-                <option value="">— No package —</option>
-                {packages.map((p) => (
-                  <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
-                ))}
-              </select>
+              <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
+              {isCustomPackage ? (
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <input required value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} placeholder="e.g. Special Deal" style={inputCls} />
+                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
+                </div>
+              ) : (
+                <select value={form.package ?? ""} onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "___custom___") {
+                    setIsCustomPackage(true);
+                    setForm(f => ({ ...f, package: "", packagePrice: 0 }));
+                  } else {
+                    const pkg = packages.find(p => p.name === val);
+                    setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
+                  }
+                }} style={inputCls}>
+                  <option value="">— No package —</option>
+                  {packages.map((p) => (
+                    <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
+                  ))}
+                  <option value="___custom___">+ Custom Package</option>
+                </select>
+              )}
             </div>
             <div>
-              <label style={labelStyle}>Package Price (auto)</label>
-              <input readOnly value={packagePrice ? `₹${packagePrice.toLocaleString("en-IN")}` : "—"}
-                style={{ ...inputCls, background: "var(--bg-surface-3)", cursor: "not-allowed", color: "var(--color-primary)", fontWeight: 700 }} />
+              <label style={labelStyle}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <input
+                  type="number"
+                  readOnly={!isCustomPackage}
+                  value={form.packagePrice || ""}
+                  onChange={(e) => setForm(f => ({ ...f, packagePrice: e.target.valueAsNumber || 0 }))}
+                  placeholder="0"
+                  style={{ 
+                    ...inputCls, 
+                    paddingLeft: "1.75rem",
+                    background: isCustomPackage ? "var(--bg-surface)" : "var(--bg-surface-3)", 
+                    cursor: isCustomPackage ? "text" : "not-allowed", 
+                    color: "var(--color-primary)", 
+                    fontWeight: 700 
+                  }} 
+                />
+              </div>
             </div>
             <div>
               <label style={labelStyle}>Status</label>
@@ -284,31 +326,50 @@ export default function CorporateFormPage() {
           )}
         </Section>
 
-        {/* ─── Notes ────────────────────────────────────────────────── */}
-        <Section title="Notes" icon={<Building2 size={18} />}>
-          <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Contract terms, special requirements, notes…" rows={3} style={{ width: "100%", resize: "vertical" }} />
+        {/* ─── Expenses & Notes ──────────────────────────────────────── */}
+        <Section title="Expenses & Notes" icon={<Building2 size={18} />}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
+            <div>
+              <label style={labelStyle}>Shoot Expenses (₹)</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.expenses || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))}
+                  placeholder="0"
+                  style={{ ...inputCls, paddingLeft: "1.75rem" }}
+                />
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Notes</label>
+              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Contract terms, special requirements, notes…" rows={2} style={{ width: "100%", resize: "vertical" }} />
+            </div>
+          </div>
         </Section>
 
         {/* ─── Financial Summary ────────────────────────────────────── */}
-        {(packagePrice > 0 || extras.length > 0 || payments.length > 0) && (
-          <div style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", overflow: "hidden", marginBottom: "1.5rem", background: "var(--bg-surface-2)" }}>
-            <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>Financial Summary</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
-              {[
-                { label: "Package", value: formatCurrency(packagePrice), color: "var(--color-primary)" },
-                { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
-                { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-                { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
-                { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
-              ].map(({ label, value, color, bold }) => (
-                <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-                  <div style={{ fontSize: "1.2rem", fontWeight: bold ? 800 : 600, color }}>{value}</div>
-                </div>
-              ))}
-            </div>
+        <div style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", overflow: "hidden", marginBottom: "1.5rem", background: "var(--bg-surface-2)" }}>
+          <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>Financial Summary</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+            {[
+              { label: "Package", value: formatCurrency(form.packagePrice || 0), color: "var(--color-primary)" },
+              { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
+              { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
+              { label: "Expenses", value: formatCurrency(form.expenses), color: "var(--color-danger)" },
+              { label: "Profit", value: formatCurrency(total - (form.expenses || 0)), color: "#10b981", bold: true },
+              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
+              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
+            ].map(({ label, value, color, bold }) => (
+              <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
+                <div style={{ fontSize: "1.2rem", fontWeight: bold ? 800 : 600, color }}>{value}</div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {mutError && (
           <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--radius-md)", color: "var(--color-danger)", fontSize: "0.9rem" }}>

@@ -1,15 +1,6 @@
-
-
-
-
-
-
-
-
-
-
 // import { useState, useEffect, useCallback } from "react";
-// import { useQuery } from "@tanstack/react-query";
+// import { createPortal } from "react-dom";
+// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 // import { getDashboardOverview } from "@/api/dashboard";
 // import { getGoogleAuthUrl, syncAllRecords } from "@/api/googleAuth";
 // import { getMe } from "@/api/auth";
@@ -27,8 +18,20 @@
 //   X,
 //   Clock,
 //   Flag,
+//   Plus,
+//   Trash2,
+//   Pencil,
 // } from "lucide-react";
 // import { useSearchParams } from "react-router-dom";
+// import StatCard from "@/components/StatCard";
+// import {
+//   getStudioExpenses,
+//   createStudioExpense,
+//   updateStudioExpense,
+//   deleteStudioExpense,
+//   type StudioExpense
+// } from "@/api/studioExpenses";
+
 // import FullCalendar from "@fullcalendar/react";
 // import dayGridPlugin from "@fullcalendar/daygrid";
 // import timeGridPlugin from "@fullcalendar/timegrid";
@@ -93,186 +96,95 @@
 //   event: EventDetail;
 //   onClose: () => void;
 // }) {
-//   return (
+//   return createPortal(
 //     <div
 //       onClick={onClose}
 //       style={{
-//         position: "absolute",
+//         position: "fixed",
 //         inset: 0,
-//         background: "rgba(0,0,0,0.45)",
-//         zIndex: 100,
+//         background: "rgba(0,0,0,0.6)",
+//         zIndex: 2000,
 //         display: "flex",
 //         alignItems: "center",
 //         justifyContent: "center",
 //         padding: "1rem",
-//         borderRadius: "12px",
+//         backdropFilter: "blur(8px)",
+//         animation: "fadeIn 0.3s ease-out"
 //       }}
 //     >
 //       <div
 //         onClick={(e) => e.stopPropagation()}
 //         style={{
 //           background: "var(--bg-surface)",
-//           borderRadius: "16px",
-//           padding: "1.5rem",
+//           borderRadius: "24px",
+//           padding: "2rem",
 //           width: "100%",
-//           maxWidth: "380px",
-//           border: "1px solid var(--border)",
-//           boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+//           maxWidth: "420px",
+//           border: "1px solid var(--border-strong)",
+//           boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+//           position: "relative",
+//           overflow: "hidden",
+//           animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
 //         }}
 //       >
-//         {/* header */}
-//         <div
-//           style={{
-//             display: "flex",
-//             justifyContent: "space-between",
-//             alignItems: "flex-start",
-//             marginBottom: "1rem",
-//           }}
-//         >
-//           <div
-//             style={{
-//               display: "flex",
-//               alignItems: "center",
-//               gap: "0.6rem",
-//               flex: 1,
-//               minWidth: 0,
-//             }}
-//           >
-//             <div
-//               style={{
-//                 width: 12,
-//                 height: 12,
-//                 borderRadius: "50%",
-//                 background: event.backgroundColor,
-//                 flexShrink: 0,
-//               }}
-//             />
-//             <span
-//               style={{
-//                 fontWeight: 700,
-//                 fontSize: "1rem",
-//                 overflow: "hidden",
-//                 textOverflow: "ellipsis",
-//                 whiteSpace: "nowrap",
-//               }}
-//             >
+//         {/* Color Accent Bar */}
+//         <div style={{ position: "absolute", top: 0, left: 0, width: "6px", height: "100%", background: event.backgroundColor }} />
+
+//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+//           <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", flex: 1, minWidth: 0 }}>
+//             <div style={{ width: 14, height: 14, borderRadius: "50%", background: event.backgroundColor, boxShadow: `0 0 10px ${event.backgroundColor}66`, flexShrink: 0 }} />
+//             <span style={{ fontWeight: 700, fontSize: "1.2rem", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
 //               {event.title}
 //             </span>
 //           </div>
 //           <button
 //             onClick={onClose}
-//             style={{
-//               background: "none",
-//               border: "none",
-//               cursor: "pointer",
-//               color: "var(--text-muted)",
-//               padding: "0.2rem",
-//               marginLeft: "0.5rem",
-//               flexShrink: 0,
-//             }}
+//             className="btn-ghost"
+//             style={{ padding: "0.4rem", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
 //           >
-//             <X size={18} />
+//             <X size={20} />
 //           </button>
 //         </div>
 
-//         {/* type badge */}
-//         <div
-//           style={{
-//             display: "flex",
-//             gap: "0.5rem",
-//             marginBottom: "1rem",
-//             flexWrap: "wrap",
-//           }}
-//         >
-//           <span
-//             style={{
-//               display: "inline-flex",
-//               alignItems: "center",
-//               gap: "0.3rem",
-//               padding: "0.25rem 0.6rem",
-//               borderRadius: "20px",
-//               fontSize: "0.75rem",
-//               fontWeight: 700,
-//               background: event.isDeadline
-//                 ? "rgba(239,68,68,0.12)"
-//                 : "rgba(99,179,237,0.12)",
-//               color: event.isDeadline ? "#ef4444" : "#60a5fa",
-//               border: event.isDeadline
-//                 ? "1px solid rgba(239,68,68,0.25)"
-//                 : "1px solid rgba(99,179,237,0.25)",
-//             }}
-//           >
-//             {event.isDeadline ? (
-//               <>
-//                 <Flag size={11} /> Delivery Deadline
-//               </>
-//             ) : (
-//               <>
-//                 <Clock size={11} /> Shoot / Event
-//               </>
-//             )}
+//         <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+//           <span style={{
+//             display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700,
+//             background: event.isDeadline ? "rgba(239,68,68,0.15)" : "rgba(99,179,237,0.15)",
+//             color: event.isDeadline ? "#ff5f5f" : "#60a5fa",
+//             border: `1px solid ${event.isDeadline ? "rgba(239,68,68,0.2)" : "rgba(99,179,237,0.2)"}`
+//           }}>
+//             {event.isDeadline ? <><Flag size={14} /> Deadline</> : <><Clock size={14} /> Shoot Event</>}
 //           </span>
-//           <span
-//             style={{
-//               display: "inline-flex",
-//               alignItems: "center",
-//               gap: "0.3rem",
-//               padding: "0.25rem 0.6rem",
-//               borderRadius: "20px",
-//               fontSize: "0.75rem",
-//               fontWeight: 600,
-//               background: "var(--bg-surface-2)",
-//               color: "var(--text-secondary)",
-//               border: "1px solid var(--border)",
-//             }}
-//           >
-//             {event.type === "Maternity" ? (
-//               <Baby size={11} />
-//             ) : event.type === "Influencer" ? (
-//               <Megaphone size={11} />
-//             ) : (
-//               <Building2 size={11} />
-//             )}
+//           <span style={{
+//             display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 600,
+//             background: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)"
+//           }}>
 //             {event.type}
 //           </span>
 //         </div>
 
-//         {/* date/time */}
-//         <div
-//           style={{
-//             padding: "0.75rem",
-//             background: "var(--bg-surface-2)",
-//             borderRadius: "10px",
-//             fontSize: "0.85rem",
-//             color: "var(--text-secondary)",
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "0.5rem",
-//           }}
-//         >
-//           <Calendar size={14} color="var(--color-primary)" />
-//           {event.isDeadline
-//             ? formatDateOnly(event.start)
-//             : formatDate(event.start)}
+//         <div style={{
+//           padding: "1.25rem", background: "linear-gradient(135deg, var(--bg-surface-2), var(--bg-surface-3))",
+//           borderRadius: "16px", fontSize: "0.95rem", color: "var(--text-primary)", border: "1px solid var(--border)",
+//           display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem"
+//         }}>
+//           <div style={{ background: "rgba(255,255,255,0.05)", padding: "0.5rem", borderRadius: "10px" }}>
+//             <Calendar size={18} color="var(--color-primary)" />
+//           </div>
+//           <div style={{ display: "flex", flexDirection: "column" }}>
+//             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Scheduled Date</span>
+//             <span style={{ fontWeight: 600 }}>{event.isDeadline ? formatDateOnly(event.start) : formatDate(event.start)}</span>
+//           </div>
 //         </div>
 
-//         {/* status */}
 //         {event.status && (
-//           <div
-//             style={{
-//               marginTop: "0.75rem",
-//               fontSize: "0.8rem",
-//               color: "var(--text-muted)",
-//             }}
-//           >
-//             Status:{" "}
-//             <strong style={{ color: "var(--text-primary)" }}>
-//               {event.status}
-//             </strong>
+//           <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "var(--bg-surface-2)", padding: "0.75rem 1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
+//             <span style={{ color: "var(--text-muted)" }}>Current Status:</span> <strong style={{ color: "var(--text-primary)", marginLeft: "0.4rem" }}>{event.status}</strong>
 //           </div>
 //         )}
 //       </div>
-//     </div>
+//     </div>,
+//     document.body
 //   );
 // }
 
@@ -280,67 +192,29 @@
 
 // function CalendarLegend() {
 //   const items = [
-//     {
-//       label: "Maternity Shoot",
-//       color: "#f472b6",
-//       icon: <Baby size={11} />,
-//     },
-//     {
-//       label: "Influencer Shoot",
-//       color: "#60a5fa",
-//       icon: <Megaphone size={11} />,
-//     },
-//     {
-//       label: "Corporate Event",
-//       color: "#4ade80",
-//       icon: <Building2 size={11} />,
-//     },
-//     {
-//       label: "Delivery Deadline",
-//       color: "#ef4444",
-//       icon: <Flag size={11} />,
-//       dashed: true,
-//     },
+//     { label: "Maternity Shoot", color: "#f472b6", gradient: "linear-gradient(135deg, #f472b6, #fb7185)", icon: <Baby size={14} /> },
+//     { label: "Influencer Shoot", color: "#60a5fa", gradient: "linear-gradient(135deg, #60a5fa, #3b82f6)", icon: <Megaphone size={14} /> },
+//     { label: "Corporate Event", color: "#4ade80", gradient: "linear-gradient(135deg, #4ade80, #10b981)", icon: <Building2 size={14} /> },
+//     { label: "Delivery Deadline", color: "#ef4444", icon: <Flag size={14} />, dashed: true },
 //   ];
-
 //   return (
-//     <div
-//       style={{
-//         display: "flex",
-//         flexWrap: "wrap",
-//         gap: "0.5rem 1rem",
-//         marginBottom: "1rem",
-//       }}
-//     >
+//     <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
 //       {items.map((item) => (
 //         <div
 //           key={item.label}
 //           style={{
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "0.4rem",
-//             fontSize: "0.75rem",
-//             color: "var(--text-secondary)",
+//             display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", fontWeight: 600,
+//             cursor: "default"
 //           }}
 //         >
-//           <span
-//             style={{
-//               display: "inline-flex",
-//               alignItems: "center",
-//               justifyContent: "center",
-//               width: 18,
-//               height: 18,
-//               borderRadius: item.dashed ? "4px" : "50%",
-//               background: `${item.color}22`,
-//               border: item.dashed
-//                 ? `2px dashed ${item.color}`
-//                 : `2px solid ${item.color}`,
-//               color: item.color,
-//             }}
-//           >
+//           <div style={{
+//             display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%",
+//             background: item.dashed ? "rgba(239, 68, 68, 0.1)" : item.gradient, border: item.dashed ? `2px dashed ${item.color}` : "none", color: item.dashed ? item.color : "#fff",
+//             boxShadow: item.dashed ? "none" : `0 4px 12px ${item.color}44`
+//           }}>
 //             {item.icon}
-//           </span>
-//           {item.label}
+//           </div>
+//           <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
 //         </div>
 //       ))}
 //     </div>
@@ -353,6 +227,7 @@
 //   const [searchParams] = useSearchParams();
 //   const googleConnected = searchParams.get("googleConnected");
 //   const { isMobile, isTablet } = useIsMobile();
+//   const queryClient = useQueryClient();
 
 //   const [syncing, setSyncing] = useState(false);
 //   const [syncMessage, setSyncMessage] = useState("");
@@ -362,10 +237,45 @@
 //   const [visibleCompleted, setVisibleCompleted] = useState(3);
 //   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
 
-//   const { data: userData } = useQuery({
-//     queryKey: ["user-me"],
-//     queryFn: getMe,
+//   // Studio Expense State
+//   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+//   const [editingExpense, setEditingExpense] = useState<StudioExpense | null>(null);
+//   const [expenseForm, setExpenseForm] = useState({
+//     amount: 0,
+//     date: new Date().toISOString().split('T')[0],
+//     category: "Other",
+//     notes: ""
 //   });
+
+//   const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
+//   const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: getDashboardOverview });
+//   const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: getStudioExpenses });
+
+//   const createExpenseMutation = useMutation({
+//     mutationFn: createStudioExpense,
+//     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
+//   });
+
+//   const updateExpenseMutation = useMutation({
+//     mutationFn: ({ id, data }: { id: string; data: any }) => updateStudioExpense(id, data),
+//     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
+//   });
+
+//   const deleteExpenseMutation = useMutation({
+//     mutationFn: deleteStudioExpense,
+//     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["studio-expenses"] })
+//   });
+
+//   const resetExpenseForm = () => {
+//     setExpenseForm({ amount: 0, date: new Date().toISOString().split('T')[0], category: "Other", notes: "" });
+//     setEditingExpense(null);
+//   };
+
+//   const handleEditExpense = (expense: StudioExpense) => {
+//     setEditingExpense(expense);
+//     setExpenseForm({ amount: expense.amount, date: new Date(expense.date).toISOString().split('T')[0], category: expense.category || "Other", notes: expense.notes || "" });
+//     setIsExpenseModalOpen(true);
+//   };
 
 //   const handleSyncAll = async () => {
 //     setSyncing(true);
@@ -380,13 +290,6 @@
 //     }
 //   };
 
-//   const isConnected = userData?.user?.googleCalendarConnected;
-
-//   const { data, isLoading, isError, error } = useQuery({
-//     queryKey: ["dashboard-overview"],
-//     queryFn: getDashboardOverview,
-//   });
-
 //   const handleConnectGoogle = async () => {
 //     try {
 //       const { url } = await getGoogleAuthUrl();
@@ -396,7 +299,6 @@
 //     }
 //   };
 
-//   // FullCalendar event click handler
 //   const handleEventClick = useCallback((info: any) => {
 //     const ep = info.event.extendedProps;
 //     setSelectedEvent({
@@ -409,946 +311,365 @@
 //     });
 //   }, []);
 
-//   // Custom event content — adds icon prefix based on type/deadline
 //   const renderEventContent = useCallback((info: any) => {
 //     const { isDeadline, type } = info.event.extendedProps;
 //     const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
+//     const backgroundColor = info.event.backgroundColor;
+
+//     // Use a more vibrant semi-transparent background for the event
+//     const eventBg = isDeadline ? "rgba(239, 68, 68, 0.15)" : `${backgroundColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
+
 //     return (
-//       <div
-//         style={{
-//           display: "flex",
-//           alignItems: "center",
-//           gap: "3px",
-//           overflow: "hidden",
-//           padding: "1px 4px",
-//           fontSize: "0.78rem",
-//           fontWeight: isDeadline ? 700 : 500,
-//           opacity: 0.95,
-//         }}
-//       >
-//         <span style={{ fontSize: "10px", flexShrink: 0 }}>{icon}</span>
-//         <span
-//           style={{
-//             overflow: "hidden",
-//             textOverflow: "ellipsis",
-//             whiteSpace: "nowrap",
-//           }}
-//         >
-//           {info.event.title}
-//         </span>
+//       <div style={{
+//         display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", padding: "2px 6px", borderRadius: "4px",
+//         background: isDeadline ? "rgba(239, 68, 68, 0.15)" : eventBg,
+//         backdropFilter: "blur(2px)", borderLeft: `3px solid ${backgroundColor}`, fontSize: "0.75rem", fontWeight: isDeadline ? 700 : 500,
+//         height: "100%", width: "100%", color: isDeadline ? "#ff5f5f" : "var(--text-primary)"
+//       }}>
+//         <span style={{ fontSize: "10px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
+//         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{info.event.title}</span>
 //       </div>
 //     );
 //   }, []);
 
-//   if (isLoading)
-//     return (
-//       <div
-//         style={{
-//           padding: "2rem",
-//           textAlign: "center",
-//           color: "var(--text-muted)",
-//         }}
-//       >
-//         Loading Dashboard Stats...
-//       </div>
-//     );
-//   if (isError)
-//     return (
-//       <div
-//         style={{
-//           padding: "2rem",
-//           textAlign: "center",
-//           color: "var(--color-danger)",
-//         }}
-//       >
-//         Error: {(error as Error).message}
-//       </div>
-//     );
+//   if (isLoading) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--text-muted)" }}>Loading Dashboard...</div>;
+//   if (isError) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--color-danger)" }}>Error: {(error as Error).message}</div>;
 //   if (!data) return null;
 
-//   const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [] } = data;
+//   const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 } } = data;
+//   const isConnected = userData?.user?.googleCalendarConnected;
 
 //   return (
-//     <div className="animate-fade-up">
-//       {/* ── header ── */}
+//     <div className="dashboard-overview animate-fade-up">
 //       <header style={{ marginBottom: "2.5rem" }}>
-//         <div
-//           style={{
-//             display: "flex",
-//             flexDirection: isTablet ? "column" : "row",
-//             justifyContent: "space-between",
-//             alignItems: isTablet ? "flex-start" : "center",
-//             gap: "1.5rem",
-//           }}
-//         >
+//         <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: "1.5rem" }}>
 //           <div>
-//             <h1
-//               style={{
-//                 fontSize: isMobile ? "2rem" : "2.5rem",
-//                 fontWeight: 700,
-//                 margin: "0 0 0.5rem 0",
-//                 background:
-//                   "linear-gradient(to right, var(--color-primary), var(--color-accent))",
-//                 WebkitBackgroundClip: "text",
-//                 WebkitTextFillColor: "transparent",
-//               }}
-//             >
+//             <h1 style={{ fontSize: isMobile ? "1.75rem" : "2.5rem", fontWeight: 800, margin: "0 0 0.5rem 0", background: "linear-gradient(to right, var(--color-primary), var(--color-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
 //               CRM Overview
 //             </h1>
-//             <p
-//               style={{ color: "var(--text-secondary)", fontSize: "1rem" }}
-//             >
-//               Unified metrics across all modules.
-//             </p>
+//             <p style={{ color: "var(--text-secondary)", fontSize: isMobile ? "0.9rem" : "1rem" }}>Unified metrics across all modules.</p>
 //           </div>
 
-//           <div
-//             style={{
-//               display: "flex",
-//               gap: "0.75rem",
-//               flexWrap: "wrap",
-//               width: isTablet ? "100%" : "auto",
-//             }}
-//           >
+//           <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
 //             {isConnected ? (
-//               <>
-//                 <div
-//                   style={{
-//                     display: "flex",
-//                     alignItems: "center",
-//                     gap: "0.5rem",
-//                     padding: "0.6rem 1rem",
-//                     borderRadius: "10px",
-//                     background: "rgba(74, 222, 128, 0.1)",
-//                     color: "var(--color-success)",
-//                     border: "1px solid rgba(74, 222, 128, 0.2)",
-//                     fontSize: "0.85rem",
-//                     fontWeight: 600,
-//                     flex: isTablet ? "1" : "none",
-//                     justifyContent: "center",
-//                   }}
-//                 >
-//                   <CheckCircle2 size={16} />
-//                   <span>{isMobile ? "Connected" : "Google Calendar: Connected"}</span>
+//               <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
+//                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px", background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", border: "1px solid rgba(74, 222, 128, 0.2)", fontSize: "0.85rem", fontWeight: 600 }}>
+//                   <CheckCircle2 size={16} /> <span>Connected</span>
 //                 </div>
-//                 <button
-//                   onClick={handleSyncAll}
-//                   disabled={syncing}
-//                   className="btn-ghost"
-//                   style={{
-//                     display: "flex",
-//                     alignItems: "center",
-//                     gap: "0.5rem",
-//                     padding: "0.6rem 1rem",
-//                     borderRadius: "10px",
-//                     flex: isTablet ? "1" : "none",
-//                     justifyContent: "center",
-//                   }}
-//                 >
-//                   <RefreshCw
-//                     size={16}
-//                     className={syncing ? "animate-spin" : ""}
-//                   />
-//                   <span>{syncing ? "Syncing..." : "Sync"}</span>
+//                 <button onClick={handleSyncAll} disabled={syncing} className="btn-ghost" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px" }}>
+//                   <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
+//                   <span>Sync</span>
 //                 </button>
-//               </>
+//               </div>
 //             ) : (
-//               <button
-//                 onClick={handleConnectGoogle}
-//                 className="btn-primary"
-//                 style={{
-//                   display: "flex",
-//                   alignItems: "center",
-//                   gap: "0.5rem",
-//                   padding: "0.75rem 1.25rem",
-//                   borderRadius: "10px",
-//                   width: isTablet ? "100%" : "auto",
-//                   justifyContent: "center",
-//                 }}
-//               >
-//                 <Calendar size={18} />
-//                 Connect Google
+//               <button onClick={handleConnectGoogle} className="btn-primary" style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.25rem", borderRadius: "10px" }}>
+//                 <Calendar size={18} /> Connect Google
 //               </button>
 //             )}
 //           </div>
 //         </div>
 
-//         {(googleConnected ||
-//           searchParams.get("googleError") ||
-//           syncMessage) && (
-//             <div
-//               style={{
-//                 marginTop: "1.5rem",
-//                 padding: "1rem",
-//                 background: searchParams.get("googleError")
-//                   ? "rgba(239, 68, 68, 0.1)"
-//                   : "rgba(74, 222, 128, 0.1)",
-//                 color: searchParams.get("googleError")
-//                   ? "var(--color-danger)"
-//                   : "var(--color-success)",
-//                 borderRadius: "10px",
-//                 display: "flex",
-//                 alignItems: "center",
-//                 gap: "0.75rem",
-//                 border: searchParams.get("googleError")
-//                   ? "1px solid rgba(239, 68, 68, 0.2)"
-//                   : "1px solid rgba(74, 222, 128, 0.2)",
-//                 fontSize: "0.9rem",
-//               }}
-//             >
-//               {searchParams.get("googleError") ? (
-//                 <AlertCircle size={18} />
-//               ) : (
-//                 <CheckCircle2 size={18} />
-//               )}
-//               <span>
-//                 {searchParams.get("googleError")
-//                   ? `Connection failed: ${searchParams.get("googleError")}`
-//                   : syncMessage || "Google Calendar connected!"}
-//               </span>
-//             </div>
-//           )}
+//         {(googleConnected || searchParams.get("googleError") || syncMessage) && (
+//           <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)", color: searchParams.get("googleError") ? "var(--color-danger)" : "var(--color-success)", fontSize: "0.9rem", border: "1px solid var(--border)" }}>
+//             {searchParams.get("googleError") ? `Error: ${searchParams.get("googleError")}` : syncMessage || "Google Calendar connected!"}
+//           </div>
+//         )}
 //       </header>
 
-//       {/* ── global stats ── */}
-//       <div
-//         style={{
-//           display: "grid",
-//           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-//           gap: "1.25rem",
-//           marginBottom: "2.5rem",
-//         }}
-//       >
-//         <StatCard
-//           title="Total Revenue"
-//           value={formatCurrency(globalTotals.totalRevenue)}
-//           icon={<TrendingUp size={24} />}
-//           color="var(--color-primary)"
-//           description="Gross contract value"
-//         />
-//         <StatCard
-//           title="Total Received"
-//           value={formatCurrency(globalTotals.totalAdvance)}
-//           icon={<CreditCard size={24} />}
-//           color="var(--color-success)"
-//           description="Payments collected"
-//         />
-//         <StatCard
-//           title="Total Outstanding"
-//           value={formatCurrency(globalTotals.totalBalance)}
-//           icon={<AlertCircle size={24} />}
-//           color="var(--color-warning)"
-//           description="Pending balances"
-//         />
+//       {/* ── 6-column stats row ── */}
+//       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(6, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
+//         <StatCard title="Total Revenue" value={formatCurrency(globalTotals.totalRevenue)} icon={<TrendingUp size={20} />} color="var(--color-primary)" description="Gross contract value" />
+//         <StatCard title="Total Received" value={formatCurrency(globalTotals.totalAdvance)} icon={<CreditCard size={20} />} color="var(--color-success)" description="Payments collected" />
+//         <StatCard title="Total Due" value={formatCurrency(globalTotals.totalBalance)} icon={<AlertCircle size={20} />} color="var(--color-warning)" description="Pending balances" />
+//         <StatCard title="Total Expenses" value={formatCurrency(globalTotals.totalExpenses)} icon={<CreditCard size={20} />} color="var(--color-danger)" description="Records + Studio" />
+//         <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="var(--color-accent)" description="Revenue - Expenses" />
+//         <StatCard title="Booked Leads" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Converted leads" />
 //       </div>
 
-//       {/* ── breakdown + reminders ── */}
-//       <div
-//         style={{
-//           display: "grid",
-//           gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-//           gap: "1.5rem",
-//           marginBottom: "2.5rem",
-//         }}
-//       >
-//         {/* Revenue breakdown */}
-//         <section className="card" style={{ padding: "1.5rem" }}>
-//           <div
-//             style={{
-//               display: "flex",
-//               alignItems: "center",
-//               gap: "0.75rem",
-//               marginBottom: "1.5rem",
-//             }}
-//           >
+//       <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(2, 1fr)", gap: "2rem", marginBottom: "2.5rem" }}>
+//         {/* Revenue Breakdown */}
+//         <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
+//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
 //             <BarChart3 size={20} color="var(--color-primary)" />
-//             <h2 style={{ fontSize: "1.1rem", margin: 0 }}>
-//               Revenue Breakdown
-//             </h2>
+//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Revenue Breakdown</h2>
 //           </div>
-//           <div
-//             style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
-//           >
+//           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 //             {categorySplit.map((cat: any) => (
 //               <div key={cat.name}>
-//                 <div
-//                   style={{
-//                     display: "flex",
-//                     justifyContent: "space-between",
-//                     marginBottom: "0.5rem",
-//                     fontSize: "0.9rem",
-//                   }}
-//                 >
-//                   <span style={{ fontWeight: 500 }}>{cat.name}</span>
-//                   <span style={{ color: "var(--text-secondary)" }}>
-//                     {formatCurrency(cat.revenue)}
-//                     {globalTotals.totalRevenue > 0
-//                       ? ` (${(
-//                         (cat.revenue / globalTotals.totalRevenue) *
-//                         100
-//                       ).toFixed(0)}%)`
-//                       : ""}
-//                   </span>
+//                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.85rem" }}>
+//                   <span style={{ fontWeight: 600 }}>{cat.name}</span>
+//                   <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+//                     <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(cat.revenue)}</span>
+//                     <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>({globalTotals.totalRevenue > 0 ? Math.round((cat.revenue / globalTotals.totalRevenue) * 100) : 0}%)</span>
+//                   </div>
 //                 </div>
-//                 <div
-//                   style={{
-//                     height: "6px",
-//                     background: "var(--bg-surface-3)",
-//                     borderRadius: "3px",
-//                     overflow: "hidden",
-//                   }}
-//                 >
-//                   <div
-//                     style={{
-//                       height: "100%",
-//                       width: `${globalTotals.totalRevenue > 0
-//                           ? (cat.revenue / globalTotals.totalRevenue) * 100
-//                           : 0
-//                         }%`,
-//                       background:
-//                         cat.revenue > 0 ? cat.color : "var(--bg-surface-3)",
-//                       borderRadius: "3px",
-//                       transition: "width 0.6s ease",
-//                     }}
-//                   />
+//                 <div style={{ height: "6px", background: "var(--bg-surface-3)", borderRadius: "3px", overflow: "hidden" }}>
+//                   <div style={{ height: "100%", width: `${globalTotals.totalRevenue > 0 ? (cat.revenue / globalTotals.totalRevenue) * 100 : 0}%`, background: cat.color, borderRadius: "3px", transition: "width 0.6s ease" }} />
 //                 </div>
 //               </div>
 //             ))}
 //           </div>
 //         </section>
 
-//         {/* Reminders section: Shoots & Deadlines */}
-//         <section className="card" style={{ padding: "1.5rem" }}>
-//           <div
-//             style={{
-//               display: "flex",
-//               alignItems: "center",
-//               gap: "0.75rem",
-//               marginBottom: "1.25rem",
-//               justifyContent: "space-between",
-//               flexWrap: "wrap"
-//             }}
-//           >
+//         {/* Reminders: Shoots & Deadlines */}
+//         <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
+//           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
 //             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
 //               <Calendar size={20} color="var(--color-warning)" />
-//               <h2 style={{ fontSize: "1.1rem", margin: 0, whiteSpace: "nowrap" }}>Upcoming</h2>
+//               <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Upcoming</h2>
 //             </div>
-
-//             {/* Segmented Toggle */}
-//             <div style={{ 
-//               display: "flex", 
-//               background: "var(--bg-surface-3)", 
-//               padding: "3px", 
-//               borderRadius: "8px",
-//               border: "1px solid var(--border)"
-//             }}>
-//               <button
-//                 onClick={() => setActiveTab('shoots')}
-//                 style={{
-//                   padding: "0.3rem 0.6rem",
-//                   fontSize: "0.75rem",
-//                   fontWeight: 600,
-//                   borderRadius: "6px",
-//                   border: "none",
-//                   cursor: "pointer",
-//                   background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent",
-//                   color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)",
-//                   boxShadow: activeTab === 'shoots' ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
-//                   transition: "all 0.2s"
-//                 }}
-//               >
-//                 Shoots
-//               </button>
-//               <button
-//                 onClick={() => setActiveTab('deadlines')}
-//                 style={{
-//                   padding: "0.3rem 0.6rem",
-//                   fontSize: "0.75rem",
-//                   fontWeight: 600,
-//                   borderRadius: "6px",
-//                   border: "none",
-//                   cursor: "pointer",
-//                   background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent",
-//                   color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)",
-//                   boxShadow: activeTab === 'deadlines' ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
-//                   transition: "all 0.2s"
-//                 }}
-//               >
-//                 Deadlines
-//               </button>
+//             <div style={{ display: "flex", background: "var(--bg-surface-3)", padding: "3px", borderRadius: "8px" }}>
+//               <button onClick={() => setActiveTab('shoots')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent", color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)" }}>Shoots</button>
+//               <button onClick={() => setActiveTab('deadlines')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent", color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)" }}>Deadlines</button>
 //             </div>
 //           </div>
-
-//           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-//             {/* 1. Upcoming Shoots Part */}
-//             {activeTab === 'shoots' && (
-//               <div className="animate-fade-in">
-//                 <div style={{ 
-//                   display: "flex", 
-//                   justifyContent: "space-between", 
-//                   alignItems: "center",
-//                   marginBottom: "0.75rem"
-//                 }}>
-//                   <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", fontWeight: 700, margin: 0 }}>
-//                     Upcoming Shoots
-//                   </h3>
-//                   {upcomingShoots.length > visibleShoots && (
-//                     <button 
-//                       onClick={() => setVisibleShoots(prev => prev + 3)}
-//                       style={{ 
-//                         background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-//                       }}
-//                       onMouseOver={(e) => (e.currentTarget.style.background = "var(--bg-surface-3)")}
-//                       onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-//                     >
-//                       View More (+3)
-//                     </button>
-//                   )}
-//                   {visibleShoots > 3 && (
-//                     <button 
-//                       onClick={() => setVisibleShoots(3)}
-//                       style={{ 
-//                         background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-//                       }}
-//                     >
-//                       Show Less
-//                     </button>
-//                   )}
-//                 </div>
-//                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//                   {upcomingShoots.length === 0 ? (
-//                     <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", fontSize: "0.8rem" }}>
-//                       No shoots scheduled for the next 7 days.
-//                     </div>
-//                   ) : (
-//                     upcomingShoots.slice(0, visibleShoots).map((shoot: any) => (
-//                       <div key={shoot.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}>
-//                         <div style={{ 
-//                           width: 32, height: 32, borderRadius: "50%", background: "var(--bg-surface-3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary)"
-//                         }}>
-//                           {shoot.type === "Maternity" ? <Baby size={16} /> : shoot.type === "Influencer" ? <Megaphone size={16} /> : <Building2 size={16} />}
-//                         </div>
-//                         <div style={{ flex: 1, minWidth: 0 }}>
-//                           <div style={{ fontWeight: 600, fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-//                             {shoot.clientName}
-//                           </div>
-//                           <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-//                             {shoot.type} · {new Date(shoot.date).toLocaleDateString("en-IN")}
-//                           </div>
-//                         </div>
-//                         <div style={{ fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.4rem", borderRadius: "4px", background: "var(--bg-surface-3)", color: "var(--text-secondary)" }}>
-//                           {shoot.daysRemaining === 0 ? "Today" : `${shoot.daysRemaining}d`}
-//                         </div>
-//                       </div>
-//                     ))
-//                   )}
-//                 </div>
-//               </div>
-//             )}
-
-//             {/* 2. Upcoming Deadlines Part */}
-//             {activeTab === 'deadlines' && (
-//               <div className="animate-fade-in">
-//                 <div style={{ 
-//                   display: "flex", 
-//                   justifyContent: "space-between", 
-//                   alignItems: "center",
-//                   marginBottom: "0.75rem"
-//                 }}>
-//                   <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", fontWeight: 700, margin: 0 }}>
-//                     Upcoming Deadlines
-//                   </h3>
-//                   {upcomingDeadlines.length > visibleDeadlines && (
-//                     <button 
-//                       onClick={() => setVisibleDeadlines(prev => prev + 3)}
-//                       style={{ 
-//                         background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-//                       }}
-//                       onMouseOver={(e) => (e.currentTarget.style.background = "var(--bg-surface-3)")}
-//                       onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-//                     >
-//                       View More (+3)
-//                     </button>
-//                   )}
-//                   {visibleDeadlines > 3 && (
-//                     <button 
-//                       onClick={() => setVisibleDeadlines(3)}
-//                       style={{ 
-//                         background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-//                       }}
-//                     >
-//                       Show Less
-//                     </button>
-//                   )}
-//                 </div>
-//                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//                   {upcomingDeadlines.length === 0 ? (
-//                     <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", fontSize: "0.8rem" }}>
-//                       No deadlines for the next 7 days.
-//                     </div>
-//                   ) : (
-//                     upcomingDeadlines.slice(0, visibleDeadlines).map((deadline: any) => (
-//                       <div key={deadline.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}>
-//                         <div style={{ 
-//                           width: 32, height: 32, borderRadius: "50%", background: "var(--color-danger-glow)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-danger)"
-//                         }}>
-//                           <Flag size={16} />
-//                         </div>
-//                         <div style={{ flex: 1, minWidth: 0 }}>
-//                           <div style={{ fontWeight: 600, fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-//                             {deadline.clientName}
-//                           </div>
-//                           <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-//                             {deadline.type} · {new Date(deadline.date).toLocaleDateString("en-IN")}
-//                           </div>
-//                         </div>
-//                         <div style={{ fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.4rem", borderRadius: "4px", background: "var(--color-danger)", color: "#fff" }}>
-//                           {deadline.daysRemaining === 0 ? "Today" : `${deadline.daysRemaining}d`}
-//                         </div>
-//                       </div>
-//                     ))
-//                   )}
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-
-//           <div style={{ 
-//             marginTop: "1.5rem", 
-//             paddingTop: "1rem", 
-//             borderTop: "1px solid var(--border)", 
-//             fontSize: "0.7rem", 
-//             color: "var(--text-muted)",
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "0.5rem"
-//           }}>
-//             <AlertCircle size={12} color="var(--color-primary)" />
-//             <span>Criteria: Active (Not Completed/Cancelled) items for the next 7 days.</span>
-//           </div>
-//         </section>
-
-//         {/* 3. Recently Completed / Cancelled Section */}
-//         <section className="card" style={{ padding: "1.5rem" }}>
-//           <div style={{ 
-//             display: "flex", 
-//             justifyContent: "space-between", 
-//             alignItems: "center",
-//             marginBottom: "1.5rem"
-//           }}>
-//             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//               <CheckCircle2 size={20} color="var(--color-success)" />
-//               <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Recently Completed</h2>
-//             </div>
-//             <div style={{ display: "flex", gap: "0.5rem" }}>
-//               {data.recentlyCompleted.length > visibleCompleted && (
-//                 <button 
-//                   onClick={() => setVisibleCompleted(prev => prev + 3)}
-//                   style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-//                 >
-//                   View More (+3)
-//                 </button>
-//               )}
-//               {visibleCompleted > 3 && (
-//                 <button 
-//                   onClick={() => setVisibleCompleted(3)}
-//                   style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-//                 >
-//                   Show Less
-//                 </button>
-//               )}
-//             </div>
-//           </div>
-
 //           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//             {data.recentlyCompleted.length === 0 ? (
-//               <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)" }}>
-//                 No items completed or cancelled this week.
-//               </div>
-//             ) : (
-//               data.recentlyCompleted.slice(0, visibleCompleted).map((item: any) => (
-//                 <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
-//                   <div style={{ 
-//                     width: 36, height: 36, borderRadius: "50%", 
-//                     background: item.status === 'Cancelled' ? "var(--color-danger-glow)" : "var(--color-success-glow)", 
-//                     display: "flex", alignItems: "center", justifyContent: "center", 
-//                     color: item.status === 'Cancelled' ? "var(--color-danger)" : "var(--color-success)"
-//                   }}>
-//                     {item.status === 'Cancelled' ? <X size={18} /> : <CheckCircle2 size={18} />}
-//                   </div>
-//                   <div style={{ flex: 1, minWidth: 0 }}>
-//                     <div style={{ fontWeight: 600, fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-//                       {item.clientName}
-//                     </div>
-//                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-//                       {item.type} · {new Date(item.date).toLocaleDateString("en-IN")}
-//                     </div>
-//                   </div>
-//                   <div style={{ textAlign: "right" }}>
-//                     <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-//                       {formatCurrency(item.total)}
-//                     </div>
-//                     <div style={{ 
-//                       fontSize: "0.7rem", 
-//                       fontWeight: 700, 
-//                       color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-warning)",
-//                       textTransform: "uppercase"
-//                     }}>
-//                       Payment: {item.paymentStatus} {item.paymentStatus === 'Due' && `(${formatCurrency(item.balance)})`}
-//                     </div>
-//                   </div>
+//             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Upcoming {activeTab}</div>
+//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).slice(0, visibleShoots).map((item: any) => (
+//               <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px solid var(--border)" }}>
+//                 <div style={{ width: 36, height: 36, borderRadius: "25%", background: activeTab === 'shoots' ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "var(--text-muted)" : "var(--color-danger)" }}>
+//                   {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={18} /> : item.type === 'Influencer' ? <Megaphone size={18} /> : <Building2 size={18} />) : <Flag size={18} />}
 //                 </div>
-//               ))
+//                 <div style={{ flex: 1, minWidth: 0 }}>
+//                   <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.clientName}</div>
+//                   <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
+//                 </div>
+//                 <div style={{ fontSize: "0.75rem", fontWeight: 800, padding: "0.25rem 0.5rem", borderRadius: "6px", background: item.daysRemaining <= 1 ? "var(--color-danger)" : "var(--bg-surface-3)", color: item.daysRemaining <= 1 ? "#fff" : "var(--text-secondary)" }}>
+//                   {item.daysRemaining === 0 ? "Today" : `${item.daysRemaining}d`}
+//                 </div>
+//               </div>
+//             ))}
+//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length === 0 && (
+//               <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+//                 No upcoming {activeTab} for the next 7 days.
+//               </div>
+//             )}
+//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length > 3 && (
+//               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", marginTop: "0.5rem" }}>
+//                 <AlertCircle size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
+//                 Criteria: Active (Not Completed/Cancelled) items for the next 7 days.
+//               </div>
 //             )}
 //           </div>
-
-//           <div style={{ 
-//             marginTop: "1.5rem", 
-//             paddingTop: "1rem", 
-//             borderTop: "1px solid var(--border)", 
-//             fontSize: "0.7rem", 
-//             color: "var(--text-muted)",
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "0.5rem"
-//           }}>
-//             <AlertCircle size={12} color="var(--color-success)" />
-//             <span>Items completed or cancelled in the last 7 days.</span>
-//           </div>
 //         </section>
-
 //       </div>
 
-//       {/* ── calendar ── */}
-//       <section
-//         className="card animate-fade-up"
-//         style={{ padding: "1.25rem", marginBottom: "2.5rem", position: "relative" }}
-//       >
-//         {/* section header */}
-//         <div
-//           style={{
-//             display: "flex",
-//             alignItems: "center",
-//             gap: "0.75rem",
-//             marginBottom: "1rem",
-//             flexWrap: "wrap",
-//           }}
-//         >
-//           <Calendar size={20} color="var(--color-primary)" />
-//           <h2
-//             style={{ fontSize: "1.1rem", margin: 0, fontWeight: 600 }}
-//           >
-//             Schedule &amp; Deadlines
-//           </h2>
-//           {isConnected && !isMobile && (
-//             <span
-//               style={{
-//                 fontSize: "0.75rem",
-//                 color: "var(--text-muted)",
-//                 marginLeft: "auto",
-//                 display: "flex",
-//                 alignItems: "center",
-//                 gap: "0.4rem",
-//               }}
-//             >
-//               <CheckCircle2 size={14} color="var(--color-success)" />
-//               Live Sync Active
-//             </span>
+//       {/* Recently Completed Section */}
+//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
+//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+//             <div style={{ background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", padding: "0.4rem", borderRadius: "50%", display: "flex" }}>
+//               <CheckCircle2 size={20} />
+//             </div>
+//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Recently Completed</h2>
+//           </div>
+//           {recentlyCompleted.length > 3 && (
+//             <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", borderRadius: "8px", color: "var(--color-primary)" }}>
+//               View More (+{recentlyCompleted.length - 3})
+//             </button>
 //           )}
 //         </div>
 
-//         {/* legend */}
-//         <CalendarLegend />
+//         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+//           {recentlyCompleted.slice(0, 3).map((item: any) => (
+//             <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "16px", border: "1px solid var(--border)" }}>
+//               <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-success)", border: "1px solid var(--border)" }}>
+//                 <CheckCircle2 size={24} />
+//               </div>
+//               <div style={{ flex: 1, minWidth: 0 }}>
+//                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+//                   <div>
+//                     <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>{item.clientName}</div>
+//                     <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
+//                   </div>
+//                   <div style={{ textAlign: "right" }}>
+//                     <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-primary)" }}>{formatCurrency(item.total)}</div>
+//                     <div style={{ fontSize: "0.7rem", fontWeight: 900, color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-danger)", letterSpacing: "0.05em", marginTop: "2px" }}>
+//                       PAYMENT: {item.paymentStatus}
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           ))}
+//           {recentlyCompleted.length === 0 && (
+//             <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+//               No recently completed items.
+//             </div>
+//           )}
+//         </div>
+//         <div style={{ marginTop: "1.25rem", padding: "0.75rem", borderRadius: "10px", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+//           <AlertCircle size={14} color="var(--color-success)" />
+//           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Items completed or cancelled in the last 7 days.</span>
+//         </div>
+//       </section>
 
-//         {/* calendar wrapper */}
-//         <div
-//           style={{
-//             borderRadius: "12px",
-//             overflow: "hidden",
-//             border: "1px solid var(--border)",
-//             background: "var(--bg-surface)",
-//           }}
-//         >
+//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
+//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+//             <Calendar size={20} color="var(--color-primary)" />
+//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Schedule & Deadlines</h2>
+//           </div>
+//         </div>
+//         <CalendarLegend />
+//         <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
 //           <FullCalendar
 //             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-//             // ── critical: IST timezone ──
 //             timeZone="Asia/Kolkata"
-//             // ── Mobile/Tablet views ──
-//             initialView={isMobile ? "timeGridDay" : isTablet ? "timeGridWeek" : "dayGridMonth"}
-//             // ── toolbar: compact on mobile ──
-//             headerToolbar={
-//               isMobile
-//                 ? {
-//                   left: "prev,next",
-//                   center: "title",
-//                   right: "today",
-//                 }
-//                 : isTablet 
-//                   ? {
-//                     left: "prev,next today",
-//                     center: "title",
-//                     right: "timeGridWeek,timeGridDay",
-//                   }
-//                   : {
-//                     left: "prev,next today",
-//                     center: "title",
-//                     right: "dayGridMonth,timeGridWeek,timeGridDay",
-//                   }
-//             }
-//             footerToolbar={
-//               isMobile
-//                 ? {
-//                   center: "dayGridMonth,timeGridWeek,timeGridDay",
-//                 }
-//                 : false
-//             }
+//             initialView={isMobile ? "dayGridMonth" : isTablet ? "dayGridMonth" : "dayGridMonth"}
+//             headerToolbar={{
+//               left: "prev,next today",
+//               center: "title",
+//               right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay"
+//             }}
 //             events={calendarEvents || []}
 //             eventContent={renderEventContent}
 //             eventClick={handleEventClick}
-//             // ── time display ──
-//             eventTimeFormat={{
-//               hour: "2-digit",
-//               minute: "2-digit",
-//               meridiem: "short",
-//             }}
-//             slotLabelFormat={{
-//               hour: "2-digit",
-//               minute: "2-digit",
-//               meridiem: "short",
-//             }}
-//             // ── layout ──
 //             height="auto"
-//             contentHeight={isMobile ? 500 : 640}
-//             eventDisplay="block"
-//             // ── show more events cleanly ──
-//             dayMaxEvents={isMobile ? 2 : 4}
-//             moreLinkClick="popover"
-//             // ── highlight today ──
+//             contentHeight={isMobile ? 400 : 640}
+//             dayMaxEvents={isMobile ? 2 : 3}
 //             nowIndicator={true}
 //           />
 //         </div>
-
-//         {/* event detail modal - now relative to this section */}
-//         {selectedEvent && (
-//           <EventModal
-//             event={selectedEvent}
-//             onClose={() => setSelectedEvent(null)}
-//           />
-//         )}
-
-//         {/* ── injected FullCalendar theme overrides ── */}
-//         <style
-//           dangerouslySetInnerHTML={{
-//             __html: `
-//           /* grid borders */
-//           .fc-theme-standard td,
-//           .fc-theme-standard th,
-//           .fc-theme-standard .fc-scrollgrid {
-//             border-color: var(--border) !important;
-//           }
-
-//           /* header day names */
-//           .fc-col-header-cell-cushion {
-//             color: var(--text-secondary) !important;
-//             padding: 8px 4px !important;
-//             text-decoration: none !important;
-//             font-size: 0.78rem;
-//             font-weight: 600;
-//             text-transform: uppercase;
-//             letter-spacing: 0.05em;
-//           }
-
-//           /* day numbers */
-//           .fc-daygrid-day-number {
-//             color: var(--text-secondary) !important;
-//             text-decoration: none !important;
-//             font-size: 0.85rem;
-//           }
-//           .fc-day-today .fc-daygrid-day-number {
-//             color: var(--color-primary) !important;
-//             font-weight: 700;
-//           }
-
-//           /* today highlight */
-//           .fc-day-today {
-//             background: rgba(99,102,241,0.04) !important;
-//           }
-
-//           /* now indicator line */
-//           .fc-timegrid-now-indicator-line {
-//             border-color: var(--color-danger) !important;
-//             border-width: 2px !important;
-//           }
-//           .fc-timegrid-now-indicator-arrow {
-//             border-color: var(--color-danger) !important;
-//           }
-
-//           /* toolbar buttons */
-//           .fc-button-primary {
-//             background-color: var(--bg-surface-2) !important;
-//             border-color: var(--border) !important;
-//             color: var(--text-primary) !important;
-//             font-size: 0.8rem !important;
-//             padding: 0.35rem 0.7rem !important;
-//             border-radius: 8px !important;
-//             box-shadow: none !important;
-//             font-weight: 500 !important;
-//           }
-//           .fc-button-primary:hover {
-//             background-color: var(--bg-surface-3) !important;
-//           }
-//           .fc-button-primary:not(:disabled):active,
-//           .fc-button-primary:not(:disabled).fc-button-active {
-//             background-color: var(--color-primary) !important;
-//             border-color: var(--color-primary) !important;
-//             color: #fff !important;
-//           }
-//           .fc-button-group .fc-button-primary {
-//             border-radius: 0 !important;
-//           }
-//           .fc-button-group .fc-button-primary:first-child {
-//             border-radius: 8px 0 0 8px !important;
-//           }
-//           .fc-button-group .fc-button-primary:last-child {
-//             border-radius: 0 8px 8px 0 !important;
-//           }
-
-//           /* events */
-//           .fc-event {
-//             border-radius: 5px !important;
-//             border: none !important;
-//             cursor: pointer;
-//             transition: filter 0.15s, transform 0.15s;
-//           }
-//           .fc-event:hover {
-//             filter: brightness(1.12);
-//             transform: translateY(-1px);
-//           }
-//           /* deadline events: dashed left border accent */
-//           .fc-event[style*="#ef4444"] {
-//             border-left: 3px solid rgba(255,255,255,0.5) !important;
-//           }
-
-//           /* toolbar title */
-//           .fc-toolbar-title {
-//             color: var(--text-primary) !important;
-//             font-size: 1.1rem !important;
-//             font-weight: 600 !important;
-//           }
-
-//           /* time grid labels */
-//           .fc-timegrid-slot-label-cushion {
-//             color: var(--text-muted) !important;
-//             font-size: 0.75rem !important;
-//           }
-
-//           /* more-events popover */
-//           .fc-popover {
-//             background: var(--bg-surface) !important;
-//             border: 1px solid var(--border) !important;
-//             border-radius: 10px !important;
-//             box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
-//           }
-//           .fc-popover-header {
-//             background: var(--bg-surface-2) !important;
-//             color: var(--text-primary) !important;
-//             border-radius: 9px 9px 0 0 !important;
-//             padding: 0.5rem 0.75rem !important;
-//             font-size: 0.8rem !important;
-//             font-weight: 600 !important;
-//           }
-
-//           /* mobile toolbar stacking */
-//           @media (max-width: 640px) {
-//             .fc-toolbar {
-//               gap: 6px !important;
-//             }
-//             .fc-toolbar-title {
-//               font-size: 0.95rem !important;
-//             }
-//             .fc-button-primary {
-//               padding: 0.3rem 0.5rem !important;
-//               font-size: 0.75rem !important;
-//             }
-//           }
-//         `,
-//           }}
-//         />
 //       </section>
-//     </div>
-//   );
-// }
 
-// // ─── stat card ───────────────────────────────────────────────────────────────
-
-// function StatCard({
-//   title,
-//   value,
-//   icon,
-//   color,
-//   description,
-// }: {
-//   title: string;
-//   value: string;
-//   icon: React.ReactNode;
-//   color: string;
-//   description: string;
-// }) {
-//   return (
-//     <div
-//       className="card"
-//       style={{
-//         padding: "1.5rem",
-//         background: "var(--bg-surface-2)",
-//         transition: "transform 0.2s",
-//         cursor: "default",
-//       }}
-//     >
-//       <div
-//         style={{
-//           display: "flex",
-//           justifyContent: "space-between",
-//           alignItems: "flex-start",
-//           marginBottom: "1rem",
-//         }}
-//       >
-//         <div
-//           style={{
-//             padding: "0.75rem",
-//             borderRadius: "12px",
-//             background: `${color}18`,
-//             color,
-//           }}
-//         >
-//           {icon}
+//       {/* Studio Expenses Section */}
+//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
+//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+//             <CreditCard size={20} color="var(--color-danger)" />
+//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Studio Expenses</h2>
+//           </div>
+//           <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
+//             <Plus size={16} /> Add
+//           </button>
 //         </div>
-//         <TrendingUp size={16} color="var(--color-success)" />
-//       </div>
-//       <div
-//         style={{
-//           fontSize: "0.9rem",
-//           color: "var(--text-muted)",
-//           marginBottom: "0.25rem",
-//         }}
-//       >
-//         {title}
-//       </div>
-//       <div style={{ fontSize: "1.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-//         {value}
-//       </div>
-//       <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-//         {description}
-//       </div>
+
+//         {isMobile ? (
+//           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+//             {expensesData?.map((expense: StudioExpense) => (
+//               <div key={expense._id} style={{ background: "var(--bg-surface-2)", padding: "1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
+//                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+//                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</span>
+//                   <span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem", fontWeight: 600 }}>{expense.category}</span>
+//                 </div>
+//                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+//                   <div style={{ fontWeight: 800, color: "var(--color-danger)", fontSize: "1.1rem" }}>{formatCurrency(expense.amount)}</div>
+//                   <div style={{ display: "flex", gap: "0.5rem" }}>
+//                     <button onClick={() => handleEditExpense(expense)} style={{ background: "var(--bg-surface-3)", border: "none", color: "var(--color-primary)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Pencil size={14} /></button>
+//                     <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "var(--color-danger)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Trash2 size={14} /></button>
+//                   </div>
+//                 </div>
+//                 {expense.notes && <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--text-secondary)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>{expense.notes}</div>}
+//               </div>
+//             ))}
+//           </div>
+//         ) : (
+//           <div style={{ overflowX: "auto" }}>
+//             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+//               <thead>
+//                 <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
+//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Date</th>
+//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Category</th>
+//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Amount</th>
+//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Notes</th>
+//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600, textAlign: "right" }}>Actions</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {expensesData?.map((expense: StudioExpense) => (
+//                   <tr key={expense._id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+//                     <td style={{ padding: "1rem" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
+//                     <td style={{ padding: "1rem" }}><span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem" }}>{expense.category}</span></td>
+//                     <td style={{ padding: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatCurrency(expense.amount)}</td>
+//                     <td style={{ padding: "1rem", color: "var(--text-secondary)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{expense.notes}</td>
+//                     <td style={{ padding: "1rem", textAlign: "right" }}>
+//                       <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+//                         <button onClick={() => handleEditExpense(expense)} style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer" }}><Pencil size={16} /></button>
+//                         <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "none", border: "none", color: "var(--color-danger)", cursor: "pointer" }}><Trash2 size={16} /></button>
+//                       </div>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         )}
+//       </section>
+
+//       {/* Expense Modal */}
+//       {isExpenseModalOpen && (
+//         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+//           <div style={{ background: "var(--bg-surface)", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "450px", border: "1px solid var(--border)" }}>
+//             <h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.25rem" }}>{editingExpense ? "Edit Expense" : "Add Studio Expense"}</h3>
+//             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Amount (INR)</label>
+//                 <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+//               </div>
+//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Date</label>
+//                 <input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+//               </div>
+//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Category</label>
+//                 <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }}>
+//                   <option value="Rent">Rent</option>
+//                   <option value="Electricity">Electricity</option>
+//                   <option value="Equipment">Equipment</option>
+//                   <option value="Staff">Staff</option>
+//                   <option value="Marketing">Marketing</option>
+//                   <option value="Other">Other</option>
+//                 </select>
+//               </div>
+//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Notes</label>
+//                 <textarea value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)", minHeight: "80px" }} />
+//               </div>
+//               <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+//                 <button onClick={() => setIsExpenseModalOpen(false)} style={{ flex: 1, padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "none", cursor: "pointer" }}>Cancel</button>
+//                 <button
+//                   onClick={() => editingExpense ? updateExpenseMutation.mutate({ id: editingExpense._id!, data: expenseForm }) : createExpenseMutation.mutate(expenseForm)}
+//                   disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
+//                   className="btn-primary"
+//                   style={{ flex: 1, padding: "0.75rem", borderRadius: "8px" }}
+//                 >
+//                   {editingExpense ? "Update" : "Save"}
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+
+//       <style dangerouslySetInnerHTML={{
+//         __html: `
+//         .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+//         .fc-col-header-cell { padding: 8px 0 !important; background: var(--bg-surface-2) !important; }
+//         .fc-col-header-cell-cushion { color: var(--text-secondary) !important; text-decoration: none !important; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+//         .fc-button-primary { background: var(--bg-surface-2) !important; border: 1px solid var(--border) !important; color: var(--text-primary) !important; font-size: 0.75rem !important; font-weight: 600 !important; border-radius: 8px !important; padding: 6px 12px !important; text-transform: capitalize !important; transition: all 0.2s ease !important; }
+//         .fc-button-primary:hover { background: var(--bg-surface-3) !important; border-color: var(--border-strong) !important; transform: translateY(-1px); }
+//         .fc-button-active { background: var(--color-primary) !important; color: #fff !important; border-color: var(--color-primary) !important; box-shadow: 0 4px 12px var(--color-primary-glow) !important; }
+//         .fc-day-today { background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.05) !important; }
+//         .fc-daygrid-day-number { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); padding: 8px !important; text-decoration: none !important; }
+//         .fc-daygrid-day:hover { background: rgba(255,255,255,0.02); }
+//         .fc-event { border: none !important; background: transparent !important; margin: 1px 2px !important; }
+//         .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
+//         .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
+
+//         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+//         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+//         @media (max-width: 768px) {
+//           .fc-header-toolbar { flex-direction: column; gap: 1rem; }
+//           .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; }
+//         }
+//       ` }} />
 //     </div>
 //   );
 // }
-
-
-
-
-
-
-
 
 
 
@@ -1370,7 +691,8 @@
 
 
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDashboardOverview } from "@/api/dashboard";
 import { getGoogleAuthUrl, syncAllRecords } from "@/api/googleAuth";
 import { getMe } from "@/api/auth";
@@ -1388,8 +710,20 @@ import {
   X,
   Clock,
   Flag,
+  Plus,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import StatCard from "@/components/StatCard";
+import {
+  getStudioExpenses,
+  createStudioExpense,
+  updateStudioExpense,
+  deleteStudioExpense,
+  type StudioExpense
+} from "@/api/studioExpenses";
+
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -1454,188 +788,95 @@ function EventModal({
   event: EventDetail;
   onClose: () => void;
 }) {
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
-        position: "fixed", // Changed to fixed to cover viewport on all screens
+        position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.45)",
-        zIndex: 1000,
+        background: "rgba(0,0,0,0.6)",
+        zIndex: 2000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "1rem",
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(8px)",
+        animation: "fadeIn 0.3s ease-out"
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--bg-surface)",
-          borderRadius: "16px",
-          padding: "1.5rem",
+          borderRadius: "24px",
+          padding: "2rem",
           width: "100%",
-          maxWidth: "380px",
-          border: "1px solid var(--border)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-          maxHeight: "90vh",
-          overflowY: "auto",
+          maxWidth: "420px",
+          border: "1px solid var(--border-strong)",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+          position: "relative",
+          overflow: "hidden",
+          animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
         }}
       >
-        {/* header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "1rem",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.6rem",
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                background: event.backgroundColor,
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: "1rem",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
+        {/* Color Accent Bar */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: "6px", height: "100%", background: event.backgroundColor }} />
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", flex: 1, minWidth: 0 }}>
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: event.backgroundColor, boxShadow: `0 0 10px ${event.backgroundColor}66`, flexShrink: 0 }} />
+            <span style={{ fontWeight: 700, fontSize: "1.2rem", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
               {event.title}
             </span>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              padding: "0.2rem",
-              marginLeft: "0.5rem",
-              flexShrink: 0,
-            }}
+            className="btn-ghost"
+            style={{ padding: "0.4rem", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* type badge */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.5rem",
-            marginBottom: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.3rem",
-              padding: "0.25rem 0.6rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              background: event.isDeadline
-                ? "rgba(239,68,68,0.12)"
-                : "rgba(99,179,237,0.12)",
-              color: event.isDeadline ? "#ef4444" : "#60a5fa",
-              border: event.isDeadline
-                ? "1px solid rgba(239,68,68,0.25)"
-                : "1px solid rgba(99,179,237,0.25)",
-            }}
-          >
-            {event.isDeadline ? (
-              <>
-                <Flag size={11} /> Delivery Deadline
-              </>
-            ) : (
-              <>
-                <Clock size={11} /> Shoot / Event
-              </>
-            )}
+        <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700,
+            background: event.isDeadline ? "rgba(239,68,68,0.15)" : "rgba(99,179,237,0.15)",
+            color: event.isDeadline ? "#ff5f5f" : "#60a5fa",
+            border: `1px solid ${event.isDeadline ? "rgba(239,68,68,0.2)" : "rgba(99,179,237,0.2)"}`
+          }}>
+            {event.isDeadline ? <><Flag size={14} /> Deadline</> : <><Clock size={14} /> Shoot Event</>}
           </span>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.3rem",
-              padding: "0.25rem 0.6rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              background: "var(--bg-surface-2)",
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            {event.type === "Maternity" ? (
-              <Baby size={11} />
-            ) : event.type === "Influencer" ? (
-              <Megaphone size={11} />
-            ) : (
-              <Building2 size={11} />
-            )}
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 600,
+            background: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)"
+          }}>
             {event.type}
           </span>
         </div>
 
-        {/* date/time */}
-        <div
-          style={{
-            padding: "0.75rem",
-            background: "var(--bg-surface-2)",
-            borderRadius: "10px",
-            fontSize: "0.85rem",
-            color: "var(--text-secondary)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}
-        >
-          <Calendar size={14} color="var(--color-primary)" />
-          {event.isDeadline
-            ? formatDateOnly(event.start)
-            : formatDate(event.start)}
+        <div style={{
+          padding: "1.25rem", background: "linear-gradient(135deg, var(--bg-surface-2), var(--bg-surface-3))",
+          borderRadius: "16px", fontSize: "0.95rem", color: "var(--text-primary)", border: "1px solid var(--border)",
+          display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem"
+        }}>
+          <div style={{ background: "rgba(255,255,255,0.05)", padding: "0.5rem", borderRadius: "10px" }}>
+            <Calendar size={18} color="var(--color-primary)" />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Scheduled Date</span>
+            <span style={{ fontWeight: 600 }}>{event.isDeadline ? formatDateOnly(event.start) : formatDate(event.start)}</span>
+          </div>
         </div>
 
-        {/* status */}
         {event.status && (
-          <div
-            style={{
-              marginTop: "0.75rem",
-              fontSize: "0.8rem",
-              color: "var(--text-muted)",
-            }}
-          >
-            Status:{" "}
-            <strong style={{ color: "var(--text-primary)" }}>
-              {event.status}
-            </strong>
+          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "var(--bg-surface-2)", padding: "0.75rem 1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
+            <span style={{ color: "var(--text-muted)" }}>Current Status:</span> <strong style={{ color: "var(--text-primary)", marginLeft: "0.4rem" }}>{event.status}</strong>
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1643,67 +884,29 @@ function EventModal({
 
 function CalendarLegend() {
   const items = [
-    {
-      label: "Maternity Shoot",
-      color: "#f472b6",
-      icon: <Baby size={11} />,
-    },
-    {
-      label: "Influencer Shoot",
-      color: "#60a5fa",
-      icon: <Megaphone size={11} />,
-    },
-    {
-      label: "Corporate Event",
-      color: "#4ade80",
-      icon: <Building2 size={11} />,
-    },
-    {
-      label: "Delivery Deadline",
-      color: "#ef4444",
-      icon: <Flag size={11} />,
-      dashed: true,
-    },
+    { label: "Maternity Shoot", color: "#f472b6", gradient: "linear-gradient(135deg, #f472b6, #fb7185)", icon: <Baby size={14} /> },
+    { label: "Influencer Shoot", color: "#60a5fa", gradient: "linear-gradient(135deg, #60a5fa, #3b82f6)", icon: <Megaphone size={14} /> },
+    { label: "Corporate Event", color: "#4ade80", gradient: "linear-gradient(135deg, #4ade80, #10b981)", icon: <Building2 size={14} /> },
+    { label: "Delivery Deadline", color: "#ef4444", icon: <Flag size={14} />, dashed: true },
   ];
-
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.5rem 1rem",
-        marginBottom: "1rem",
-      }}
-    >
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
       {items.map((item) => (
         <div
           key={item.label}
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            fontSize: "0.75rem",
-            color: "var(--text-secondary)",
+            display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", fontWeight: 600,
+            cursor: "default"
           }}
         >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 18,
-              height: 18,
-              borderRadius: item.dashed ? "4px" : "50%",
-              background: `${item.color}22`,
-              border: item.dashed
-                ? `2px dashed ${item.color}`
-                : `2px solid ${item.color}`,
-              color: item.color,
-            }}
-          >
+          <div style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%",
+            background: item.dashed ? "rgba(239, 68, 68, 0.1)" : item.gradient, border: item.dashed ? `2px dashed ${item.color}` : "none", color: item.dashed ? item.color : "#fff",
+            boxShadow: item.dashed ? "none" : `0 4px 12px ${item.color}44`
+          }}>
             {item.icon}
-          </span>
-          {item.label}
+          </div>
+          <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
         </div>
       ))}
     </div>
@@ -1716,6 +919,7 @@ export default function DashboardOverviewPage() {
   const [searchParams] = useSearchParams();
   const googleConnected = searchParams.get("googleConnected");
   const { isMobile, isTablet } = useIsMobile();
+  const queryClient = useQueryClient();
 
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -1725,10 +929,45 @@ export default function DashboardOverviewPage() {
   const [visibleCompleted, setVisibleCompleted] = useState(3);
   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
 
-  const { data: userData } = useQuery({
-    queryKey: ["user-me"],
-    queryFn: getMe,
+  // Studio Expense State
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<StudioExpense | null>(null);
+  const [expenseForm, setExpenseForm] = useState({
+    amount: 0,
+    date: new Date().toISOString().split('T')[0],
+    category: "",
+    notes: ""
   });
+
+  const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: getDashboardOverview });
+  const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: getStudioExpenses });
+
+  const createExpenseMutation = useMutation({
+    mutationFn: createStudioExpense,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateStudioExpense(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: deleteStudioExpense,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["studio-expenses"] })
+  });
+
+  const resetExpenseForm = () => {
+    setExpenseForm({ amount: 0, date: new Date().toISOString().split('T')[0], category: "", notes: "" });
+    setEditingExpense(null);
+  };
+
+  const handleEditExpense = (expense: StudioExpense) => {
+    setEditingExpense(expense);
+    setExpenseForm({ amount: expense.amount, date: new Date(expense.date).toISOString().split('T')[0], category: expense.category || "", notes: expense.notes || "" });
+    setIsExpenseModalOpen(true);
+  };
 
   const handleSyncAll = async () => {
     setSyncing(true);
@@ -1743,13 +982,6 @@ export default function DashboardOverviewPage() {
     }
   };
 
-  const isConnected = userData?.user?.googleCalendarConnected;
-
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["dashboard-overview"],
-    queryFn: getDashboardOverview,
-  });
-
   const handleConnectGoogle = async () => {
     try {
       const { url } = await getGoogleAuthUrl();
@@ -1759,7 +991,6 @@ export default function DashboardOverviewPage() {
     }
   };
 
-  // FullCalendar event click handler
   const handleEventClick = useCallback((info: any) => {
     const ep = info.event.extendedProps;
     setSelectedEvent({
@@ -1772,982 +1003,388 @@ export default function DashboardOverviewPage() {
     });
   }, []);
 
-  // Custom event content — adds icon prefix based on type/deadline
   const renderEventContent = useCallback((info: any) => {
     const { isDeadline, type } = info.event.extendedProps;
     const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
+    const backgroundColor = info.event.backgroundColor;
+
+    // Use a more vibrant semi-transparent background for the event
+    const eventBg = isDeadline ? "rgba(239, 68, 68, 0.15)" : `${backgroundColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
+
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "3px",
-          overflow: "hidden",
-          padding: "1px 4px",
-          fontSize: "0.78rem",
-          fontWeight: isDeadline ? 700 : 500,
-          opacity: 0.95,
-        }}
-      >
-        <span style={{ fontSize: "10px", flexShrink: 0 }}>{icon}</span>
-        <span
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {info.event.title}
-        </span>
+      <div style={{
+        display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", padding: "2px 6px", borderRadius: "4px",
+        background: isDeadline ? "rgba(239, 68, 68, 0.15)" : eventBg,
+        backdropFilter: "blur(2px)", borderLeft: `3px solid ${backgroundColor}`, fontSize: "0.75rem", fontWeight: isDeadline ? 700 : 500,
+        height: "100%", width: "100%", color: isDeadline ? "#ff5f5f" : "var(--text-primary)"
+      }}>
+        <span style={{ fontSize: "10px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{info.event.title}</span>
       </div>
     );
   }, []);
 
-  if (isLoading)
-    return (
-      <div
-        style={{
-          padding: "2rem",
-          textAlign: "center",
-          color: "var(--text-muted)",
-        }}
-      >
-        Loading Dashboard Stats...
-      </div>
-    );
-  if (isError)
-    return (
-      <div
-        style={{
-          padding: "2rem",
-          textAlign: "center",
-          color: "var(--color-danger)",
-        }}
-      >
-        Error: {(error as Error).message}
-      </div>
-    );
+  if (isLoading) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--text-muted)" }}>Loading Dashboard...</div>;
+  if (isError) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--color-danger)" }}>Error: {(error as Error).message}</div>;
   if (!data) return null;
 
-  const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [] } = data;
+  const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 } } = data;
+  const isConnected = userData?.user?.googleCalendarConnected;
 
   return (
     <div className="dashboard-overview animate-fade-up">
-      {/* ── header ── */}
       <header style={{ marginBottom: "2.5rem" }}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: isTablet ? "column" : "row",
-            justifyContent: "space-between",
-            alignItems: isTablet ? "flex-start" : "center",
-            gap: "1.5rem",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: "1.5rem" }}>
           <div>
-            <h1
-              style={{
-                fontSize: isMobile ? "2rem" : "2.5rem",
-                fontWeight: 700,
-                margin: "0 0 0.5rem 0",
-                background:
-                  "linear-gradient(to right, var(--color-primary), var(--color-accent))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
+            <h1 style={{ fontSize: isMobile ? "1.75rem" : "2.5rem", fontWeight: 800, margin: "0 0 0.5rem 0", background: "linear-gradient(to right, var(--color-primary), var(--color-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               CRM Overview
             </h1>
-            <p
-              style={{ color: "var(--text-secondary)", fontSize: "1rem" }}
-            >
-              Unified metrics across all modules.
-            </p>
+            <p style={{ color: "var(--text-secondary)", fontSize: isMobile ? "0.9rem" : "1rem" }}>Unified metrics across all modules.</p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "0.75rem",
-              flexWrap: "wrap",
-              width: isTablet ? "100%" : "auto",
-            }}
-          >
+          <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
             {isConnected ? (
-              <>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.6rem 1rem",
-                    borderRadius: "10px",
-                    background: "rgba(74, 222, 128, 0.1)",
-                    color: "var(--color-success)",
-                    border: "1px solid rgba(74, 222, 128, 0.2)",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    flex: isTablet ? "1" : "none",
-                    justifyContent: "center",
-                  }}
-                >
-                  <CheckCircle2 size={16} />
-                  <span>{isMobile ? "Connected" : "Google Calendar: Connected"}</span>
+              <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px", background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", border: "1px solid rgba(74, 222, 128, 0.2)", fontSize: "0.85rem", fontWeight: 600 }}>
+                  <CheckCircle2 size={16} /> <span>Connected</span>
                 </div>
-                <button
-                  onClick={handleSyncAll}
-                  disabled={syncing}
-                  className="btn-ghost"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.6rem 1rem",
-                    borderRadius: "10px",
-                    flex: isTablet ? "1" : "none",
-                    justifyContent: "center",
-                  }}
-                >
-                  <RefreshCw
-                    size={16}
-                    className={syncing ? "animate-spin" : ""}
-                  />
-                  <span>{syncing ? "Syncing..." : "Sync"}</span>
+                <button onClick={handleSyncAll} disabled={syncing} className="btn-ghost" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px" }}>
+                  <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
+                  <span>Sync</span>
                 </button>
-              </>
+              </div>
             ) : (
-              <button
-                onClick={handleConnectGoogle}
-                className="btn-primary"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.75rem 1.25rem",
-                  borderRadius: "10px",
-                  width: isTablet ? "100%" : "auto",
-                  justifyContent: "center",
-                }}
-              >
-                <Calendar size={18} />
-                Connect Google
+              <button onClick={handleConnectGoogle} className="btn-primary" style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.25rem", borderRadius: "10px" }}>
+                <Calendar size={18} /> Connect Google
               </button>
             )}
           </div>
         </div>
 
-        {(googleConnected ||
-          searchParams.get("googleError") ||
-          syncMessage) && (
-            <div
-              style={{
-                marginTop: "1.5rem",
-                padding: "1rem",
-                background: searchParams.get("googleError")
-                  ? "rgba(239, 68, 68, 0.1)"
-                  : "rgba(74, 222, 128, 0.1)",
-                color: searchParams.get("googleError")
-                  ? "var(--color-danger)"
-                  : "var(--color-success)",
-                borderRadius: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                border: searchParams.get("googleError")
-                  ? "1px solid rgba(239, 68, 68, 0.2)"
-                  : "1px solid rgba(74, 222, 128, 0.2)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {searchParams.get("googleError") ? (
-                <AlertCircle size={18} />
-              ) : (
-                <CheckCircle2 size={18} />
-              )}
-              <span>
-                {searchParams.get("googleError")
-                  ? `Connection failed: ${searchParams.get("googleError")}`
-                  : syncMessage || "Google Calendar connected!"}
-              </span>
-            </div>
-          )}
+        {(googleConnected || searchParams.get("googleError") || syncMessage) && (
+          <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)", color: searchParams.get("googleError") ? "var(--color-danger)" : "var(--color-success)", fontSize: "0.9rem", border: "1px solid var(--border)" }}>
+            {searchParams.get("googleError") ? `Error: ${searchParams.get("googleError")}` : syncMessage || "Google Calendar connected!"}
+          </div>
+        )}
       </header>
 
-      {/* ── global stats ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "1.25rem",
-          marginBottom: "2.5rem",
-        }}
-      >
-        <StatCard
-          title="Total Revenue"
-          value={formatCurrency(globalTotals.totalRevenue)}
-          icon={<TrendingUp size={24} />}
-          color="var(--color-primary)"
-          description="Gross contract value"
-        />
-        <StatCard
-          title="Total Received"
-          value={formatCurrency(globalTotals.totalAdvance)}
-          icon={<CreditCard size={24} />}
-          color="var(--color-success)"
-          description="Payments collected"
-        />
-        <StatCard
-          title="Total Outstanding"
-          value={formatCurrency(globalTotals.totalBalance)}
-          icon={<AlertCircle size={24} />}
-          color="var(--color-warning)"
-          description="Pending balances"
-        />
+      {/* ── 6-column stats row ── */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(6, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
+        <StatCard title="Total Revenue" value={formatCurrency(globalTotals.totalRevenue)} icon={<TrendingUp size={20} />} color="var(--color-primary)" description="Gross contract value" />
+        <StatCard title="Total Received" value={formatCurrency(globalTotals.totalAdvance)} icon={<CreditCard size={20} />} color="var(--color-success)" description="Payments collected" />
+        <StatCard title="Total Due" value={formatCurrency(globalTotals.totalBalance)} icon={<AlertCircle size={20} />} color="var(--color-warning)" description="Pending balances" />
+        <StatCard title="Total Expenses" value={formatCurrency(globalTotals.totalExpenses)} icon={<CreditCard size={20} />} color="var(--color-danger)" description="Records + Studio" />
+        <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="var(--color-accent)" description="Revenue - Expenses" />
+        <StatCard title="Booked Leads" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Converted leads" />
       </div>
 
-      {/* ── breakdown + reminders ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "2.5rem",
-        }}
-      >
-        {/* Revenue breakdown */}
-        <section className="card" style={{ padding: "1.5rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <BarChart3 size={20} color="var(--color-primary)" />
-            <h2 style={{ fontSize: "1.1rem", margin: 0 }}>
-              Revenue Breakdown
-            </h2>
+      {/* ========== Studio Expenses (moved above Revenue Breakdown) ========== */}
+      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <CreditCard size={20} color="var(--color-danger)" />
+            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Studio Expenses</h2>
           </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
-          >
+          <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
+            <Plus size={16} /> Add
+          </button>
+        </div>
+
+        {isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {expensesData?.map((expense: StudioExpense) => (
+              <div key={expense._id} style={{ background: "var(--bg-surface-2)", padding: "1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</span>
+                  <span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem", fontWeight: 600 }}>{expense.category}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontWeight: 800, color: "var(--color-danger)", fontSize: "1.1rem" }}>{formatCurrency(expense.amount)}</div>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button onClick={() => handleEditExpense(expense)} style={{ background: "var(--bg-surface-3)", border: "none", color: "var(--color-primary)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Pencil size={14} /></button>
+                    <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "var(--color-danger)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Trash2 size={14} /></button>
+                  </div>
+                </div>
+                {expense.notes && <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--text-secondary)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>{expense.notes}</div>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
+                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Date</th>
+                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Category</th>
+                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Amount</th>
+                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Notes</th>
+                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expensesData?.map((expense: StudioExpense) => (
+                  <tr key={expense._id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <td style={{ padding: "1rem" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
+                    <td style={{ padding: "1rem" }}><span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem" }}>{expense.category}</span></td>
+                    <td style={{ padding: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatCurrency(expense.amount)}</td>
+                    <td style={{ padding: "1rem", color: "var(--text-secondary)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{expense.notes}</td>
+                    <td style={{ padding: "1rem", textAlign: "right" }}>
+                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                        <button onClick={() => handleEditExpense(expense)} style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer" }}><Pencil size={16} /></button>
+                        <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "none", border: "none", color: "var(--color-danger)", cursor: "pointer" }}><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(2, 1fr)", gap: "2rem", marginBottom: "2.5rem" }}>
+        {/* Revenue Breakdown */}
+        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            <BarChart3 size={20} color="var(--color-primary)" />
+            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Revenue Breakdown</h2>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             {categorySplit.map((cat: any) => (
               <div key={cat.name}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "0.5rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <span style={{ fontWeight: 500 }}>{cat.name}</span>
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    {formatCurrency(cat.revenue)}
-                    {globalTotals.totalRevenue > 0
-                      ? ` (${(
-                        (cat.revenue / globalTotals.totalRevenue) *
-                        100
-                      ).toFixed(0)}%)`
-                      : ""}
-                  </span>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.85rem" }}>
+                  <span style={{ fontWeight: 600 }}>{cat.name}</span>
+                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                    <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(cat.revenue)}</span>
+                    <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>({globalTotals.totalRevenue > 0 ? Math.round((cat.revenue / globalTotals.totalRevenue) * 100) : 0}%)</span>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    height: "6px",
-                    background: "var(--bg-surface-3)",
-                    borderRadius: "3px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${globalTotals.totalRevenue > 0
-                        ? (cat.revenue / globalTotals.totalRevenue) * 100
-                        : 0
-                        }%`,
-                      background:
-                        cat.revenue > 0 ? cat.color : "var(--bg-surface-3)",
-                      borderRadius: "3px",
-                      transition: "width 0.6s ease",
-                    }}
-                  />
+                <div style={{ height: "6px", background: "var(--bg-surface-3)", borderRadius: "3px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${globalTotals.totalRevenue > 0 ? (cat.revenue / globalTotals.totalRevenue) * 100 : 0}%`, background: cat.color, borderRadius: "3px", transition: "width 0.6s ease" }} />
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Reminders section: Shoots & Deadlines */}
-        <section className="card" style={{ padding: "1.5rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "1.25rem",
-              justifyContent: "space-between",
-              flexWrap: "wrap"
-            }}
-          >
+        {/* Reminders: Shoots & Deadlines */}
+        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <Calendar size={20} color="var(--color-warning)" />
-              <h2 style={{ fontSize: "1.1rem", margin: 0, whiteSpace: "nowrap" }}>Upcoming</h2>
+              <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Upcoming</h2>
             </div>
-
-            {/* Segmented Toggle */}
-            <div style={{
-              display: "flex",
-              background: "var(--bg-surface-3)",
-              padding: "3px",
-              borderRadius: "8px",
-              border: "1px solid var(--border)"
-            }}>
-              <button
-                onClick={() => setActiveTab('shoots')}
-                style={{
-                  padding: "0.3rem 0.6rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  borderRadius: "6px",
-                  border: "none",
-                  cursor: "pointer",
-                  background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent",
-                  color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)",
-                  boxShadow: activeTab === 'shoots' ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
-                  transition: "all 0.2s"
-                }}
-              >
-                Shoots
-              </button>
-              <button
-                onClick={() => setActiveTab('deadlines')}
-                style={{
-                  padding: "0.3rem 0.6rem",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  borderRadius: "6px",
-                  border: "none",
-                  cursor: "pointer",
-                  background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent",
-                  color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)",
-                  boxShadow: activeTab === 'deadlines' ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
-                  transition: "all 0.2s"
-                }}
-              >
-                Deadlines
-              </button>
+            <div style={{ display: "flex", background: "var(--bg-surface-3)", padding: "3px", borderRadius: "8px" }}>
+              <button onClick={() => setActiveTab('shoots')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent", color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)" }}>Shoots</button>
+              <button onClick={() => setActiveTab('deadlines')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent", color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)" }}>Deadlines</button>
             </div>
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {/* 1. Upcoming Shoots Part */}
-            {activeTab === 'shoots' && (
-              <div className="animate-fade-in">
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.75rem"
-                }}>
-                  <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", fontWeight: 700, margin: 0 }}>
-                    Upcoming Shoots
-                  </h3>
-                  {upcomingShoots.length > visibleShoots && (
-                    <button
-                      onClick={() => setVisibleShoots(prev => prev + 3)}
-                      style={{
-                        background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-                      }}
-                      onMouseOver={(e) => (e.currentTarget.style.background = "var(--bg-surface-3)")}
-                      onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                    >
-                      View More (+3)
-                    </button>
-                  )}
-                  {visibleShoots > 3 && (
-                    <button
-                      onClick={() => setVisibleShoots(3)}
-                      style={{
-                        background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-                      }}
-                    >
-                      Show Less
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {upcomingShoots.length === 0 ? (
-                    <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", fontSize: "0.8rem" }}>
-                      No shoots scheduled for the next 7 days.
-                    </div>
-                  ) : (
-                    upcomingShoots.slice(0, visibleShoots).map((shoot: any) => (
-                      <div key={shoot.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: "50%", background: "var(--bg-surface-3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary)"
-                        }}>
-                          {shoot.type === "Maternity" ? <Baby size={16} /> : shoot.type === "Influencer" ? <Megaphone size={16} /> : <Building2 size={16} />}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {shoot.clientName}
-                          </div>
-                          <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                            {shoot.type} · {new Date(shoot.date).toLocaleDateString("en-IN")}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.4rem", borderRadius: "4px", background: "var(--bg-surface-3)", color: "var(--text-secondary)" }}>
-                          {shoot.daysRemaining === 0 ? "Today" : `${shoot.daysRemaining}d`}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 2. Upcoming Deadlines Part */}
-            {activeTab === 'deadlines' && (
-              <div className="animate-fade-in">
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.75rem"
-                }}>
-                  <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", fontWeight: 700, margin: 0 }}>
-                    Upcoming Deadlines
-                  </h3>
-                  {upcomingDeadlines.length > visibleDeadlines && (
-                    <button
-                      onClick={() => setVisibleDeadlines(prev => prev + 3)}
-                      style={{
-                        background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-                      }}
-                      onMouseOver={(e) => (e.currentTarget.style.background = "var(--bg-surface-3)")}
-                      onMouseOut={(e) => (e.currentTarget.style.background = "none")}
-                    >
-                      View More (+3)
-                    </button>
-                  )}
-                  {visibleDeadlines > 3 && (
-                    <button
-                      onClick={() => setVisibleDeadlines(3)}
-                      style={{
-                        background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 600, cursor: "pointer", padding: "0.2rem 0.5rem", borderRadius: "4px"
-                      }}
-                    >
-                      Show Less
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {upcomingDeadlines.length === 0 ? (
-                    <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)", fontSize: "0.8rem" }}>
-                      No deadlines for the next 7 days.
-                    </div>
-                  ) : (
-                    upcomingDeadlines.slice(0, visibleDeadlines).map((deadline: any) => (
-                      <div key={deadline.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateX(4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateX(0)"}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: "50%", background: "rgba(239,68,68,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-danger)"
-                        }}>
-                          <Flag size={16} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {deadline.clientName}
-                          </div>
-                          <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                            {deadline.type} · {new Date(deadline.date).toLocaleDateString("en-IN")}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.4rem", borderRadius: "4px", background: "var(--color-danger)", color: "#fff" }}>
-                          {deadline.daysRemaining === 0 ? "Today" : `${deadline.daysRemaining}d`}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={{
-            marginTop: "1.5rem",
-            paddingTop: "1rem",
-            borderTop: "1px solid var(--border)",
-            fontSize: "0.7rem",
-            color: "var(--text-muted)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem"
-          }}>
-            <AlertCircle size={12} color="var(--color-primary)" />
-            <span>Criteria: Active (Not Completed/Cancelled) items for the next 7 days.</span>
-          </div>
-        </section>
-
-        {/* 3. Recently Completed / Cancelled Section */}
-        <section className="card" style={{ padding: "1.5rem" }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1.5rem"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <CheckCircle2 size={20} color="var(--color-success)" />
-              <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Recently Completed</h2>
-            </div>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              {data.recentlyCompleted.length > visibleCompleted && (
-                <button
-                  onClick={() => setVisibleCompleted(prev => prev + 3)}
-                  style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                >
-                  View More (+3)
-                </button>
-              )}
-              {visibleCompleted > 3 && (
-                <button
-                  onClick={() => setVisibleCompleted(3)}
-                  style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
-                >
-                  Show Less
-                </button>
-              )}
-            </div>
-          </div>
-
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {data.recentlyCompleted.length === 0 ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "var(--radius-md)" }}>
-                No items completed or cancelled this week.
-              </div>
-            ) : (
-              data.recentlyCompleted.slice(0, visibleCompleted).map((item: any) => (
-                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: "50%",
-                    background: item.status === 'Cancelled' ? "rgba(239,68,68,0.2)" : "rgba(74,222,128,0.2)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: item.status === 'Cancelled' ? "var(--color-danger)" : "var(--color-success)"
-                  }}>
-                    {item.status === 'Cancelled' ? <X size={18} /> : <CheckCircle2 size={18} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {item.clientName}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      {item.type} · {new Date(item.date).toLocaleDateString("en-IN")}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                      {formatCurrency(item.total)}
-                    </div>
-                    <div style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                      color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-warning)",
-                      textTransform: "uppercase"
-                    }}>
-                      Payment: {item.paymentStatus} {item.paymentStatus === 'Due' && `(${formatCurrency(item.balance)})`}
-                    </div>
-                  </div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Upcoming {activeTab}</div>
+            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).slice(0, visibleShoots).map((item: any) => (
+              <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px solid var(--border)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: "25%", background: activeTab === 'shoots' ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "var(--text-muted)" : "var(--color-danger)" }}>
+                  {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={18} /> : item.type === 'Influencer' ? <Megaphone size={18} /> : <Building2 size={18} />) : <Flag size={18} />}
                 </div>
-              ))
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.clientName}</div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
+                </div>
+                <div style={{ fontSize: "0.75rem", fontWeight: 800, padding: "0.25rem 0.5rem", borderRadius: "6px", background: item.daysRemaining <= 1 ? "var(--color-danger)" : "var(--bg-surface-3)", color: item.daysRemaining <= 1 ? "#fff" : "var(--text-secondary)" }}>
+                  {item.daysRemaining === 0 ? "Today" : `${item.daysRemaining}d`}
+                </div>
+              </div>
+            ))}
+            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length === 0 && (
+              <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                No upcoming {activeTab} for the next 7 days.
+              </div>
+            )}
+            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length > 3 && (
+              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", marginTop: "0.5rem" }}>
+                <AlertCircle size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
+                Criteria: Active (Not Completed/Cancelled) items for the next 7 days.
+              </div>
             )}
           </div>
-
-          <div style={{
-            marginTop: "1.5rem",
-            paddingTop: "1rem",
-            borderTop: "1px solid var(--border)",
-            fontSize: "0.7rem",
-            color: "var(--text-muted)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem"
-          }}>
-            <AlertCircle size={12} color="var(--color-success)" />
-            <span>Items completed or cancelled in the last 7 days.</span>
-          </div>
         </section>
-
       </div>
 
-      {/* ── calendar ── */}
-      <section
-        className="card animate-fade-up"
-        style={{ padding: "1.25rem", marginBottom: "2.5rem", position: "relative" }}
-      >
-        {/* section header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            marginBottom: "1rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <Calendar size={20} color="var(--color-primary)" />
-          <h2
-            style={{ fontSize: "1.1rem", margin: 0, fontWeight: 600 }}
-          >
-            Schedule &amp; Deadlines
-          </h2>
-          {isConnected && !isMobile && (
-            <span
-              style={{
-                fontSize: "0.75rem",
-                color: "var(--text-muted)",
-                marginLeft: "auto",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
-            >
-              <CheckCircle2 size={14} color="var(--color-success)" />
-              Live Sync Active
-            </span>
+      {/* Recently Completed Section */}
+      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", padding: "0.4rem", borderRadius: "50%", display: "flex" }}>
+              <CheckCircle2 size={20} />
+            </div>
+            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Recently Completed</h2>
+          </div>
+          {recentlyCompleted.length > 3 && (
+            <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", borderRadius: "8px", color: "var(--color-primary)" }}>
+              View More (+{recentlyCompleted.length - 3})
+            </button>
           )}
         </div>
 
-        {/* legend */}
-        <CalendarLegend />
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {recentlyCompleted.slice(0, 3).map((item: any) => (
+            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "16px", border: "1px solid var(--border)" }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-success)", border: "1px solid var(--border)" }}>
+                <CheckCircle2 size={24} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>{item.clientName}</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-primary)" }}>{formatCurrency(item.total)}</div>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 900, color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-danger)", letterSpacing: "0.05em", marginTop: "2px" }}>
+                      PAYMENT: {item.paymentStatus}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {recentlyCompleted.length === 0 && (
+            <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+              No recently completed items.
+            </div>
+          )}
+        </div>
+        <div style={{ marginTop: "1.25rem", padding: "0.75rem", borderRadius: "10px", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <AlertCircle size={14} color="var(--color-success)" />
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Items completed or cancelled in the last 7 days.</span>
+        </div>
+      </section>
 
-        {/* calendar wrapper */}
-        <div
-          style={{
-            borderRadius: "12px",
-            overflow: "hidden",
-            border: "1px solid var(--border)",
-            background: "var(--bg-surface)",
-          }}
-        >
+      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <Calendar size={20} color="var(--color-primary)" />
+            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Schedule & Deadlines</h2>
+          </div>
+        </div>
+        <CalendarLegend />
+        <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            // ── critical: IST timezone ──
             timeZone="Asia/Kolkata"
-            // ── Mobile/Tablet views ──
-            initialView={isMobile ? "timeGridDay" : isTablet ? "timeGridWeek" : "dayGridMonth"}
-            // ── toolbar: compact on mobile ──
-            headerToolbar={
-              isMobile
-                ? {
-                  left: "prev,next",
-                  center: "title",
-                  right: "today",
-                }
-                : isTablet
-                  ? {
-                    left: "prev,next today",
-                    center: "title",
-                    right: "timeGridWeek,timeGridDay",
-                  }
-                  : {
-                    left: "prev,next today",
-                    center: "title",
-                    right: "dayGridMonth,timeGridWeek,timeGridDay",
-                  }
-            }
-            footerToolbar={
-              isMobile
-                ? {
-                  center: "dayGridMonth,timeGridWeek,timeGridDay",
-                }
-                : false
-            }
+            initialView={isMobile ? "dayGridMonth" : isTablet ? "dayGridMonth" : "dayGridMonth"}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay"
+            }}
             events={calendarEvents || []}
             eventContent={renderEventContent}
             eventClick={handleEventClick}
-            // ── time display ──
-            eventTimeFormat={{
-              hour: "2-digit",
-              minute: "2-digit",
-              meridiem: "short",
-            }}
-            slotLabelFormat={{
-              hour: "2-digit",
-              minute: "2-digit",
-              meridiem: "short",
-            }}
-            // ── layout ──
             height="auto"
-            contentHeight={isMobile ? 500 : 640}
-            eventDisplay="block"
-            // ── show more events cleanly ──
-            dayMaxEvents={isMobile ? 2 : 4}
-            moreLinkClick="popover"
-            // ── highlight today ──
+            contentHeight={isMobile ? 400 : 640}
+            dayMaxEvents={isMobile ? 2 : 3}
             nowIndicator={true}
           />
         </div>
-
-        {/* event detail modal - now relative to this section */}
-        {selectedEvent && (
-          <EventModal
-            event={selectedEvent}
-            onClose={() => setSelectedEvent(null)}
-          />
-        )}
-
-        {/* ── injected FullCalendar theme overrides + responsive styles ── */}
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-          /* grid borders */
-          .fc-theme-standard td,
-          .fc-theme-standard th,
-          .fc-theme-standard .fc-scrollgrid {
-            border-color: var(--border) !important;
-          }
-
-          /* header day names */
-          .fc-col-header-cell-cushion {
-            color: var(--text-secondary) !important;
-            padding: 8px 4px !important;
-            text-decoration: none !important;
-            font-size: 0.78rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-          }
-
-          /* day numbers */
-          .fc-daygrid-day-number {
-            color: var(--text-secondary) !important;
-            text-decoration: none !important;
-            font-size: 0.85rem;
-          }
-          .fc-day-today .fc-daygrid-day-number {
-            color: var(--color-primary) !important;
-            font-weight: 700;
-          }
-
-          /* today highlight */
-          .fc-day-today {
-            background: rgba(99,102,241,0.04) !important;
-          }
-
-          /* now indicator line */
-          .fc-timegrid-now-indicator-line {
-            border-color: var(--color-danger) !important;
-            border-width: 2px !important;
-          }
-          .fc-timegrid-now-indicator-arrow {
-            border-color: var(--color-danger) !important;
-          }
-
-          /* toolbar buttons */
-          .fc-button-primary {
-            background-color: var(--bg-surface-2) !important;
-            border-color: var(--border) !important;
-            color: var(--text-primary) !important;
-            font-size: 0.8rem !important;
-            padding: 0.35rem 0.7rem !important;
-            border-radius: 8px !important;
-            box-shadow: none !important;
-            font-weight: 500 !important;
-          }
-          .fc-button-primary:hover {
-            background-color: var(--bg-surface-3) !important;
-          }
-          .fc-button-primary:not(:disabled):active,
-          .fc-button-primary:not(:disabled).fc-button-active {
-            background-color: var(--color-primary) !important;
-            border-color: var(--color-primary) !important;
-            color: #fff !important;
-          }
-          .fc-button-group .fc-button-primary {
-            border-radius: 0 !important;
-          }
-          .fc-button-group .fc-button-primary:first-child {
-            border-radius: 8px 0 0 8px !important;
-          }
-          .fc-button-group .fc-button-primary:last-child {
-            border-radius: 0 8px 8px 0 !important;
-          }
-
-          /* events */
-          .fc-event {
-            border-radius: 5px !important;
-            border: none !important;
-            cursor: pointer;
-            transition: filter 0.15s, transform 0.15s;
-          }
-          .fc-event:hover {
-            filter: brightness(1.12);
-            transform: translateY(-1px);
-          }
-          /* deadline events: dashed left border accent */
-          .fc-event[style*="#ef4444"] {
-            border-left: 3px solid rgba(255,255,255,0.5) !important;
-          }
-
-          /* toolbar title */
-          .fc-toolbar-title {
-            color: var(--text-primary) !important;
-            font-size: 1.1rem !important;
-            font-weight: 600 !important;
-          }
-
-          /* time grid labels */
-          .fc-timegrid-slot-label-cushion {
-            color: var(--text-muted) !important;
-            font-size: 0.75rem !important;
-          }
-
-          /* more-events popover */
-          .fc-popover {
-            background: var(--bg-surface) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: 10px !important;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
-          }
-          .fc-popover-header {
-            background: var(--bg-surface-2) !important;
-            color: var(--text-primary) !important;
-            border-radius: 9px 9px 0 0 !important;
-            padding: 0.5rem 0.75rem !important;
-            font-size: 0.8rem !important;
-            font-weight: 600 !important;
-          }
-
-          /* ===== RESPONSIVE ADDITIONS ===== */
-          @media (max-width: 768px) {
-            .fc-toolbar {
-              gap: 6px !important;
-              flex-wrap: wrap !important;
-            }
-            .fc-toolbar-title {
-              font-size: 0.95rem !important;
-            }
-            .fc-button-primary {
-              padding: 0.3rem 0.5rem !important;
-              font-size: 0.75rem !important;
-            }
-            .fc-col-header-cell-cushion {
-              font-size: 0.7rem !important;
-              padding: 4px 2px !important;
-            }
-            .fc-daygrid-day-number {
-              font-size: 0.75rem !important;
-            }
-            .fc-event {
-              font-size: 0.7rem !important;
-            }
-            .fc-timegrid-slot-label-cushion {
-              font-size: 0.65rem !important;
-            }
-          }
-
-          @media (max-width: 1024px) {
-            .dashboard-overview .card {
-              padding: 1rem !important;
-            }
-            .dashboard-overview h1 {
-              font-size: 1.8rem !important;
-            }
-            .dashboard-overview h2 {
-              font-size: 1rem !important;
-            }
-            .fc-toolbar-title {
-              font-size: 1rem !important;
-            }
-            .fc-button-primary {
-              padding: 0.3rem 0.6rem !important;
-              font-size: 0.75rem !important;
-            }
-          }
-
-          /* Ensure no horizontal overflow on small devices */
-          @media (max-width: 640px) {
-            .dashboard-overview {
-              overflow-x: hidden;
-            }
-            .fc .fc-scrollgrid-sync-table {
-              min-width: 100%;
-            }
-            .fc-daygrid-day-events {
-              margin: 0 2px !important;
-            }
-          }
-        `,
-          }}
-        />
       </section>
-    </div>
-  );
-}
 
-// ─── stat card ───────────────────────────────────────────────────────────────
-
-function StatCard({
-  title,
-  value,
-  icon,
-  color,
-  description,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  color: string;
-  description: string;
-}) {
-  return (
-    <div
-      className="card"
-      style={{
-        padding: "1.5rem",
-        background: "var(--bg-surface-2)",
-        transition: "transform 0.2s",
-        cursor: "default",
-      }}
-    >
-      <div
-        style={{
+      {/* Expense Modal */}
+      {isExpenseModalOpen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          zIndex: 1100,
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "1rem",
-        }}
-      >
-        <div
-          style={{
-            padding: "0.75rem",
-            borderRadius: "12px",
-            background: `${color}18`,
-            color,
-          }}
-        >
-          {icon}
+          alignItems: (isMobile || isTablet) ? "center" : "flex-start",
+          justifyContent: "center",
+          padding: "1rem",
+          paddingTop: (isMobile || isTablet) ? "1rem" : "10vh",
+          backdropFilter: "blur(4px)",
+          animation: "fadeIn 0.3s ease-out"
+        }}>
+          <div style={{
+            background: "var(--bg-surface)",
+            borderRadius: "16px",
+            padding: "2rem",
+            width: "100%",
+            maxWidth: "450px",
+            border: "1px solid var(--border)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+            animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+          }}>
+            <h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.25rem" }}>{editingExpense ? "Edit Expense" : "Add Studio Expense"}</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Amount (INR)</label>
+                <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Date</label>
+                <input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Category</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Rent, Electricity, Equipment..."
+                  value={expenseForm.category}
+                  onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                  style={{
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-surface-2)",
+                    color: "var(--text-primary)"
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Notes</label>
+                <textarea value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)", minHeight: "80px" }} />
+              </div>
+              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+                <button onClick={() => setIsExpenseModalOpen(false)} style={{ flex: 1, padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "none", cursor: "pointer" }}>Cancel</button>
+                <button
+                  onClick={() => editingExpense ? updateExpenseMutation.mutate({ id: editingExpense._id!, data: expenseForm }) : createExpenseMutation.mutate(expenseForm)}
+                  disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
+                  className="btn-primary"
+                  style={{ flex: 1, padding: "0.75rem", borderRadius: "8px" }}
+                >
+                  {editingExpense ? "Update" : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <TrendingUp size={16} color="var(--color-success)" />
-      </div>
-      <div
-        style={{
-          fontSize: "0.9rem",
-          color: "var(--text-muted)",
-          marginBottom: "0.25rem",
-        }}
-      >
-        {title}
-      </div>
-      <div style={{ fontSize: "1.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-        {value}
-      </div>
-      <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-        {description}
-      </div>
+      )}
+
+      {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+        .fc-col-header-cell { padding: 8px 0 !important; background: var(--bg-surface-2) !important; }
+        .fc-col-header-cell-cushion { color: var(--text-secondary) !important; text-decoration: none !important; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+        .fc-button-primary { background: var(--bg-surface-2) !important; border: 1px solid var(--border) !important; color: var(--text-primary) !important; font-size: 0.75rem !important; font-weight: 600 !important; border-radius: 8px !important; padding: 6px 12px !important; text-transform: capitalize !important; transition: all 0.2s ease !important; }
+        .fc-button-primary:hover { background: var(--bg-surface-3) !important; border-color: var(--border-strong) !important; transform: translateY(-1px); }
+        .fc-button-active { background: var(--color-primary) !important; color: #fff !important; border-color: var(--color-primary) !important; box-shadow: 0 4px 12px var(--color-primary-glow) !important; }
+        .fc-day-today { background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.05) !important; }
+        .fc-daygrid-day-number { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); padding: 8px !important; text-decoration: none !important; }
+        .fc-daygrid-day:hover { background: rgba(255,255,255,0.02); }
+        .fc-event { border: none !important; background: transparent !important; margin: 1px 2px !important; }
+        .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
+        .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+          .fc-header-toolbar { flex-direction: column; gap: 1rem; }
+          .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; }
+        }
+      ` }} />
     </div>
   );
 }

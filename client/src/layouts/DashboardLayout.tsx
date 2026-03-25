@@ -1,5 +1,5 @@
 import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
-import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package } from "lucide-react";
+import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package, Users, FileText } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardOverview } from "@/api/dashboard";
@@ -61,21 +61,23 @@ export default function DashboardLayout() {
     { name: "Maternity / Newborn", icon: Baby, path: "/dashboard/maternity" },
     { name: "Influencer", icon: Megaphone, path: "/dashboard/influencer" },
     { name: "Corporate / Events", icon: Building2, path: "/dashboard/corporate" },
+    { name: "Leads", icon: Users, path: "/dashboard/leads" },
+    { name: "Edits", icon: FileText, path: "/dashboard/edits" },
     { name: "Packages", icon: Package, path: "/dashboard/packages" },
   ];
 
   return (
     <div className="layout-wrapper">
-      {isSidebarOpen && <div 
-        className="mobile-only" 
-        style={{ 
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, 
-          backgroundColor: "rgba(0,0,0,0.5)", zIndex: 95, backdropFilter: "blur(2px)" 
-        }} 
+      {isSidebarOpen && <div
+        className="mobile-only"
+        style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)", zIndex: 95, backdropFilter: "blur(2px)"
+        }}
         onClick={() => setIsSidebarOpen(false)}
       />}
 
-      <aside 
+      <aside
         ref={sidebarRef}
         className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
       >
@@ -92,7 +94,7 @@ export default function DashboardLayout() {
               KAIROS
             </span>
           </div>
-          <button 
+          <button
             className="mobile-only"
             onClick={() => setIsSidebarOpen(false)}
             style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
@@ -106,13 +108,13 @@ export default function DashboardLayout() {
             Modules
           </div>
           {menuItems.map((item) => {
-            const isActive = item.exact 
-              ? location.pathname === item.path 
+            const isActive = item.exact
+              ? location.pathname === item.path
               : location.pathname.startsWith(item.path) && location.pathname !== "/dashboard";
-            
+
             return (
-              <NavLink 
-                key={item.path} 
+              <NavLink
+                key={item.path}
                 to={item.path}
                 style={{
                   display: "flex", alignItems: "center", gap: "0.75rem",
@@ -132,7 +134,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div style={{ marginTop: "auto", paddingTop: "1.5rem", borderTop: "1px solid var(--border)" }}>
-          <button 
+          <button
             onClick={handleLogout}
             style={{
               display: "flex", alignItems: "center", gap: "0.75rem", width: "100%",
@@ -152,12 +154,12 @@ export default function DashboardLayout() {
 
       <main className="main-content">
         <header className="header">
-          <button 
+          <button
             className="mobile-only"
             onClick={() => setIsSidebarOpen(true)}
-            style={{ 
-              background: "none", border: "none", color: "var(--text-primary)", 
-              cursor: "pointer", marginRight: "auto", padding: "0.5rem" 
+            style={{
+              background: "none", border: "none", color: "var(--text-primary)",
+              cursor: "pointer", marginRight: "auto", padding: "0.5rem"
             }}
           >
             <Menu size={24} />
@@ -165,9 +167,9 @@ export default function DashboardLayout() {
 
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
             <div style={{ position: "relative" }} ref={notifRef}>
-              <button 
+              <button
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                style={{ 
+                style={{
                   background: "none", border: "none", cursor: "pointer", padding: "0.5rem", borderRadius: "50%",
                   color: hasAlerts ? "var(--color-primary)" : "var(--text-muted)",
                   transition: "background 0.2s",
@@ -178,10 +180,10 @@ export default function DashboardLayout() {
               >
                 {criticalCount > 0 ? <BellRing size={22} className="animate-pulse" /> : <Bell size={22} />}
                 {hasAlerts && (
-                  <span style={{ 
-                    position: "absolute", top: 4, right: 4, 
-                    background: criticalCount > 0 ? "var(--color-danger)" : "var(--color-primary)", 
-                    color: "#fff", fontSize: "10px", fontWeight: 700, 
+                  <span style={{
+                    position: "absolute", top: 4, right: 4,
+                    background: criticalCount > 0 ? "var(--color-danger)" : "var(--color-primary)",
+                    color: "#fff", fontSize: "10px", fontWeight: 700,
                     minWidth: "16px", height: "16px", borderRadius: "8px",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     boxShadow: "0 0 0 2px var(--bg-surface)"
@@ -194,7 +196,7 @@ export default function DashboardLayout() {
               {isNotifOpen && (
                 <div style={{
                   position: "absolute", top: "100%", right: 0, marginTop: "0.5rem",
-                  width: window.innerWidth < 400 ? "calc(100vw - 2rem)" : "350px", 
+                  width: window.innerWidth < 400 ? "calc(100vw - 2rem)" : "350px",
                   maxHeight: "450px", overflowY: "auto",
                   background: "var(--bg-surface)", borderRadius: "var(--radius-lg)",
                   boxShadow: "var(--shadow-xl)", border: "1px solid var(--border)",
@@ -211,21 +213,21 @@ export default function DashboardLayout() {
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {notifications.map((n: any) => (
-                        <div key={n.id} style={{ 
-                          padding: "0.75rem", borderRadius: "var(--radius-md)", 
+                        <div key={n.id} style={{
+                          padding: "0.75rem", borderRadius: "var(--radius-md)",
                           background: n.priority === 'Expired' || n.priority === 'Critical' ? 'var(--color-danger-glow)' : n.priority === 'High' || n.priority === 'Moderate' ? 'var(--color-warning-glow)' : 'var(--bg-surface-2)',
                           border: "1px solid var(--border)", cursor: "pointer"
                         }}
-                        onClick={() => {
-                          setIsNotifOpen(false);
-                          navigate(`/dashboard/${n.type.toLowerCase().replace(' ', '-')}`);
-                        }}
+                          onClick={() => {
+                            setIsNotifOpen(false);
+                            navigate(`/dashboard/${n.type.toLowerCase().replace(' ', '-')}`);
+                          }}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
                             <span style={{ fontWeight: 600, fontSize: "0.9rem", color: n.priority === 'Expired' ? 'var(--color-danger)' : 'inherit' }}>
                               {n.clientName} {n.priority === 'Expired' && '(Expired)'}
                             </span>
-                            <span style={{ 
+                            <span style={{
                               fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.35rem", borderRadius: "4px",
                               background: n.priority === 'Expired' || n.priority === 'Critical' ? 'var(--color-danger)' : n.priority === 'High' ? 'var(--color-warning)' : 'var(--bg-surface-3)',
                               color: n.priority === 'Expired' || n.priority === 'Critical' || n.priority === 'High' ? '#fff' : 'var(--text-secondary)'
@@ -251,7 +253,7 @@ export default function DashboardLayout() {
                   Admin
                 </div>
               </div>
-              <NavLink 
+              <NavLink
                 to="/dashboard/profile"
                 title="View Profile"
                 style={{ display: "flex", alignItems: "center", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
@@ -268,7 +270,7 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
-      
+
       {/* Global Animated Reminder Modal */}
       <GlobalReminderModal notifications={notifications} />
     </div>

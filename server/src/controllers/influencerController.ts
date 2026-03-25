@@ -294,7 +294,18 @@ export const getInfluencers = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const influencers = await Influencer.find(filter).sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: influencers.length, data: influencers });
+
+    // Summary calculation based on FILTERED data
+    const summary = {
+      total: influencers.length,
+      totalRevenue: influencers.reduce((sum, i) => sum + (i.total || 0), 0),
+      totalReceived: influencers.reduce((sum, i) => sum + (i.advance || 0), 0),
+      totalDue: influencers.reduce((sum, i) => sum + Math.max(i.balance || 0, 0), 0),
+      totalExpenses: influencers.reduce((sum, i) => sum + (i.expenses || 0), 0),
+      totalProfit: influencers.reduce((sum, i) => sum + ((i.total || 0) - (i.expenses || 0)), 0),
+    };
+
+    res.status(200).json({ success: true, summary, data: influencers });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

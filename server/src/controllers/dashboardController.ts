@@ -167,6 +167,8 @@ import { Request, Response } from 'express';
 import Maternity from '../models/Maternity';
 import Influencer from '../models/Influencer';
 import CorporateEvent from '../models/CorporateEvent';
+import StudioExpense from '../models/StudioExpense';
+import Lead from '../models/Lead';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -188,15 +190,18 @@ const calcStats = (records: any[] = []) =>
         const total = Number(curr.total) || 0;
         const advance = Number(curr.advance) || 0;
         const balance = Number(curr.balance) || total - advance || 0;
+        const expenses = Number(curr.expenses) || 0;
         acc.totalRevenue += total;
         acc.totalAdvance += advance;
         acc.totalBalance += balance;
+        acc.totalExpenses += expenses;
+        acc.totalProfit += (total - expenses);
       } catch (e) {
         console.error('Error calculating record stats:', e);
       }
       return acc;
     },
-    { totalRevenue: 0, totalAdvance: 0, totalBalance: 0 },
+    { totalRevenue: 0, totalAdvance: 0, totalBalance: 0, totalExpenses: 0, totalProfit: 0 },
   );
 
 const safeToObject = (doc: any, type: string) => {
@@ -211,10 +216,14 @@ const safeToObject = (doc: any, type: string) => {
 
 export const getDashboardOverview = async (req: Request, res: Response) => {
   try {
-    const [maternities, influencers, corporateEvents] = await Promise.all([
-      Maternity.find({}),
-      Influencer.find({}),
-      CorporateEvent.find({}),
+    const query = {};
+
+    const [maternities, influencers, corporateEvents, studioExpenses, leads] = await Promise.all([
+      Maternity.find(query),
+      Influencer.find(query),
+      CorporateEvent.find(query),
+      StudioExpense.find(query),
+      Lead.find(query),
     ]);
 
     // ── financial totals ──────────────────────────────────────────────────
@@ -223,16 +232,31 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const influencerStats = calcStats(influencers);
     const corporateStats = calcStats(corporateEvents);
 
+    // Only count revenue/profit for Booked leads
+    const bookedLeads = leads.filter(l => l.status === 'Booked');
+    const leadStats = bookedLeads.reduce((acc, curr) => {
+      const budget = Number(curr.budget) || 0;
+      acc.totalRevenue += budget;
+      acc.totalProfit += budget;
+      return acc;
+    }, { totalRevenue: 0, totalProfit: 0 });
+
+    const studioExpensesTotal = studioExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
     const globalTotals = {
-      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue,
+      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue + leadStats.totalRevenue,
       totalAdvance: maternityStats.totalAdvance + influencerStats.totalAdvance + corporateStats.totalAdvance,
-      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance,
+      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance + leadStats.totalRevenue,
+      totalExpenses: maternityStats.totalExpenses + influencerStats.totalExpenses + corporateStats.totalExpenses + studioExpensesTotal,
+      totalProfit: (maternityStats.totalProfit + influencerStats.totalProfit + corporateStats.totalProfit + leadStats.totalProfit) - studioExpensesTotal,
+      studioExpensesTotal,
     };
 
     const categorySplit = [
       { name: 'Maternity', revenue: maternityStats.totalRevenue, color: '#f472b6' },
       { name: 'Influencer', revenue: influencerStats.totalRevenue, color: '#60a5fa' },
       { name: 'Corporate', revenue: corporateStats.totalRevenue, color: '#4ade80' },
+      { name: 'Leads (Booked)', revenue: leadStats.totalRevenue, color: '#3b82f6' },
     ];
 
     // ── notifications ─────────────────────────────────────────────────────
@@ -246,7 +270,31 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       ...corporateEvents.map(c => safeToObject(c, 'Corporate')),
     ];
 
-    const notifications = allRecords
+    const leadNotifications = leads
+      .filter(l => l.nextFollowUpDate && l.status !== 'Booked' && l.status !== 'Lost')
+      .map(l => {
+        const followUp = new Date(l.nextFollowUpDate as any);
+        followUp.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((followUp.getTime() - today.getTime()) / 86_400_000);
+
+        let priority: 'Moderate' | 'High' | 'Critical' | 'Expired';
+        if (diffDays < 0) priority = 'Expired';
+        else if (diffDays <= 1) priority = 'Critical';
+        else if (diffDays <= 3) priority = 'High';
+        else if (diffDays <= 7) priority = 'Moderate';
+        else return null;
+
+        return {
+          id: l._id,
+          clientName: l.clientName,
+          type: 'Lead Follow-up',
+          deadline: l.nextFollowUpDate,
+          daysRemaining: diffDays,
+          priority,
+        };
+      });
+
+    const deliveryNotifications = allRecords
       .filter(r => r?.deliveryDeadline && r.status !== 'Completed' && r.status !== 'Cancelled')
       .map(r => {
         try {
@@ -261,7 +309,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
           else if (diffDays <= 1) priority = 'Critical';
           else if (diffDays <= 3) priority = 'High';
           else if (diffDays <= 7) priority = 'Moderate';
-          else return null; // not urgent yet
+          else return null;
 
           return {
             id: r._id,
@@ -275,25 +323,19 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
           console.error('Error processing notification:', e);
           return null;
         }
-      })
+      });
+
+    const notifications = [...deliveryNotifications, ...leadNotifications]
       .filter(Boolean)
       .sort((a: any, b: any) => (a.daysRemaining ?? 0) - (b.daysRemaining ?? 0));
 
     // ── calendar events ───────────────────────────────────────────────────
 
-    /**
-     * Color map — same palette as the frontend legend:
-     *   Shoot / event  → category colour (pink / blue / green)
-     *   Delivery deadline → red  (#ef4444)
-     *
-     * We pass strict ISO strings so FullCalendar's timeZone="Asia/Kolkata"
-     * can convert them correctly on the client.  Storing as allDay=true for
-     * deadlines means FullCalendar won't try to apply a time offset to them.
-     */
     const categoryColor: Record<string, string> = {
       Maternity: '#f472b6',
       Influencer: '#60a5fa',
       Corporate: '#4ade80',
+      Lead: '#3b82f6',
     };
 
     const calendarEvents: any[] = [];
@@ -359,6 +401,24 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       }
     });
 
+    // Add Leads to calendar
+    leads.forEach(l => {
+      if (l.eventDate && l.status !== 'Booked' && l.status !== 'Lost') {
+        const eventISO = toISO(l.eventDate);
+        if (eventISO) {
+          calendarEvents.push({
+            id: `${l._id}-leadevent`,
+            title: `Potential: ${l.clientName}`,
+            start: eventISO,
+            backgroundColor: '#3b82f633', // faded blue
+            borderColor: '#3b82f6',
+            allDay: true,
+            extendedProps: { type: 'Lead', status: l.status, recordId: l._id, isDeadline: false },
+          });
+        }
+      }
+    });
+
     // ── upcoming week data ───────────────────────────────────────────────
 
     const upcomingShoots = allRecords
@@ -405,14 +465,21 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: { 
-        globalTotals, 
-        categorySplit, 
-        notifications, 
-        calendarEvents, 
-        upcomingShoots, 
+      data: {
+        globalTotals,
+        categorySplit,
+        notifications,
+        calendarEvents,
+        upcomingShoots,
         upcomingDeadlines,
-        recentlyCompleted 
+        recentlyCompleted,
+        leadStats: {
+          total: leads.length,
+          new: leads.filter(l => l.status === 'New').length,
+          contacted: leads.filter(l => l.status === 'Contacted').length,
+          booked: bookedLeads.length,
+          lost: leads.filter(l => l.status === 'Lost').length
+        }
       },
     });
   } catch (error: any) {

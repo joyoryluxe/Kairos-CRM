@@ -6,6 +6,9 @@ export interface DashboardStats {
     totalRevenue: number;
     totalAdvance: number;
     totalBalance: number;
+    totalExpenses: number;
+    totalProfit: number;
+    studioExpensesTotal?: number;
   };
   categorySplit: Array<{
     name: string;
@@ -45,6 +48,13 @@ export interface DashboardStats {
     paymentStatus: "Done" | "Due";
     date: string;
   }>;
+  leadStats?: {
+    total: number;
+    new: number;
+    contacted: number;
+    booked: number;
+    lost: number;
+  };
 }
 
 export async function getDashboardOverview(): Promise<DashboardStats> {

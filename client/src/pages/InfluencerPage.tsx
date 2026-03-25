@@ -1,7 +1,8 @@
 import {
   Megaphone, Phone, Calendar, User, MapPin, Package, Search, X, Plus, Edit, Trash2,
-  ChevronDown, ChevronUp, Instagram, Clock,
+  ChevronDown, ChevronUp, Instagram, Clock, TrendingUp, CreditCard, AlertCircle, CheckCircle2
 } from "lucide-react";
+import StatCard from "@/components/StatCard";
 import { useState } from "react";
 import Loader from "../components/Loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -58,6 +59,7 @@ export default function InfluencerPage() {
     deliveryDeadlineFrom: "",
     deliveryDeadlineTo: "",
     paymentStatus: "",
+    referredBy: "",
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -91,17 +93,22 @@ export default function InfluencerPage() {
     deliveryDeadlineFrom: "",
     deliveryDeadlineTo: "",
     paymentStatus: "",
+    referredBy: "",
   });
 
-  // Since we are doing server-side filtering, filteredData is just data
-  const filteredData = data;
+  // Since we are doing server-side filtering, data.data is our list
+  const influencers = data?.data || [];
+  const filteredData = influencers; // used by the render/list logic
+  const apiSummary = data?.summary || {};
 
   // Summary totals
   const summary = {
-    totalRecords: data?.length ?? 0,
-    totalRevenue: data?.reduce((sum: number, i: Influencer) => sum + (i.total ?? 0), 0) ?? 0,
-    totalReceived: data?.reduce((sum: number, i: Influencer) => sum + (i.advance ?? 0), 0) ?? 0,
-    totalDue: data?.reduce((sum: number, i: Influencer) => sum + (i.balance ?? 0), 0) ?? 0,
+    totalRecords: apiSummary.total || 0,
+    totalRevenue: apiSummary.totalRevenue || 0,
+    totalReceived: apiSummary.totalReceived || 0,
+    totalDue: apiSummary.totalDue || 0,
+    totalExpenses: apiSummary.totalExpenses || 0,
+    totalProfit: apiSummary.totalProfit || 0
   };
 
   return (
@@ -123,18 +130,54 @@ export default function InfluencerPage() {
       </header>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {[
-          { label: "Total Records", value: summary.totalRecords },
-          { label: "Total Revenue", value: formatCurrency(summary.totalRevenue) },
-          { label: "Received", value: formatCurrency(summary.totalReceived) },
-          { label: "Due", value: formatCurrency(summary.totalDue) },
-        ].map(({ label, value }) => (
-          <div key={label} className="card" style={{ padding: "1rem", background: "var(--bg-surface-2)" }}>
-            <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{label}</div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{value}</div>
-          </div>
-        ))}
+      <div className="grid-responsive" style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(6, 1fr)",
+        gap: "1.5rem",
+        marginBottom: "2.5rem"
+      }}>
+        <StatCard
+          title="Total Records"
+          value={summary.totalRecords}
+          icon={<Package size={24} />}
+          color="var(--color-primary)"
+          description="Total entries"
+        />
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(summary.totalRevenue)}
+          icon={<TrendingUp size={24} />}
+          color="#f472b6"
+          description="Gross value"
+        />
+        <StatCard
+          title="Received"
+          value={formatCurrency(summary.totalReceived)}
+          icon={<CheckCircle2 size={24} />}
+          color="#34d399"
+          description="Collected"
+        />
+        <StatCard
+          title="Total Due"
+          value={formatCurrency(summary.totalDue)}
+          icon={<AlertCircle size={24} />}
+          color="#f87171"
+          description="Pending"
+        />
+        <StatCard
+          title="Total Expenses"
+          value={formatCurrency(summary.totalExpenses)}
+          icon={<CreditCard size={24} />}
+          color="#fbbf24"
+          description="Costs"
+        />
+        <StatCard
+          title="Estimated Profit"
+          value={formatCurrency(summary.totalProfit)}
+          icon={<TrendingUp size={24} />}
+          color="#60a5fa"
+          description="Net profit"
+        />
       </div>
 
       {/* Filters */}
@@ -150,9 +193,9 @@ export default function InfluencerPage() {
         </div>
 
         {/* Basic Filters */}
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "1.25rem",
           alignItems: "end"
         }}>
@@ -180,11 +223,11 @@ export default function InfluencerPage() {
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="btn-ghost"
-              style={{ 
-                display: "flex", 
-                alignItems: "center", 
+              style={{
+                display: "flex",
+                alignItems: "center",
                 justifyContent: "center",
-                gap: "0.4rem", 
+                gap: "0.4rem",
                 fontSize: "0.9rem",
                 padding: "0.6rem 1rem",
                 border: "1px solid var(--border)",
@@ -243,6 +286,10 @@ export default function InfluencerPage() {
             <div>
               <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Deadline (To)</label>
               <input type="date" value={filters.deliveryDeadlineTo} onChange={(e) => setFilters((f) => ({ ...f, deliveryDeadlineTo: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: "0.25rem", color: "var(--text-muted)" }}>Reference By</label>
+              <input placeholder="Search reference..." value={filters.referredBy} onChange={(e) => setFilters((f) => ({ ...f, referredBy: e.target.value }))} style={{ width: "100%", padding: "0.5rem" }} />
             </div>
           </div>
         )}
@@ -363,6 +410,11 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem" }}>
               <Package size={14} color="var(--color-primary)" />
               <span style={{ fontWeight: 500, color: "var(--color-primary)" }}>{record.package}</span>
+            </div>
+          )}
+          {record.referredBy && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", color: "var(--text-muted)" }}>
+              <User size={14} /> <span>Ref: {record.referredBy}</span>
             </div>
           )}
         </div>

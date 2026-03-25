@@ -215,6 +215,8 @@ export const getMaternities = async (req: AuthRequest, res: Response): Promise<v
       totalRevenue: maternities.reduce((sum, m) => sum + (m.total || 0), 0),
       totalReceived: maternities.reduce((sum, m) => sum + (m.advance || 0), 0),
       totalDue: maternities.reduce((sum, m) => sum + Math.max(m.balance || 0, 0), 0),
+      totalExpenses: maternities.reduce((sum, m) => sum + (m.expenses || 0), 0),
+      totalProfit: maternities.reduce((sum, m) => sum + ((m.total || 0) - (m.expenses || 0)), 0),
     };
 
     res.status(200).json({ success: true, summary, data: maternities });

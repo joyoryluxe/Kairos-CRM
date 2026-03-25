@@ -13,6 +13,10 @@ import CorporateFormPage from "./pages/CorporateFormPage";
 import DashboardOverviewPage from "./pages/DashboardOverviewPage";
 import PackagesPage from "./pages/PackagesPage";
 import ProfilePage from "./pages/ProfilePage";
+import LeadsPage from "./pages/LeadsPage";
+import LeadFormPage from "./pages/LeadFormPage";
+import EditsPage from "./pages/EditsPage";
+import EditFormPage from "./pages/EditFormPage";
 
 function App() {
   return (
@@ -38,6 +42,14 @@ function App() {
         <Route path="corporate/:id/edit" element={<CorporateFormPage />} />
         {/* Packages */}
         <Route path="packages" element={<PackagesPage />} />
+        {/* Leads */}
+        <Route path="leads" element={<LeadsPage />} />
+        <Route path="leads/new" element={<LeadFormPage />} />
+        <Route path="leads/:id/edit" element={<LeadFormPage />} />
+        {/* Edits */}
+        <Route path="edits" element={<EditsPage />} />
+        <Route path="edits/new" element={<EditFormPage />} />
+        <Route path="edits/:id/edit" element={<EditFormPage />} />
         {/* Profile */}
         <Route path="profile" element={<ProfilePage />} />
       </Route>

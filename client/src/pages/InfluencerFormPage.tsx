@@ -25,6 +25,7 @@ interface FormState {
   shootDateAndTime?: string;
   deliveryDeadline?: string;
   package?: string;
+  packagePrice: number;
   extras: Array<{ description: string; amount: number }>;
   expenses: number;
   payments: Array<{ amount: number; date: string; note?: string }>;
@@ -42,6 +43,7 @@ const EMPTY: FormState = {
   shootDateAndTime: "",
   deliveryDeadline: "",
   package: "",
+  packagePrice: 0,
   extras: [],
   expenses: 0,
   payments: [],
@@ -76,10 +78,15 @@ export default function InfluencerFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const isEdit = Boolean(id);
+  const { data: packages = [] } = useQuery<PackageType[]>({
+    queryKey: ["packages", "Influencer"],
+    queryFn: () => getActivePackages("Influencer"),
+  });
   const queryClient = useQueryClient();
 
   const [form, setForm] = useState<FormState>(EMPTY);
   const [loaded, setLoaded] = useState(false);
+  const [isCustomPackage, setIsCustomPackage] = useState(false);
 
   // Load existing record for edit
   const { data: existingRecord, isSuccess } = useQuery({
@@ -89,7 +96,7 @@ export default function InfluencerFormPage() {
   });
 
   useEffect(() => {
-    if (isEdit && isSuccess && existingRecord && !loaded) {
+    if (isEdit && isSuccess && existingRecord && !loaded && packages.length > 0) {
       const m = existingRecord;
       setForm({
         clientName: m.clientName,
@@ -101,20 +108,20 @@ export default function InfluencerFormPage() {
         shootDateAndTime: m.shootDateAndTime ? new Date(m.shootDateAndTime).toISOString().slice(0, 16) : "",
         deliveryDeadline: m.deliveryDeadline ? new Date(m.deliveryDeadline).toISOString().slice(0, 10) : "",
         package: m.package ?? "",
+        packagePrice: m.packagePrice ?? 0,
         extras: Array.isArray(m.extras) ? m.extras : [],
         expenses: m.expenses ?? 0,
         payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
         notes: m.notes ?? "",
         status: m.status ?? "Pending",
       });
+      // If the package is not in the list (and not empty), it's custom
+      if (m.package && !packages.some(p => p.name === m.package)) {
+        setIsCustomPackage(true);
+      }
       setLoaded(true);
     }
-  }, [isEdit, isSuccess, existingRecord, loaded]);
-
-  const { data: packages = [] } = useQuery<PackageType[]>({
-    queryKey: ["packages", "Influencer"],
-    queryFn: () => getActivePackages("Influencer"),
-  });
+  }, [isEdit, isSuccess, existingRecord, loaded, packages]);
 
   const createMutation = useMutation({
     mutationFn: createInfluencer,
@@ -129,7 +136,6 @@ export default function InfluencerFormPage() {
     e.preventDefault();
     const payload: any = {
       ...form,
-      packagePrice,
       total,
       advance: paid,
       balance,
@@ -156,9 +162,8 @@ export default function InfluencerFormPage() {
     setForm((f) => { const a = [...payments]; a[i] = { ...a[i], [k]: v }; return { ...f, payments: a }; });
 
   // Totals
-  const packagePrice = packages.find((p) => p.name === form.package)?.price ?? 0;
   const extrasTotal = extras.reduce((s, e) => s + (e.amount || 0), 0);
-  const total = packagePrice + extrasTotal;
+  const total = (form.packagePrice || 0) + extrasTotal;
   const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const balance = total - paid;
 
@@ -209,7 +214,7 @@ export default function InfluencerFormPage() {
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Referred By</label>
+              <label style={labelStyle}>Reference By</label>
               <input value={form.referredBy} onChange={(e) => setForm((f) => ({ ...f, referredBy: e.target.value }))} placeholder="Friend / Agency" style={inputCls} />
             </div>
           </div>
@@ -252,18 +257,51 @@ export default function InfluencerFormPage() {
         <Section title="Package & Status" icon={<Package size={18} />}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>Select Package</label>
-              <select value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} style={inputCls}>
-                <option value="">— No package —</option>
-                {packages.map((p) => (
-                  <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
-                ))}
-              </select>
+              <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
+              {isCustomPackage ? (
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <input required value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} placeholder="e.g. Special Deal" style={inputCls} />
+                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
+                </div>
+              ) : (
+                <select value={form.package} onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "___custom___") {
+                    setIsCustomPackage(true);
+                    setForm(f => ({ ...f, package: "", packagePrice: 0 }));
+                  } else {
+                    const pkg = packages.find(p => p.name === val);
+                    setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
+                  }
+                }} style={inputCls}>
+                  <option value="">— No package —</option>
+                  {packages.map((p) => (
+                    <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
+                  ))}
+                  <option value="___custom___">+ Custom Package</option>
+                </select>
+              )}
             </div>
             <div>
-              <label style={labelStyle}>Package Price (auto)</label>
-              <input readOnly value={packagePrice ? `₹${packagePrice.toLocaleString("en-IN")}` : "—"}
-                style={{ ...inputCls, background: "var(--bg-surface-3)", cursor: "not-allowed", color: "var(--color-primary)", fontWeight: 700 }} />
+              <label style={labelStyle}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <input
+                  type="number"
+                  readOnly={!isCustomPackage}
+                  value={form.packagePrice || ""}
+                  onChange={(e) => setForm(f => ({ ...f, packagePrice: e.target.valueAsNumber || 0 }))}
+                  placeholder="0"
+                  style={{ 
+                    ...inputCls, 
+                    paddingLeft: "1.75rem",
+                    background: isCustomPackage ? "var(--bg-surface)" : "var(--bg-surface-3)", 
+                    cursor: isCustomPackage ? "text" : "not-allowed", 
+                    color: "var(--color-primary)", 
+                    fontWeight: 700 
+                  }} 
+                />
+              </div>
             </div>
             <div>
               <label style={labelStyle}>Status</label>
@@ -341,7 +379,7 @@ export default function InfluencerFormPage() {
           <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>Financial Summary</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
             {[
-              { label: "Package", value: formatCurrency(packagePrice), color: "var(--color-primary)" },
+              { label: "Package", value: formatCurrency(form.packagePrice), color: "var(--color-primary)" },
               { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
               { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
               { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },

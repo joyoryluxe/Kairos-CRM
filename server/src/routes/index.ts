@@ -7,6 +7,9 @@ import corporateEventRoutes from "./corporateEventRoutes";
 import dashboardRoutes from "./dashboardRoutes";
 import googleAuthRoutes from "./googleAuthRoutes";
 import packageRoutes from "./packageRoutes";
+import studioExpenseRoutes from "./studioExpenseRoutes";
+import leadRoutes from "./leadRoutes";
+import editRoutes from "./editRoutes";
 
 const router = Router();
 
@@ -22,5 +25,8 @@ router.use("/influencer", influencerRoutes);
 router.use("/corporate-events", corporateEventRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/packages", packageRoutes);
+router.use("/studio-expenses", studioExpenseRoutes);
+router.use("/leads", leadRoutes);
+router.use("/edits", editRoutes);
 
 export default router;
