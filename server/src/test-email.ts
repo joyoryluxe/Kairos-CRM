@@ -18,7 +18,7 @@ async function testEmail() {
     // Note: This will only work if you have a valid SMTP_PASS in .env
     // For testing, you can use a real email to address
     await emailService.sendEmail({
-      to: 'kairosstudio45@gmail.com',
+      to: 'joyory.parthiv@gmail.com',
       subject: 'KAIROS CRM - Shoot Reminder Test',
       template: 'shoot-reminder',
       context: {
@@ -31,7 +31,7 @@ async function testEmail() {
     console.log('Shoot reminder test triggered!');
 
     await emailService.sendEmail({
-      to: 'kairosstudio45@gmail.com',
+      to: 'joyory.parthiv@gmail.com',
       subject: 'KAIROS CRM - Admin Notification Test',
       template: 'admin-notification',
       context: {

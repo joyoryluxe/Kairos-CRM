@@ -577,27 +577,14 @@ function buildWhatsAppMessage(record: Influencer): string {
   ].filter(Boolean).join(", ");
 
   const lines = [
-    `📸 *Influencer Shoot Brief*`,
-    ``,
     `👤 *Name:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
-    record.instaId ? `📷 *Instagram:* @${record.instaId}` : null,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
-    ``,
-    record.shootName ? `🎬 *Shoot:* ${record.shootName}` : null,
-    `📅 *Shoot Date:* ${formatDateTime(record.shootDateAndTime)}`,
-    record.deliveryDeadline ? `⏰ *Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
-    record.package ? `📦 *Package:* ${record.package}` : null,
-    `🔖 *Status:* ${record.status ?? "Pending"}`,
-    record.referredBy ? `👥 *Referred By:* ${record.referredBy}` : null,
-    ``,
-    `💰 *Total:* ${formatCurrency(record.total)}`,
-    `✅ *Advance Paid:* ${formatCurrency(record.advance)}`,
-    `⚠️ *Balance Due:* ${formatCurrency(record.balance)}`,
   ].filter((l) => l !== null).join("\n");
 
   return lines;
 }
+
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function InfluencerPage() {

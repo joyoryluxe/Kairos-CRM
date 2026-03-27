@@ -659,25 +659,14 @@ function buildWhatsAppMessage(record: CorporateEvent): string {
   ].filter(Boolean).join(", ");
 
   const lines = [
-    `📋 *Corporate Event Brief*`,
-    ``,
     `👤 *Client:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
-    ``,
-    `🎉 *Event:* ${record.eventName || "—"}`,
-    `📅 *Date:* ${formatDateTime(record.eventDateAndTime)}`,
-    record.deliveryDeadline ? `⏰ *Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
-    `📦 *Package:* ${record.package || "—"}`,
-    `🔖 *Status:* ${record.status}`,
-    ``,
-    `💰 *Total:* ${formatCurrency(record.total)}`,
-    `✅ *Advance Paid:* ${formatCurrency(record.advance)}`,
-    `⚠️ *Balance Due:* ${formatCurrency(record.balance)}`,
   ].filter((l) => l !== null).join("\n");
 
   return lines;
 }
+
 
 export default function CorporatePage() {
   const queryClient = useQueryClient();

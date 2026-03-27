@@ -586,26 +586,14 @@ function buildWhatsAppMessage(record: Maternity): string {
   ].filter(Boolean).join(", ");
 
   const lines = [
-    `🍼 *Maternity Shoot Brief*`,
-    ``,
     `👤 *Client:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
-    ``,
-    record.babyName ? `👶 *Baby Name:* ${record.babyName}` : null,
-    record.birthDate ? `🎂 *Birth Date:* ${formatDate(record.birthDate)}` : null,
-    `📅 *Shoot Date:* ${formatDateTime(record.shootDateAndTime)}`,
-    record.deliveryDeadline ? `⏰ *Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
-    record.package ? `📦 *Package:* ${record.package}` : null,
-    `🔖 *Status:* ${record.status}`,
-    ``,
-    `💰 *Total:* ${formatCurrency(record.total)}`,
-    `✅ *Advance Paid:* ${formatCurrency(record.advance)}`,
-    `⚠️ *Balance Due:* ${formatCurrency(record.balance)}`,
   ].filter((l) => l !== null).join("\n");
 
   return lines;
 }
+
 
 // ─── main page ───────────────────────────────────────────────────────────────
 

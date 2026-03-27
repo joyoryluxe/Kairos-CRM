@@ -1,6 +1,6 @@
 import {
   Building2, Phone, Calendar, Package, Plus, X,
-  ArrowLeft, Save, ChevronRight, Clock,
+  ArrowLeft, Save, ChevronRight, Clock, MapPin
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -37,6 +37,7 @@ const formatCurrency = (v?: number) =>
   v == null ? "—" : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(v);
 
 interface FormState extends CorporateEventInput {
+  address: { street: string; city: string; state: string; zipCode: string };
   notes?: string;
   extras?: Array<{ description: string; amount: number }>;
   payments?: Array<{ amount: number; date: string; note?: string }>;
@@ -49,6 +50,7 @@ const EMPTY: FormState = {
   clientName: "",
   phoneNumber: "",
   email: "",
+  address: { street: "", city: "", state: "", zipCode: "" },
   eventName: "",
   eventDateAndTime: "",
   deliveryDeadline: "",
@@ -91,6 +93,7 @@ export default function CorporateFormPage() {
         clientName: m.clientName,
         phoneNumber: m.phoneNumber,
         email: m.email ?? "",
+        address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
         eventName: m.eventName ?? "",
         eventDateAndTime: m.eventDateAndTime ? new Date(m.eventDateAndTime).toISOString().slice(0, 16) : "",
         deliveryDeadline: m.deliveryDeadline ? new Date(m.deliveryDeadline).toISOString().slice(0, 10) : "",
@@ -201,6 +204,25 @@ export default function CorporateFormPage() {
               <label style={labelStyle}>Email Address</label>
               <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="corp@example.com" style={inputCls} />
             </div>
+          </div>
+        </Section>
+
+        {/* ─── Address ─────────────────────────────────────────── */}
+        <Section title="Address" icon={<MapPin size={18} />}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
+            {(["street", "city", "state", "zipCode"] as const).map((field) => (
+              <div key={field}>
+                <label style={labelStyle}>
+                  {field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}
+                </label>
+                <input
+                  value={form.address[field]}
+                  onChange={(e) => setForm((f) => ({ ...f, address: { ...f.address, [field]: e.target.value } }))}
+                  placeholder={field === "zipCode" ? "400001" : ""}
+                  style={inputCls}
+                />
+              </div>
+            ))}
           </div>
         </Section>
 
