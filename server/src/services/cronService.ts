@@ -7,7 +7,7 @@ import Edit from '../models/Edit';
 import NotificationLog from '../models/NotificationLog';
 import { emailService } from './emailService';
 
-const ADMIN_EMAIL = 'joyory.parthiv@gmail.com';
+const ADMIN_EMAIL = 'kairosstudio45@gmail.com';
 
 class CronService {
     /**
