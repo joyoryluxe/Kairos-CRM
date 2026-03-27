@@ -329,7 +329,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       .filter(m => m.birthDate && m.status !== 'Cancelled' && m.status !== 'Completed')
       .map(m => {
         try {
-          const birthDate = new Date(m.birthDate);
+          const birthDate = new Date(m.birthDate!);
           if (isNaN(birthDate.getTime())) return null;
 
           // Calculate next occurrence (ignoring year)
