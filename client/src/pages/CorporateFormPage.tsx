@@ -48,6 +48,7 @@ interface FormState extends CorporateEventInput {
 const EMPTY: FormState = {
   clientName: "",
   phoneNumber: "",
+  email: "",
   eventName: "",
   eventDateAndTime: "",
   deliveryDeadline: "",
@@ -89,6 +90,7 @@ export default function CorporateFormPage() {
       setForm({
         clientName: m.clientName,
         phoneNumber: m.phoneNumber,
+        email: m.email ?? "",
         eventName: m.eventName ?? "",
         eventDateAndTime: m.eventDateAndTime ? new Date(m.eventDateAndTime).toISOString().slice(0, 16) : "",
         deliveryDeadline: m.deliveryDeadline ? new Date(m.deliveryDeadline).toISOString().slice(0, 10) : "",
@@ -194,6 +196,10 @@ export default function CorporateFormPage() {
             <div>
               <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+            </div>
+            <div>
+              <label style={labelStyle}>Email Address</label>
+              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="corp@example.com" style={inputCls} />
             </div>
           </div>
         </Section>

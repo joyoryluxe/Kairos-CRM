@@ -16,6 +16,7 @@ export interface IPayment {
 export interface IInfluencer extends Document {
   clientName: string;
   phoneNumber: string;
+  email?: string;
   instaId?: string;
   referredBy?: string;
   address: {
@@ -69,6 +70,7 @@ const InfluencerSchema = new Schema<IInfluencer>(
   {
     clientName: { type: String, required: true, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
+    email: { type: String, lowercase: true, trim: true },
     instaId: { type: String, trim: true },
     referredBy: { type: String, trim: true },
     address: {

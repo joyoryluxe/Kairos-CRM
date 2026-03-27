@@ -18,6 +18,7 @@ import { getActivePackages, type Package as PackageType } from "@/api/packages";
 interface FormState {
   clientName: string;
   phoneNumber: string;
+  email?: string;
   address: { street: string; city: string; state: string; zipCode: string };
   shootDateAndTime?: string;
   deliveryDeadline?: string;
@@ -35,6 +36,7 @@ interface FormState {
 const EMPTY: FormState = {
   clientName: "",
   phoneNumber: "",
+  email: "",
   address: { street: "", city: "", state: "", zipCode: "" },
   shootDateAndTime: "",
   deliveryDeadline: "",
@@ -101,6 +103,7 @@ export default function MaternityFormPage() {
       setForm({
         clientName: m.clientName,
         phoneNumber: m.phoneNumber,
+        email: m.email ?? "",
         address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
         shootDateAndTime: m.shootDateAndTime
           ? new Date(m.shootDateAndTime).toISOString().slice(0, 16)
@@ -242,6 +245,12 @@ export default function MaternityFormPage() {
                 Phone <span style={{ color: "var(--color-danger)" }}>*</span>
               </label>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>
+                Email Address
+              </label>
+              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="client@example.com" style={inputCls} />
             </div>
           </div>
         </Section>

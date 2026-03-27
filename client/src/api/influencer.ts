@@ -5,6 +5,7 @@ export type Influencer = {
   _id: string;
   clientName: string;
   phoneNumber: string;
+  email?: string;
   instaId?: string;
   referredBy?: string;
   address?: {

@@ -11,6 +11,7 @@ import { env } from "./config/env";
 import router from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
+import { cronService } from "./services/cronService";
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -18,6 +19,9 @@ const server = http.createServer(app);
 // ─── Connect DB ───────────────────────────────────────────────────────────────
 // Connect DB in background — Mongoose buffers any incoming requests
 connectDB();
+
+// Initialize Cron Jobs
+cronService.init();
 
 // ─── Security Middleware ───────────────────────────────────────────────────────
 app.use(helmet());

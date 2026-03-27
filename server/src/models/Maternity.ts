@@ -95,6 +95,7 @@ export interface IMaternity extends Document {
   shootDateAndTime?: Date;
   deliveryDeadline?: Date;
   birthDate?: Date;
+  email?: string;
   babyName?: string;
 
   // ── Package & Pricing
@@ -155,6 +156,7 @@ const MaternitySchema = new Schema<IMaternity>(
     shootDateAndTime: { type: Date },
     deliveryDeadline: { type: Date },
     birthDate: { type: Date },
+    email: { type: String, lowercase: true, trim: true },
     babyName: { type: String, trim: true },
 
     // ── Package & Pricing

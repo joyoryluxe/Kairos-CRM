@@ -18,6 +18,7 @@ import { getActivePackages, type Package as PackageType } from "@/api/packages";
 interface FormState {
   clientName: string;
   phoneNumber: string;
+  email?: string;
   instaId?: string;
   referredBy?: string;
   address: { street: string; city: string; state: string; zipCode: string };
@@ -36,6 +37,7 @@ interface FormState {
 const EMPTY: FormState = {
   clientName: "",
   phoneNumber: "",
+  email: "",
   instaId: "",
   referredBy: "",
   address: { street: "", city: "", state: "", zipCode: "" },
@@ -101,6 +103,7 @@ export default function InfluencerFormPage() {
       setForm({
         clientName: m.clientName,
         phoneNumber: m.phoneNumber,
+        email: m.email ?? "",
         instaId: m.instaId ?? "",
         referredBy: m.referredBy ?? "",
         address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
@@ -206,6 +209,10 @@ export default function InfluencerFormPage() {
             <div>
               <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+            </div>
+            <div>
+              <label style={labelStyle}>Email Address</label>
+              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="influencer@example.com" style={inputCls} />
             </div>
             <div>
               <label style={labelStyle}>Instagram ID</label>

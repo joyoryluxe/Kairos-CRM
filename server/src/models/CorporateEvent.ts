@@ -4,6 +4,7 @@ import Package from './Package';
 export interface ICorporateEvent extends Document {
   clientName: string;
   phoneNumber: string;
+  email?: string;
   address: {
     street: string;
     city: string;
@@ -33,6 +34,7 @@ const CorporateEventSchema: Schema = new Schema(
   {
     clientName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
+    email: { type: String, lowercase: true, trim: true },
     address: {
       street: { type: String, default: '' },
       city: { type: String, default: '' },

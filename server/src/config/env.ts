@@ -13,6 +13,11 @@ interface Env {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   GOOGLE_REDIRECT_URI?: string;
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_USER: string;
+  SMTP_PASS: string;
+  EMAIL_FROM: string;
 }
 
 const getEnv = (): Env => {
@@ -26,6 +31,11 @@ const getEnv = (): Env => {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI,
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    EMAIL_FROM,
   } = process.env;
 
   if (!MONGO_URI) throw new Error("MONGO_URI is required in .env");
@@ -41,6 +51,11 @@ const getEnv = (): Env => {
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_REDIRECT_URI,
+    SMTP_HOST: SMTP_HOST || "smtp.resend.com",
+    SMTP_PORT: Number(SMTP_PORT) || 465,
+    SMTP_USER: SMTP_USER || "resend",
+    SMTP_PASS: SMTP_PASS || "",
+    EMAIL_FROM: EMAIL_FROM || "onboarding@resend.dev",
   };
 };
 

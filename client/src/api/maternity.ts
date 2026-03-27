@@ -5,6 +5,7 @@ export type Maternity = {
   _id: string;
   clientName: string;
   phoneNumber: string;
+  email?: string;
   address?: {
     street: string;
     city: string;
