@@ -1,13 +1,14 @@
 import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
 import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package, Users, FileText } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDashboardOverview } from "@/api/dashboard";
 import { getMe } from "@/api/auth";
 import GlobalReminderModal from "@/components/GlobalReminderModal";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -53,6 +54,7 @@ export default function DashboardLayout() {
 
   const handleLogout = () => {
     localStorage.removeItem("kairos_token");
+    queryClient.clear();
     navigate("/login");
   };
 

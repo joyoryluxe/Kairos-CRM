@@ -302,7 +302,7 @@ export const getInfluencers = async (req: AuthRequest, res: Response): Promise<v
       totalReceived: influencers.reduce((sum, i) => sum + (i.advance || 0), 0),
       totalDue: influencers.reduce((sum, i) => sum + Math.max(i.balance || 0, 0), 0),
       totalExpenses: influencers.reduce((sum, i) => sum + (i.expenses || 0), 0),
-      totalProfit: influencers.reduce((sum, i) => sum + ((i.total || 0) - (i.expenses || 0)), 0),
+      totalProfit: influencers.reduce((sum, i) => sum + (i.profit || 0), 0),
     };
 
     res.status(200).json({ success: true, summary, data: influencers });

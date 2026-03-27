@@ -113,6 +113,7 @@ export interface IMaternity extends Document {
   advance: number;            // Auto-calculated: sum of all payments
   total: number;              // Auto-calculated: packagePrice + extrasTotal
   balance: number;            // Auto-calculated: total - advance (amount still due)
+  profit: number;             // Auto-calculated: total - expenses
 
   // ── Status
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
@@ -172,6 +173,7 @@ const MaternitySchema = new Schema<IMaternity>(
     advance: { type: Number, default: 0, min: 0 },  // sum of payments
     total: { type: Number, default: 0, min: 0 },  // packagePrice + extrasTotal
     balance: { type: Number, default: 0 },           // total - advance (can be negative = overpaid)
+    profit: { type: Number, default: 0 },            // total - expenses
 
     // ── Status
     status: {
@@ -208,6 +210,9 @@ MaternitySchema.pre('save', async function (next) {
   // 5. Balance = what client still owes (negative = overpaid)
   this.balance = this.total - this.advance;
 
+  // 6. Profit = total billed - your expenses
+  this.profit = this.total - (this.expenses || 0);
+
   next();
 });
 
@@ -236,6 +241,9 @@ MaternitySchema.pre('findOneAndUpdate', async function (next) {
   const advance = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
   const balance = total - advance;
   
+  const expenses = update.expenses ?? update['$set']?.expenses ?? 0;
+  const profit = total - expenses;
+  
   // Inject calculated fields into the update
   this.setUpdate({
     ...update,
@@ -246,6 +254,7 @@ MaternitySchema.pre('findOneAndUpdate', async function (next) {
       total,
       advance,
       balance,
+      profit
     },
   });
 

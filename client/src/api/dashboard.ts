@@ -55,6 +55,14 @@ export interface DashboardStats {
     booked: number;
     lost: number;
   };
+  birthDateReminders: Array<{
+    id: string;
+    clientName: string;
+    babyName: string;
+    date: string;
+    daysRemaining: number;
+    priority: "Moderate" | "High" | "Critical" | "Expired";
+  }>;
 }
 
 export async function getDashboardOverview(): Promise<DashboardStats> {

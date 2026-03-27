@@ -1,9 +1,11 @@
 import { useState, FormEvent } from "react";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -30,6 +32,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("kairos_token", data.token);
+      queryClient.clear();
       navigate("/dashboard/maternity");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Invalid credentials. Please try again.");

@@ -40,6 +40,7 @@ export interface IInfluencer extends Document {
   advance: number;
   total: number;
   balance: number;
+  profit: number;
 
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   googleCalendarEventId?: string;
@@ -93,6 +94,7 @@ const InfluencerSchema = new Schema<IInfluencer>(
     advance: { type: Number, default: 0, min: 0 },
     total: { type: Number, default: 0, min: 0 },
     balance: { type: Number, default: 0 },
+    profit: { type: Number, default: 0 },
 
     status: {
       type: String,
@@ -119,6 +121,7 @@ InfluencerSchema.pre('save', async function (next) {
   this.total = this.packagePrice + this.extrasTotal;
   this.advance = this.payments.reduce((sum, p) => sum + p.amount, 0);
   this.balance = this.total - this.advance;
+  this.profit = this.total - (this.expenses || 0);
 
   next();
 });
@@ -147,6 +150,9 @@ InfluencerSchema.pre('findOneAndUpdate', async function (next) {
   const advance = payments.reduce((sum: number, p: IPayment) => sum + p.amount, 0);
   const balance = total - advance;
 
+  const expenses = update.expenses ?? update['$set']?.expenses ?? 0;
+  const profit = total - expenses;
+
   this.setUpdate({
     ...update,
     $set: {
@@ -156,6 +162,7 @@ InfluencerSchema.pre('findOneAndUpdate', async function (next) {
       total,
       advance,
       balance,
+      profit
     },
   });
 

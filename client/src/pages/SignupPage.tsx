@@ -1,9 +1,11 @@
 import { useState, FormEvent } from "react";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "", role: "sales_rep" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,7 @@ export default function SignupPage() {
       const { confirmPassword, ...submitData } = formData;
       const { data } = await api.post("/auth/register", submitData);
       localStorage.setItem("kairos_token", data.token);
+      queryClient.clear();
       navigate("/dashboard/maternity");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Registration failed. Please try again.");

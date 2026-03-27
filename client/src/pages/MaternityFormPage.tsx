@@ -182,8 +182,9 @@ export default function MaternityFormPage() {
   // Live totals
   const extrasTotal = extras.reduce((s, e) => s + (e.amount || 0), 0);
   const total = (form.packagePrice || 0) + extrasTotal;
-  const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const paid = (form.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
   const balance = total - paid;
+  const profit = total - (form.expenses || 0);
 
   const inputCls = { width: "100%" };
 
@@ -447,6 +448,8 @@ export default function MaternityFormPage() {
               { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
               { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
               { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
+              { label: "Expenses", value: formatCurrency(form.expenses || 0), color: "var(--color-danger)" },
+              { label: "Profit", value: formatCurrency(profit), color: "#10b981", bold: true },
             ].map(({ label, value, color, bold }) => (
               <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>

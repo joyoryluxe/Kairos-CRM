@@ -109,7 +109,7 @@ export const getCorporateEvents = async (req: AuthRequest, res: Response): Promi
       totalReceived: corporateEvents.reduce((sum, e) => sum + (e.advance || 0), 0),
       totalDue: corporateEvents.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
       totalExpenses: corporateEvents.reduce((sum, e) => sum + (e.expenses || 0), 0),
-      totalProfit: corporateEvents.reduce((sum, e) => sum + ((e.total || 0) - (e.expenses || 0)), 0),
+      totalProfit: corporateEvents.reduce((sum, e) => sum + (e.profit || 0), 0),
     };
 
     res.status(200).json({ success: true, summary, data: corporateEvents });

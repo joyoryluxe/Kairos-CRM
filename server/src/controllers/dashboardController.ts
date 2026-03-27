@@ -325,6 +325,46 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
         }
       });
 
+    const birthDateReminders = maternities
+      .filter(m => m.birthDate && m.status !== 'Cancelled' && m.status !== 'Completed')
+      .map(m => {
+        try {
+          const birthDate = new Date(m.birthDate);
+          if (isNaN(birthDate.getTime())) return null;
+
+          // Calculate next occurrence (ignoring year)
+          const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+
+          // If birthday already passed this year, look at next year
+          if (nextBirthday < today) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+          }
+
+          const diffDays = Math.ceil((nextBirthday.getTime() - today.getTime()) / 86_400_000);
+
+          if (diffDays > 7) return null;
+
+          let priority: 'Moderate' | 'High' | 'Critical';
+          if (diffDays <= 1) priority = 'Critical';
+          else if (diffDays <= 3) priority = 'High';
+          else priority = 'Moderate';
+
+          return {
+            id: m._id,
+            clientName: m.clientName || 'Unknown Client',
+            babyName: m.babyName || 'Baby',
+            date: m.birthDate,
+            daysRemaining: diffDays,
+            priority,
+          };
+        } catch (e) {
+          console.error('Error processing birthDate reminder:', e);
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a?.daysRemaining ?? 0) - (b?.daysRemaining ?? 0));
+
     const notifications = [...deliveryNotifications, ...leadNotifications]
       .filter(Boolean)
       .sort((a: any, b: any) => (a.daysRemaining ?? 0) - (b.daysRemaining ?? 0));
@@ -479,7 +519,8 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
           contacted: leads.filter(l => l.status === 'Contacted').length,
           booked: bookedLeads.length,
           lost: leads.filter(l => l.status === 'Lost').length
-        }
+        },
+        birthDateReminders
       },
     });
   } catch (error: any) {

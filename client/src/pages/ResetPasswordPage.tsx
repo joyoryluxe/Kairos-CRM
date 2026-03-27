@@ -1,9 +1,11 @@
 import { useState, FormEvent } from "react";
 import api from "../api/axios";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { token } = useParams<{ token: string }>();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,6 +32,7 @@ export default function ResetPasswordPage() {
     try {
       const { data } = await api.put(`/auth/resetpassword/${token}`, { password });
       localStorage.setItem("kairos_token", data.token);
+      queryClient.clear();
       navigate("/dashboard/maternity");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to reset password. Token may be invalid or expired.");

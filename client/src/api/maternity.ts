@@ -24,6 +24,7 @@ export type Maternity = {
   advance?: number;
   total?: number;
   balance?: number;
+  profit?: number;
   status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   referredBy?: string;
   notes?: string;

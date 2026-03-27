@@ -25,6 +25,7 @@ export type Influencer = {
   advance?: number;
   total?: number;
   balance?: number;
+  profit?: number;
   status?: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
   notes?: string;
   createdAt?: string;

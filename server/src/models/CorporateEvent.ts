@@ -20,6 +20,7 @@ export interface ICorporateEvent extends Document {
   advance: number;
   balance: number;
   expenses: number;
+  profit: number;
   extras: Array<{ description: string; amount: number }>;
   payments: Array<{ amount: number; date: Date; note?: string }>;
   notes?: string;
@@ -48,6 +49,7 @@ const CorporateEventSchema: Schema = new Schema(
     advance: { type: Number, default: 0 },
     balance: { type: Number, default: 0 },
     expenses: { type: Number, default: 0 },
+    profit: { type: Number, default: 0 },
     extras: [
       {
         description: { type: String, default: '' },
@@ -98,6 +100,9 @@ CorporateEventSchema.pre('save', async function (next) {
   // 4. Calculate balance
   self.balance = self.total - self.advance;
 
+  // 5. Calculate profit
+  self.profit = self.total - (self.expenses || 0);
+
   next();
 });
 
@@ -126,6 +131,9 @@ CorporateEventSchema.pre('findOneAndUpdate', async function (next) {
   const total = packagePrice + extrasTotal;
   const balance = total - advance;
   
+  const expenses = update.expenses ?? update['$set']?.expenses ?? 0;
+  const profit = total - expenses;
+  
   this.setUpdate({
     ...update,
     $set: {
@@ -135,6 +143,7 @@ CorporateEventSchema.pre('findOneAndUpdate', async function (next) {
       advance,
       total,
       balance,
+      profit
     },
   });
 

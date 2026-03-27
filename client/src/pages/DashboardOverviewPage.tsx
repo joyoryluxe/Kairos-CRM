@@ -770,6 +770,81 @@ function useIsMobile() {
   return { isMobile, isTablet };
 }
 
+// ─── birth date reminders ───────────────────────────────────────────────────
+
+function BirthDateReminderCard({ reminder }: { reminder: any }) {
+  const getDisplayInfo = (days: number) => {
+    const messages: Record<number, string> = {
+      0: "IT'S THE BIG DAY! 🎉",
+      1: "Tomorrow is the day! 🤱",
+      2: "Only 2 days remaining! ⏳",
+      3: "Counting down: 3 days! 👶",
+      4: "Just 4 days left! 💖",
+      5: "High five! 5 days to go ✋",
+      6: "6 days remaining! 🎀",
+      7: "Almost there! 7 days. ✨",
+    };
+
+    const text = messages[days] || `${days} days remains`;
+
+    if (days === 0) return { text, color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)", border: "rgba(239, 68, 68, 0.4)", pulse: true };
+    if (days === 1) return { text, color: "#f87171", bg: "rgba(248, 113, 113, 0.1)", border: "rgba(248, 113, 113, 0.3)" };
+    if (days <= 3) return { text, color: "#fbbf24", bg: "rgba(251, 191, 36, 0.1)", border: "rgba(251, 191, 36, 0.3)" };
+    return { text, color: "#60a5fa", bg: "rgba(96, 165, 250, 0.1)", border: "rgba(96, 165, 250, 0.3)" };
+  };
+
+  const info = getDisplayInfo(reminder.daysRemaining);
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem",
+      background: info.bg, borderRadius: "20px", border: `2px solid ${info.border}`,
+      boxShadow: reminder.daysRemaining === 0 ? "0 0 25px rgba(239, 68, 68, 0.25)" : "none",
+      animation: info.pulse ? "pulse-red 1.5s infinite" : "none",
+      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+      cursor: "default",
+      width: "100%",
+      flexWrap: "wrap", // Allow wrapping for very small screens
+    }}
+      className="reminder-card-hover"
+    >
+      <div style={{
+        display: "flex", alignItems: "center", gap: "1rem", flex: "1 1 auto", minWidth: "200px"
+      }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: "16px", background: "var(--bg-surface)",
+          display: "flex", alignItems: "center", justifyContent: "center", color: info.color, border: `1px solid ${info.border}`,
+          boxShadow: "0 4px 10px rgba(0,0,0,0.1)", flexShrink: 0, alignSelf: "flex-start", marginTop: "0.25rem"
+        }}>
+          <Baby size={28} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
+            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Client</span>
+            <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)", lineHeight: "1.2" }}>{reminder.clientName}</span>
+          </div>
+          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
+            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Baby</span>
+            <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{reminder.babyName}</span>
+          </div>
+          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
+            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{new Date(reminder.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{
+        textAlign: "center", padding: "0.6rem 0.8rem", borderRadius: "12px",
+        background: "var(--bg-surface)", border: `1px solid ${info.border}`, fontSize: "0.75rem", fontWeight: 900, color: info.color,
+        minWidth: "120px", lineHeight: "1.2", display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0, marginLeft: "auto"
+      }}>
+        {info.text}
+      </div>
+    </div>
+  );
+}
+
 // ─── event detail modal ──────────────────────────────────────────────────────
 
 interface EventDetail {
@@ -1026,7 +1101,7 @@ export default function DashboardOverviewPage() {
   if (isError) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--color-danger)" }}>Error: {(error as Error).message}</div>;
   if (!data) return null;
 
-  const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 } } = data;
+  const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 }, birthDateReminders = [] } = data;
   const isConnected = userData?.user?.googleCalendarConnected;
 
   return (
@@ -1075,6 +1150,26 @@ export default function DashboardOverviewPage() {
         <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="var(--color-accent)" description="Revenue - Expenses" />
         <StatCard title="Booked Leads" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Converted leads" />
       </div>
+
+      {/* Maternity Birth Date Reminders */}
+      {birthDateReminders.length > 0 && (
+        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem", border: "1px solid rgba(244, 114, 182, 0.2)", background: "linear-gradient(135deg, var(--bg-surface), rgba(244, 114, 182, 0.05))" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+            <div style={{ background: "rgba(244, 114, 182, 0.15)", color: "#f472b6", padding: "0.5rem", borderRadius: "12px" }}>
+              <Baby size={22} className={birthDateReminders.some(r => r.daysRemaining <= 1) ? "animate-bounce" : ""} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: "1.25rem", margin: 0, fontWeight: 800, color: "var(--text-primary)" }}>Maternity Birth Date Reminders</h2>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>Upcoming delivery celebrations and shoots.</p>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(clamp(280px, 100%, 360px), 1fr))", gap: "1.25rem" }}>
+            {birthDateReminders.map((reminder) => (
+              <BirthDateReminderCard key={reminder.id} reminder={reminder} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ========== Studio Expenses (moved above Revenue Breakdown) ========== */}
       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
