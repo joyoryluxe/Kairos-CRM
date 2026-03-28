@@ -3,6 +3,17 @@ import { OAuth2Client } from 'google-auth-library';
 import { env } from '../config/env';
 
 /**
+ * Thrown when Google revokes / invalidates the refresh token.
+ * Callers should clear the stored token and prompt re-authorisation.
+ */
+export class InvalidGrantError extends Error {
+  constructor() {
+    super('Google refresh token is invalid or has been revoked (invalid_grant). Please reconnect Google Calendar.');
+    this.name = 'InvalidGrantError';
+  }
+}
+
+/**
  * Event Data Interface for syncing
  */
 export interface CalendarEventData {
@@ -58,27 +69,42 @@ class GoogleCalendarService {
 
     try {
       if (eventData.id) {
-        const res = await this.calendar.events.update({
-          auth,
-          calendarId: 'primary',
-          eventId: eventData.id,
-          requestBody: event,
-        });
-        return res.data.id || null;
-      } else {
-        const res = await this.calendar.events.insert({
-          auth,
-          calendarId: 'primary',
-          requestBody: event,
-        });
-        return res.data.id || null;
+        try {
+          const res = await this.calendar.events.update({
+            auth,
+            calendarId: 'primary',
+            eventId: eventData.id,
+            requestBody: event,
+          });
+          return res.data.id || null;
+        } catch (updateError: any) {
+          const status = updateError.status ?? updateError.response?.status;
+          // 404 = the event was manually deleted from Google Calendar.
+          // Fall through to insert a fresh one below.
+          if (status !== 404 && status !== 410) throw updateError;
+          console.warn(`Google Calendar: event ${eventData.id} not found (${status}), re-creating it.`);
+          // Fall through ↓
+        }
       }
+      // Insert (either new record, or fallback after a 404 on update)
+      const res = await this.calendar.events.insert({
+        auth,
+        calendarId: 'primary',
+        requestBody: event,
+      });
+      return res.data.id || null;
     } catch (error: any) {
+      const errPayload = error.response?.data?.error || error.message;
       console.error('Google Calendar API Error Details:', {
         message: error.message,
         status: error.status,
-        errors: error.response?.data?.error,
+        errors: errPayload,
       });
+      // invalid_grant means the refresh token has been revoked — propagate so
+      // the caller can clear the stored token and ask the user to reconnect.
+      if (errPayload === 'invalid_grant' || error.message === 'invalid_grant') {
+        throw new InvalidGrantError();
+      }
       return null;
     }
   }
@@ -100,6 +126,10 @@ class GoogleCalendarService {
       return true;
     } catch (error: any) {
       console.error('Error deleting Google Calendar event:', error.message);
+      const errPayload = error.response?.data?.error || error.message;
+      if (errPayload === 'invalid_grant' || error.message === 'invalid_grant') {
+        throw new InvalidGrantError();
+      }
       return false;
     }
   }

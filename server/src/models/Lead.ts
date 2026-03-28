@@ -26,6 +26,9 @@ export interface ILead extends Document {
   lastContactedDate?: Date;
   nextFollowUpDate?: Date;
 
+  // Google Calendar
+  googleCalendarEventId?: string;
+
   // Ownership
   user: mongoose.Types.ObjectId;
 }
@@ -58,6 +61,7 @@ const LeadSchema: Schema = new Schema(
     notes: { type: String, default: '' },
     lastContactedDate: { type: Date },
     nextFollowUpDate: { type: Date },
+    googleCalendarEventId: { type: String },
 
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

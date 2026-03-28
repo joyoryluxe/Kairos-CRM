@@ -1,5 +1,5 @@
 import {
-  Megaphone, Phone, Calendar, MapPin, Package, Plus, X,
+  Megaphone, Phone, Calendar, MapPin, Package, Plus,
   ArrowLeft, Save, ChevronRight, Instagram, Clock,
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
@@ -13,6 +13,9 @@ import {
   type InfluencerInput,
 } from "@/api/influencer";
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
+import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
+import { History as HistoryIcon, X } from "lucide-react";
+import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -128,7 +131,30 @@ export default function InfluencerFormPage() {
 
   const createMutation = useMutation({
     mutationFn: createInfluencer,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["influencer"] }); navigate("/dashboard/influencer"); },
+    onSuccess: () => {
+      // Save to history
+      const historyData = {
+        clientName: form.clientName,
+        phoneNumber: form.phoneNumber,
+        email: form.email,
+        instaId: form.instaId,
+        referredBy: form.referredBy,
+        address: form.address,
+        package: form.package,
+        packagePrice: form.packagePrice,
+      };
+      saveFormHistory("influencer", historyData);
+
+      // Save individual fields history
+      saveFieldHistory("influencer", "clientName", form.clientName);
+      saveFieldHistory("influencer", "phoneNumber", form.phoneNumber);
+      saveFieldHistory("influencer", "email", form.email);
+      saveFieldHistory("influencer", "instaId", form.instaId);
+      saveFieldHistory("influencer", "referredBy", form.referredBy);
+
+      queryClient.invalidateQueries({ queryKey: ["influencer"] });
+      navigate("/dashboard/influencer");
+    },
   });
   const updateMutation = useMutation({
     mutationFn: ({ payload }: { payload: Partial<InfluencerInput> }) => updateInfluencer(id!, payload),
@@ -171,6 +197,34 @@ export default function InfluencerFormPage() {
   const balance = total - paid;
   const profit = total - (form.expenses || 0);
 
+  const [backupState, setBackupState] = useState<FormState | null>(null);
+
+  const handleLoadHistory = () => {
+    const history = getFormHistory("influencer");
+    if (history) {
+      setBackupState({ ...form });
+      setForm((f) => ({
+        ...f,
+        ...history,
+        address: history.address || f.address,
+      }));
+      if (history.package && !packages.some(p => p.name === history.package)) {
+        setIsCustomPackage(true);
+      } else {
+        setIsCustomPackage(false);
+      }
+    }
+  };
+
+  const handleUndoHistory = () => {
+    if (backupState) {
+      setForm(backupState);
+      setBackupState(null);
+    }
+  };
+
+  const hasHistory = !isEdit && !!getFormHistory("influencer");
+
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
       {isPending && <Loader fullPage message="Saving influencer data..." />}
@@ -194,6 +248,53 @@ export default function InfluencerFormPage() {
             </h1>
             <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Brand Deals & Campaigns</p>
           </div>
+
+          {hasHistory && (
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+              {backupState && (
+                <button
+                  type="button"
+                  onClick={handleUndoHistory}
+                  className="btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    backgroundColor: "var(--bg-surface-3)",
+                    color: "var(--color-danger)",
+                    border: "1px solid var(--color-danger-glow)",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                  title="Restore before fill"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLoadHistory}
+                className="btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  backgroundColor: "var(--bg-surface-3)",
+                  color: "var(--color-primary)",
+                  border: "1px solid var(--color-primary-glow)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <HistoryIcon size={16} />
+                Fill from Last Submission
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -203,26 +304,41 @@ export default function InfluencerFormPage() {
         <Section title="Influencer Profile" icon={<Phone size={18} />}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                <FieldHistoryDropdown formId="influencer" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
+              </div>
               <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Riya Mehta" style={inputCls} />
             </div>
             <div>
-              <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                <FieldHistoryDropdown formId="influencer" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
+              </div>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
             </div>
             <div>
-              <label style={labelStyle}>Email Address</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Email Address</label>
+                <FieldHistoryDropdown formId="influencer" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
+              </div>
               <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="influencer@example.com" style={inputCls} />
             </div>
             <div>
-              <label style={labelStyle}>Instagram ID</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Instagram ID</label>
+                <FieldHistoryDropdown formId="influencer" fieldName="instaId" onSelect={(v) => setForm(f => ({ ...f, instaId: v }))} />
+              </div>
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}><Instagram size={15} /></span>
                 <input value={form.instaId} onChange={(e) => setForm((f) => ({ ...f, instaId: e.target.value }))} placeholder="@handle" style={{ ...inputCls, paddingLeft: "2.25rem" }} />
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Reference By</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Reference By</label>
+                <FieldHistoryDropdown formId="influencer" fieldName="referredBy" onSelect={(v) => setForm(f => ({ ...f, referredBy: v }))} />
+              </div>
               <input value={form.referredBy} onChange={(e) => setForm((f) => ({ ...f, referredBy: e.target.value }))} placeholder="Friend / Agency" style={inputCls} />
             </div>
           </div>

@@ -14,6 +14,7 @@ export interface IEdit extends Document {
   deadline: Date;
   notes?: string;
   photoClipCount: number;
+  googleCalendarEventId?: string;
   user: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +43,7 @@ const EditSchema: Schema = new Schema(
     deadline: { type: Date, required: true },
     notes: { type: String, default: '' },
     photoClipCount: { type: Number, required: true, default: 0 },
+    googleCalendarEventId: { type: String },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

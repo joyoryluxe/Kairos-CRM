@@ -1,7 +1,9 @@
 import {
   Building2, Phone, Calendar, Package, Plus, X,
-  ArrowLeft, Save, ChevronRight, Clock, MapPin
+  ArrowLeft, Save, ChevronRight, Clock, MapPin, History as HistoryIcon
 } from "lucide-react";
+import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
+import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../components/Loader";
@@ -117,7 +119,26 @@ export default function CorporateFormPage() {
 
   const createMutation = useMutation({
     mutationFn: createCorporateEvent,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["corporate-events"] }); navigate("/dashboard/corporate"); },
+    onSuccess: () => {
+      // Save to history
+      const historyData = {
+        clientName: form.clientName,
+        phoneNumber: form.phoneNumber,
+        email: form.email,
+        address: form.address,
+        package: form.package,
+        packagePrice: form.packagePrice,
+      };
+      saveFormHistory("corporate", historyData);
+
+      // Save individual fields history
+      saveFieldHistory("corporate", "clientName", form.clientName);
+      saveFieldHistory("corporate", "phoneNumber", form.phoneNumber);
+      saveFieldHistory("corporate", "email", form.email);
+
+      queryClient.invalidateQueries({ queryKey: ["corporate-events"] });
+      navigate("/dashboard/corporate");
+    },
   });
   const updateMutation = useMutation({
     mutationFn: ({ payload }: { payload: Partial<CorporateEventInput> }) => updateCorporateEvent(id!, payload),
@@ -161,6 +182,34 @@ export default function CorporateFormPage() {
   const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const balance = total - paid;
 
+  const [backupState, setBackupState] = useState<FormState | null>(null);
+
+  const handleLoadHistory = () => {
+    const history = getFormHistory("corporate");
+    if (history) {
+      setBackupState({ ...form });
+      setForm((f) => ({
+        ...f,
+        ...history,
+        address: history.address || f.address,
+      }));
+      if (history.package && !packages.some(p => p.name === history.package)) {
+        setIsCustomPackage(true);
+      } else {
+        setIsCustomPackage(false);
+      }
+    }
+  };
+
+  const handleUndoHistory = () => {
+    if (backupState) {
+      setForm(backupState);
+      setBackupState(null);
+    }
+  };
+
+  const hasHistory = !isEdit && !!getFormHistory("corporate");
+
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
       {isPending && <Loader fullPage message="Saving corporate event..." />}
@@ -184,6 +233,53 @@ export default function CorporateFormPage() {
             </h1>
             <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>B2B Contracts & Large Events</p>
           </div>
+
+          {hasHistory && (
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+              {backupState && (
+                <button
+                  type="button"
+                  onClick={handleUndoHistory}
+                  className="btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    backgroundColor: "var(--bg-surface-3)",
+                    color: "var(--color-danger)",
+                    border: "1px solid var(--color-danger-glow)",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                  title="Restore before fill"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLoadHistory}
+                className="btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  backgroundColor: "var(--bg-surface-3)",
+                  color: "var(--color-primary)",
+                  border: "1px solid var(--color-primary-glow)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <HistoryIcon size={16} />
+                Fill from Last Submission
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -193,15 +289,24 @@ export default function CorporateFormPage() {
         <Section title="Client Information" icon={<Phone size={18} />}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>Company / Client Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Company / Client Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                <FieldHistoryDropdown formId="corporate" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
+              </div>
               <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Tata Corp Ltd" style={inputCls} />
             </div>
             <div>
-              <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
+                <FieldHistoryDropdown formId="corporate" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
+              </div>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
             </div>
             <div>
-              <label style={labelStyle}>Email Address</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={labelStyle}>Email Address</label>
+                <FieldHistoryDropdown formId="corporate" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
+              </div>
               <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="corp@example.com" style={inputCls} />
             </div>
           </div>

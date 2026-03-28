@@ -10,8 +10,12 @@ import {
   ChevronRight,
   Sparkles,
   Layers,
-  Clock
+  Clock,
+  History as HistoryIcon,
+  X
 } from "lucide-react";
+import { saveFormHistory, getFormHistory, saveFieldHistory } from "../utils/formHistory";
+import FieldHistoryDropdown from "../components/FieldHistoryDropdown";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -83,6 +87,20 @@ const EditFormPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createEdit,
     onSuccess: () => {
+      // Save to history
+      const historyData = {
+        title: form.title,
+        clientName: form.clientName,
+        type: form.type,
+        priority: form.priority,
+      };
+      saveFormHistory("edit", historyData);
+
+      // Save individual fields history
+      saveFieldHistory("edit", "title", form.title);
+      saveFieldHistory("edit", "clientName", form.clientName);
+      saveFieldHistory("edit", "type", form.type);
+
       queryClient.invalidateQueries({ queryKey: ["edits"] });
       navigate("/dashboard/edits");
     },
@@ -106,6 +124,28 @@ const EditFormPage: React.FC = () => {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const [backupState, setBackupState] = useState<EditInput | null>(null);
+
+  const handleLoadHistory = () => {
+    const history = getFormHistory("edit");
+    if (history) {
+      setBackupState({ ...form });
+      setForm((f) => ({
+        ...f,
+        ...history,
+      }));
+    }
+  };
+
+  const handleUndoHistory = () => {
+    if (backupState) {
+      setForm(backupState);
+      setBackupState(null);
+    }
+  };
+
+  const hasHistory = !isEdit && !!getFormHistory("edit");
 
   if (isEdit && isFetching) return <Loader fullPage message="Retrieving task details..." />;
 
@@ -136,11 +176,44 @@ const EditFormPage: React.FC = () => {
               {isEdit ? <Layers size={24} /> : <Sparkles size={24} />}
             </div>
             <div>
-              <h1>{isEdit ? "Refine Edit Task" : "Create New Task"}</h1>
-              <p>Define the parameters for your post-production workflow.</p>
+                <h1>{isEdit ? "Refine Edit Task" : "Create New Task"}</h1>
+                <p>Define the parameters for your post-production workflow.</p>
+              </div>
             </div>
+
+            {hasHistory && (
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.5rem" }}>
+                {backupState && (
+                  <button
+                    type="button"
+                    onClick={handleUndoHistory}
+                    className="btn-back-premium"
+                    style={{
+                      borderColor: "var(--color-danger-glow)",
+                      color: "var(--color-danger)",
+                      backgroundColor: "var(--bg-surface-3)",
+                    }}
+                    title="Restore before fill"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleLoadHistory}
+                  className="btn-back-premium"
+                  style={{
+                    borderColor: "var(--color-primary-glow)",
+                    color: "var(--color-primary)",
+                    backgroundColor: "var(--bg-surface-3)",
+                  }}
+                >
+                  <HistoryIcon size={18} />
+                  <span>Fill from Last Submission</span>
+                </button>
+              </div>
+            )}
           </div>
-        </div>
 
         <form onSubmit={handleSubmit} className="premium-form">
           {/* Section: Basic Metadata */}
@@ -151,7 +224,10 @@ const EditFormPage: React.FC = () => {
           >
             <div className="form-grid">
               <div className="form-group-premium grow">
-                <label>Project Title</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                  <label style={{ marginBottom: 0 }}>Project Title</label>
+                  <FieldHistoryDropdown formId="edit" fieldName="title" onSelect={(v) => setForm(f => ({ ...f, title: v }))} />
+                </div>
                 <input 
                   required 
                   type="text" 
@@ -161,7 +237,10 @@ const EditFormPage: React.FC = () => {
                 />
               </div>
               <div className="form-group-premium grow">
-                <label>Client Name</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                  <label style={{ marginBottom: 0 }}>Client Name</label>
+                  <FieldHistoryDropdown formId="edit" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
+                </div>
                 <input 
                   required 
                   type="text" 
@@ -181,7 +260,10 @@ const EditFormPage: React.FC = () => {
           >
             <div className="form-grid row-3">
               <div className="form-group-premium">
-                <label>Edit Category</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                  <label style={{ marginBottom: 0 }}>Edit Category</label>
+                  <FieldHistoryDropdown formId="edit" fieldName="type" onSelect={(v) => setForm(f => ({ ...f, type: v }))} />
+                </div>
                 <input 
                   required 
                   type="text" 

@@ -1049,11 +1049,19 @@ export default function DashboardOverviewPage() {
       const result = await syncAllRecords();
       setSyncMessage(result.message);
     } catch (err: any) {
-      setSyncMessage(err.response?.data?.message || "Sync failed");
+      const responseData = err.response?.data;
+      if (err.response?.status === 401 && responseData?.code === 'INVALID_GRANT') {
+        // Token has been revoked — refresh user data so UI shows "Connect Google" again
+        queryClient.invalidateQueries({ queryKey: ["user-me"] });
+        setSyncMessage("⚠️ Google Calendar connection expired. Please reconnect your Google account.");
+      } else {
+        setSyncMessage(responseData?.message || "Sync failed. Please try again.");
+      }
     } finally {
       setSyncing(false);
     }
   };
+
 
   const handleConnectGoogle = async () => {
     try {
@@ -1121,9 +1129,34 @@ export default function DashboardOverviewPage() {
                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px", background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", border: "1px solid rgba(74, 222, 128, 0.2)", fontSize: "0.85rem", fontWeight: 600 }}>
                   <CheckCircle2 size={16} /> <span>Connected</span>
                 </div>
-                <button onClick={handleSyncAll} disabled={syncing} className="btn-ghost" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px" }}>
-                  <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
-                  <span>Sync</span>
+                <button 
+                  onClick={handleSyncAll} 
+                  disabled={syncing} 
+                  className={syncing ? "btn-syncing" : "btn-ghost"} 
+                  style={{ 
+                    flex: 1, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    gap: "0.5rem", 
+                    padding: "0.6rem 1rem", 
+                    borderRadius: "10px",
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                >
+                  {syncing ? (
+                    <>
+                      <div className="button-loader-ring" />
+                      <RefreshCw size={16} className="animate-spin" />
+                      <span>Syncing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw size={16} />
+                      <span>Sync</span>
+                    </>
+                  )}
                 </button>
               </div>
             ) : (
@@ -1135,7 +1168,11 @@ export default function DashboardOverviewPage() {
         </div>
 
         {(googleConnected || searchParams.get("googleError") || syncMessage) && (
-          <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)", color: searchParams.get("googleError") ? "var(--color-danger)" : "var(--color-success)", fontSize: "0.9rem", border: "1px solid var(--border)" }}>
+          <div style={{
+            marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)",
+            color: searchParams.get("googleError") || syncMessage?.startsWith("⚠️") ? "var(--color-danger)" : "var(--color-success)",
+            fontSize: "0.9rem", border: "1px solid var(--border)"
+          }}>
             {searchParams.get("googleError") ? `Error: ${searchParams.get("googleError")}` : syncMessage || "Google Calendar connected!"}
           </div>
         )}
@@ -1470,6 +1507,39 @@ export default function DashboardOverviewPage() {
         .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
         .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
         
+        .btn-syncing {
+          background: var(--bg-surface-3) !important;
+          color: var(--color-primary) !important;
+          border-color: var(--color-primary) !important;
+          cursor: not-allowed !important;
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-syncing::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          height: 2px;
+          background: var(--color-primary);
+          animation: sync-progress 2s linear infinite;
+        }
+        @keyframes sync-progress {
+          0% { width: 0; left: 0; }
+          50% { width: 70%; left: 15%; }
+          100% { width: 0; left: 100%; }
+        }
+        .button-loader-ring {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.1), transparent);
+          animation: scan 1.5s linear infinite;
+        }
+        @keyframes scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 

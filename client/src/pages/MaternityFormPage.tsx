@@ -1,5 +1,5 @@
 import {
-  Baby, Phone, Calendar, MapPin, Package, Plus, X,
+  Baby, Phone, Calendar, MapPin, Package, Plus,
   ArrowLeft, Save, ChevronRight,
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
@@ -13,6 +13,9 @@ import {
   type MaternityInput,
 } from "@/api/maternity";
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
+import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
+import { History as HistoryIcon, X } from "lucide-react";
+import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -134,6 +137,23 @@ export default function MaternityFormPage() {
   const createMutation = useMutation({
     mutationFn: createMaternity,
     onSuccess: () => {
+      // Save to history
+      const historyData = {
+        clientName: form.clientName,
+        phoneNumber: form.phoneNumber,
+        email: form.email,
+        address: form.address,
+        package: form.package,
+        packagePrice: form.packagePrice,
+      };
+      saveFormHistory("maternity", historyData);
+      
+      // Save individual fields history
+      saveFieldHistory("maternity", "clientName", form.clientName);
+      saveFieldHistory("maternity", "phoneNumber", form.phoneNumber);
+      saveFieldHistory("maternity", "email", form.email);
+      saveFieldHistory("maternity", "city", form.address.city);
+
       queryClient.invalidateQueries({ queryKey: ["maternity"] });
       navigate("/dashboard/maternity");
     },
@@ -189,7 +209,35 @@ export default function MaternityFormPage() {
   const balance = total - paid;
   const profit = total - (form.expenses || 0);
 
+  const [backupState, setBackupState] = useState<FormState | null>(null);
+
   const inputCls = { width: "100%" };
+
+  const handleLoadHistory = () => {
+    const history = getFormHistory("maternity");
+    if (history) {
+      setBackupState({ ...form });
+      setForm((f) => ({
+        ...f,
+        ...history,
+        address: history.address || f.address,
+      }));
+      if (history.package && !packages.some(p => p.name === history.package)) {
+        setIsCustomPackage(true);
+      } else {
+        setIsCustomPackage(false);
+      }
+    }
+  };
+
+  const handleUndoHistory = () => {
+    if (backupState) {
+      setForm(backupState);
+      setBackupState(null);
+    }
+  };
+
+  const hasHistory = !isEdit && !!getFormHistory("maternity");
 
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
@@ -226,6 +274,53 @@ export default function MaternityFormPage() {
               Maternity & Newborn Photography
             </p>
           </div>
+
+          {hasHistory && (
+            <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+              {backupState && (
+                <button
+                  type="button"
+                  onClick={handleUndoHistory}
+                  className="btn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    backgroundColor: "var(--bg-surface-3)",
+                    color: "var(--color-danger)",
+                    border: "1px solid var(--color-danger-glow)",
+                    padding: "0.5rem 1rem",
+                    borderRadius: "var(--radius-md)",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                  title="Restore before fill"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLoadHistory}
+                className="btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  backgroundColor: "var(--bg-surface-3)",
+                  color: "var(--color-primary)",
+                  border: "1px solid var(--color-primary-glow)",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                <HistoryIcon size={16} />
+                Fill from Last Submission
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -235,21 +330,30 @@ export default function MaternityFormPage() {
         <Section title="Client Information" icon={<Phone size={18} />}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>
-                Client Name <span style={{ color: "var(--color-danger)" }}>*</span>
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Client Name <span style={{ color: "var(--color-danger)" }}>*</span>
+                </label>
+                <FieldHistoryDropdown formId="maternity" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
+              </div>
               <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Priya Sharma" style={inputCls} />
             </div>
             <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>
-                Phone <span style={{ color: "var(--color-danger)" }}>*</span>
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Phone <span style={{ color: "var(--color-danger)" }}>*</span>
+                </label>
+                <FieldHistoryDropdown formId="maternity" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
+              </div>
               <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
             </div>
             <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>
-                Email Address
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Email Address
+                </label>
+                <FieldHistoryDropdown formId="maternity" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
+              </div>
               <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="client@example.com" style={inputCls} />
             </div>
           </div>

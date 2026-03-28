@@ -2257,7 +2257,11 @@ import {
   Phone,
   Mail,
   Globe,
+  History as HistoryIcon,
+  X
 } from "lucide-react";
+import { saveFormHistory, getFormHistory, saveFieldHistory } from "../utils/formHistory";
+import FieldHistoryDropdown from "../components/FieldHistoryDropdown";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -2608,6 +2612,25 @@ const LeadFormPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createLead,
     onSuccess: () => {
+      // Save to history
+      const historyData = {
+        clientName: form.clientName,
+        phoneNumber: form.phoneNumber,
+        email: form.email,
+        source: isCustomSource ? customSourceName : form.source,
+        eventType: isCustomEvent ? customEventName : form.eventType,
+        eventLocation: form.eventLocation,
+        budget: form.budget,
+      };
+      saveFormHistory("lead", historyData);
+
+      // Save individual fields history
+      saveFieldHistory("lead", "clientName", form.clientName);
+      saveFieldHistory("lead", "phoneNumber", form.phoneNumber);
+      saveFieldHistory("lead", "email", form.email);
+      saveFieldHistory("lead", "source", historyData.source);
+      saveFieldHistory("lead", "eventType", historyData.eventType);
+
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       navigate("/dashboard/leads");
     },
@@ -2633,6 +2656,55 @@ const LeadFormPage: React.FC = () => {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const [backupState, setBackupState] = useState<FormState | null>(null);
+
+  const handleLoadHistory = () => {
+    const history = getFormHistory("lead");
+    if (history) {
+      setBackupState({ ...form });
+      set({
+        clientName: history.clientName,
+        phoneNumber: history.phoneNumber,
+        email: history.email,
+        eventLocation: history.eventLocation,
+        budget: history.budget,
+      });
+
+      // Handle source
+      const isStdSource = STANDARD_SOURCES.includes(history.source);
+      if (isStdSource) {
+        set({ source: history.source as LeadSource });
+        setIsCustomSource(false);
+        setCustomSourceName("");
+      } else {
+        set({ source: "Other" });
+        setIsCustomSource(true);
+        setCustomSourceName(history.source);
+      }
+
+      // Handle event type
+      const isStdEvent = STANDARD_EVENT_TYPES.includes(history.eventType);
+      if (isStdEvent) {
+        set({ eventType: history.eventType as LeadEventType });
+        setIsCustomEvent(false);
+        setCustomEventName("");
+      } else {
+        set({ eventType: "Other" });
+        setIsCustomEvent(true);
+        setCustomEventName(history.eventType);
+      }
+    }
+  };
+
+  const handleUndoHistory = () => {
+    if (backupState) {
+      setForm(backupState);
+      setBackupState(null);
+    }
+  };
+
+  const hasHistory = !isEdit && !!getFormHistory("lead");
 
   /* Handle event type select change */
   const handleEventTypeChange = (val: string) => {
@@ -2674,14 +2746,60 @@ const LeadFormPage: React.FC = () => {
           <span className="current">{isEdit ? "Edit Lead" : "New Lead"}</span>
         </div>
 
-        <h1 className="form-title">
-          {isEdit ? "Edit Lead Details" : "Create New Lead"}
-        </h1>
-        <p className="form-subtitle">
-          {isEdit
-            ? "Update the lead information and track progress."
-            : "Fill in the details to add a new lead to your pipeline."}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem", marginBottom: "0.5rem" }}>
+          <div>
+            <h1 className="form-title">
+              {isEdit ? "Edit Lead Details" : "Create New Lead"}
+            </h1>
+            <p className="form-subtitle" style={{ marginBottom: 0 }}>
+              {isEdit
+                ? "Update the lead information and track progress."
+                : "Fill in the details to add a new lead to your pipeline."}
+            </p>
+          </div>
+          {hasHistory && (
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {backupState && (
+                <button
+                  type="button"
+                  onClick={handleUndoHistory}
+                  className="btn-cancel"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    borderColor: "var(--color-danger-light)",
+                    color: "var(--color-danger)",
+                    fontWeight: 700,
+                    padding: "8px 16px",
+                    height: "fit-content"
+                  }}
+                  title="Restore before fill"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLoadHistory}
+                className="btn-cancel"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  borderColor: "var(--color-primary-light)",
+                  color: "var(--color-primary)",
+                  fontWeight: 700,
+                  padding: "8px 16px",
+                  height: "fit-content"
+                }}
+              >
+                <HistoryIcon size={16} />
+                Fill from Last Submission
+              </button>
+            </div>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
@@ -2696,7 +2814,10 @@ const LeadFormPage: React.FC = () => {
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 {/* Client Name */}
                 <div className="form-field">
-                  <label>Client Name *</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label>Client Name *</label>
+                    <FieldHistoryDropdown formId="lead" fieldName="clientName" onSelect={(v) => set({ clientName: v })} style={{ marginBottom: "-4px" }} />
+                  </div>
                   <div className="field-wrap">
                     <User size={14} className="field-icon" />
                     <input
@@ -2712,7 +2833,10 @@ const LeadFormPage: React.FC = () => {
                 {/* Phone + Email */}
                 <div className="form-grid-2">
                   <div className="form-field">
-                    <label>Phone Number *</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <label>Phone Number *</label>
+                      <FieldHistoryDropdown formId="lead" fieldName="phoneNumber" onSelect={(v) => set({ phoneNumber: v })} style={{ marginBottom: "-4px" }} />
+                    </div>
                     <div className="field-wrap">
                       <Phone size={14} className="field-icon" />
                       <input
@@ -2725,7 +2849,10 @@ const LeadFormPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="form-field">
-                    <label>Email Address</label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <label>Email Address</label>
+                      <FieldHistoryDropdown formId="lead" fieldName="email" onSelect={(v) => set({ email: v })} style={{ marginBottom: "-4px" }} />
+                    </div>
                     <div className="field-wrap">
                       <Mail size={14} className="field-icon" />
                       <input
