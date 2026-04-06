@@ -1048,7 +1048,7 @@ export default function DashboardOverviewPage() {
     try {
       const result = await syncAllRecords();
       setSyncMessage(result.message);
-    } catch (err: any) {
+    } catch (err: any) {  
       const responseData = err.response?.data;
       if (err.response?.status === 401 && responseData?.code === 'INVALID_GRANT') {
         // Token has been revoked — refresh user data so UI shows "Connect Google" again

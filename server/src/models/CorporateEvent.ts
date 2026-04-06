@@ -1,6 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import Package from './Package';
 
+// ─── Types ─────────────────────────────────────────────────────────────────────
+export interface IExtra {
+  description: string;
+  amount: number;
+}
+
+export interface IPayment {
+  amount: number;
+  date: Date;
+  note?: string;
+}
+
 export interface ICorporateEvent extends Document {
   clientName: string;
   phoneNumber: string;
@@ -22,18 +34,36 @@ export interface ICorporateEvent extends Document {
   balance: number;
   expenses: number;
   profit: number;
-  extras: Array<{ description: string; amount: number }>;
-  payments: Array<{ amount: number; date: Date; note?: string }>;
+  extras: IExtra[];
+  payments: IPayment[];
   notes?: string;
   referenceByName?: string;
   googleCalendarEventId?: string;
   status: 'Pending' | 'Confirmed' | 'Completed' | 'Cancelled';
 }
 
+// ─── Sub-Schemas ──────────────────────────────────────────────────────────────
+const ExtraSchema = new Schema<IExtra>(
+  {
+    description: { type: String, default: '' },
+    amount: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+const PaymentSchema = new Schema<IPayment>(
+  {
+    amount: { type: Number, required: true },
+    date: { type: Date, required: true },
+    note: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const CorporateEventSchema: Schema = new Schema(
   {
-    clientName: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    clientName: { type: String, required: true, trim: true },
+    phoneNumber: { type: String, required: true, trim: true },
     email: { type: String, lowercase: true, trim: true },
     address: {
       street: { type: String, default: '' },
@@ -41,30 +71,19 @@ const CorporateEventSchema: Schema = new Schema(
       state: { type: String, default: '' },
       zipCode: { type: String, default: '' },
     },
-    eventName: { type: String },
+    eventName: { type: String, trim: true },
     eventDateAndTime: { type: Date },
     deliveryDeadline: { type: Date },
-    package: { type: String },
-    packagePrice: { type: Number, default: 0 },
+    package: { type: String, trim: true },
+    packagePrice: { type: Number, default: 0, min: 0 },
     total: { type: Number, default: 0 },
     extrasTotal: { type: Number, default: 0 },
     advance: { type: Number, default: 0 },
     balance: { type: Number, default: 0 },
-    expenses: { type: Number, default: 0 },
+    expenses: { type: Number, default: 0, min: 0 },
     profit: { type: Number, default: 0 },
-    extras: [
-      {
-        description: { type: String, default: '' },
-        amount: { type: Number, default: 0 },
-      }
-    ],
-    payments: [
-      {
-        amount: { type: Number, required: true },
-        date: { type: Date, required: true },
-        note: { type: String, default: '' },
-      }
-    ],
+    extras: { type: [ExtraSchema], default: [] },
+    payments: { type: [PaymentSchema], default: [] },
     notes: { type: String, default: '' },
     referenceByName: { type: String },
     googleCalendarEventId: { type: String },
@@ -78,11 +97,10 @@ const CorporateEventSchema: Schema = new Schema(
 );
 
 // ─── Auto-Calculate Before Save ────────────────────────────────────────────────
-// This runs every time a record is saved or updated.
 CorporateEventSchema.pre('save', async function (next) {
-  const self = this as any;
+  const self = this as ICorporateEvent;
   
-  // 0. If a package is selected but price is 0, auto-fill its base price from DB
+  // 1. If a package is selected but price is 0, auto-fill its base price from DB
   if (self.package && (self.packagePrice === 0 || self.isModified('package'))) {
     const pkg = await Package.findOne({ name: self.package, category: 'Corporate', isActive: true });
     if (pkg) {
@@ -90,19 +108,19 @@ CorporateEventSchema.pre('save', async function (next) {
     }
   }
 
-  // 1. Calculate extrasTotal
-  self.extrasTotal = (self.extras || []).reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-  
-  // 2. Calculate advance (sum of payments)
-  self.advance = (self.payments || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+  // 2. Calculate extrasTotal
+  self.extrasTotal = self.extras.reduce((sum, e) => sum + (e.amount || 0), 0);
   
   // 3. Assume total is packagePrice + extrasTotal
   self.total = self.packagePrice + self.extrasTotal;
+
+  // 4. Calculate advance (sum of payments)
+  self.advance = self.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   
-  // 4. Calculate balance
+  // 5. Calculate balance
   self.balance = self.total - self.advance;
 
-  // 5. Calculate profit
+  // 6. Calculate profit
   self.profit = self.total - (self.expenses || 0);
 
   next();
