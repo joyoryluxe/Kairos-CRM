@@ -7,7 +7,7 @@ import CorporateEvent from './server/src/models/CorporateEvent';
 
 dotenv.config({ path: './server/.env' });
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/kairos-crm';
+const MONGO_URI = process.env.MONGO_URI || '';
 
 async function runTest() {
   try {

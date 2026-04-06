@@ -5,7 +5,7 @@ import path from 'path';
 // Load environment variables from server/.env
 dotenv.config({ path: path.join(__dirname, 'server', '.env') });
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://joyoryluxe:Joyory123@joyoryluxe.4rnfwin.mongodb.net/kairos-crm';
+const MONGO_URI = process.env.MONGO_URI || '';
 
 async function check() {
   try {
