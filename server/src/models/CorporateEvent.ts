@@ -60,7 +60,7 @@ const PaymentSchema = new Schema<IPayment>(
   { _id: false }
 );
 
-const CorporateEventSchema: Schema = new Schema(
+const CorporateEventSchema = new Schema<ICorporateEvent>(
   {
     clientName: { type: String, required: true, trim: true },
     phoneNumber: { type: String, required: true, trim: true },
@@ -98,30 +98,28 @@ const CorporateEventSchema: Schema = new Schema(
 
 // ─── Auto-Calculate Before Save ────────────────────────────────────────────────
 CorporateEventSchema.pre('save', async function (next) {
-  const self = this as ICorporateEvent;
-  
   // 1. If a package is selected but price is 0, auto-fill its base price from DB
-  if (self.package && (self.packagePrice === 0 || self.isModified('package'))) {
-    const pkg = await Package.findOne({ name: self.package, category: 'Corporate', isActive: true });
+  if (this.package && (this.packagePrice === 0 || this.isModified('package'))) {
+    const pkg = await Package.findOne({ name: this.package, category: 'Corporate', isActive: true });
     if (pkg) {
-      self.packagePrice = pkg.price;
+      this.packagePrice = pkg.price;
     }
   }
 
   // 2. Calculate extrasTotal
-  self.extrasTotal = self.extras.reduce((sum, e) => sum + (e.amount || 0), 0);
+  this.extrasTotal = this.extras.reduce((sum, e) => sum + (e.amount || 0), 0);
   
   // 3. Assume total is packagePrice + extrasTotal
-  self.total = self.packagePrice + self.extrasTotal;
+  this.total = this.packagePrice + this.extrasTotal;
 
   // 4. Calculate advance (sum of payments)
-  self.advance = self.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  this.advance = this.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   
   // 5. Calculate balance
-  self.balance = self.total - self.advance;
+  this.balance = this.total - this.advance;
 
   // 6. Calculate profit
-  self.profit = self.total - (self.expenses || 0);
+  this.profit = this.total - (this.expenses || 0);
 
   next();
 });
