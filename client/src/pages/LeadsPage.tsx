@@ -437,10 +437,12 @@ import {
   Clock,
   ArrowRight,
   SlidersHorizontal,
+  Download,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getLeads, updateLead, type Lead, type LeadStatus } from "../api/lead";
 import { format } from "date-fns";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 const STATUS_COLUMNS: LeadStatus[] = [
   "New",
@@ -1030,6 +1032,27 @@ const LeadsPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const handleExport = () => {
+    if (!filteredLeads || filteredLeads.length === 0) return;
+    const exportData = filteredLeads.map((lead) => ({
+      "Client Name": lead.clientName,
+      "Phone Number": lead.phoneNumber,
+      "Status": lead.status,
+      "Source": lead.source,
+      "Event Type": lead.eventType,
+      "Event Location": lead.eventLocation || "-",
+      "Budget": lead.budget || 0,
+      "Next Follow-up": lead.nextFollowUpDate ? format(new Date(lead.nextFollowUpDate), "MMM dd, yyyy") : "-",
+      "Notes": lead.notes || "-",
+    }));
+
+    const summaryData = {
+      "Total Leads Filtered": filteredLeads.length
+    };
+
+    exportToExcel(exportData, "Leads_Pipeline", summaryData);
+  };
+
   const getLeadsByStatus = (status: LeadStatus) =>
     filteredLeads.filter((lead) => lead.status === status);
 
@@ -1054,6 +1077,9 @@ const LeadsPage: React.FC = () => {
             <p>Manage potential clients &amp; track conversions</p>
           </div>
           <div className="leads-header-actions">
+            <button className="btn" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "8px 18px", borderRadius: "10px", background: "var(--bg-surface-2)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
+              <Download size={16} /> Export
+            </button>
             <div className="view-toggle">
               <button
                 className={viewMode === "kanban" ? "active" : ""}

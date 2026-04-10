@@ -14,7 +14,8 @@ import {
   ChevronUp,
   X,
   Hash,
-  ArrowRight
+  ArrowRight,
+  Download
 } from "lucide-react";
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ import {
   type EditStatus,
   type EditPriority
 } from "../api/edit";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -108,6 +110,27 @@ const EditsPage: React.FC = () => {
              matchesReceived && matchesDeadline && matchesMinItems && matchesMaxItems;
     });
   }, [edits, searchTerm, statusFilter, priorityFilter, typeFilter, receivedDateStart, receivedDateEnd, deadlineStart, deadlineEnd, minItems, maxItems]);
+
+  const handleExport = () => {
+    if (!filteredEdits || filteredEdits.length === 0) return;
+    const exportData = filteredEdits.map((edit) => ({
+      "Task Title": edit.title,
+      "Client Name": edit.clientName,
+      "Category": edit.type,
+      "Status": edit.status,
+      "Priority": edit.priority,
+      "Items": edit.photoClipCount,
+      "Received Date": edit.receivedDate ? format(new Date(edit.receivedDate), "MMM dd, yyyy") : "-",
+      "Deadline": edit.deadline ? format(new Date(edit.deadline), "MMM dd, yyyy") : "-",
+      "Notes": edit.notes || "-",
+    }));
+
+    const summaryData = {
+      "Total Tasks Filtered": filteredEdits.length
+    };
+
+    exportToExcel(exportData, "Edit_Tasks", summaryData);
+  };
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -320,13 +343,22 @@ const EditsPage: React.FC = () => {
             Track post-production workflow and maintain deadlines.
           </p>
         </div>
-        <button 
-          className="btn-premium" 
-          onClick={() => navigate("/dashboard/edits/new")}
-          style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
-        >
-          <Plus size={20} /> Add New Task
-        </button>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button 
+            className="btn-premium" 
+            onClick={handleExport}
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "none", color: "var(--text-primary)", border: "1px solid var(--border)", boxShadow: "none" }}
+          >
+            <Download size={20} /> Export
+          </button>
+          <button 
+            className="btn-premium" 
+            onClick={() => navigate("/dashboard/edits/new")}
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
+            <Plus size={20} /> Add New Task
+          </button>
+        </div>
       </div>
 
       {/* Advanced Filter Bar */}

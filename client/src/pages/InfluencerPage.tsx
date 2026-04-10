@@ -517,7 +517,7 @@
 
 import {
   Megaphone, Phone, Calendar, User, MapPin, Package, Search, X, Plus, Edit, Trash2,
-  ChevronDown, ChevronUp, Instagram, Clock, TrendingUp, CreditCard, AlertCircle, CheckCircle2
+  ChevronDown, ChevronUp, Instagram, Clock, TrendingUp, CreditCard, AlertCircle, CheckCircle2, Download
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { useState } from "react";
@@ -530,6 +530,7 @@ import {
   type Influencer,
 } from "@/api/influencer";
 import { getActivePackages } from "@/api/packages";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 // ─── Formatting Helpers ───────────────────────────────────────────────────────
 const formatCurrency = (value?: number) => {
@@ -626,6 +627,37 @@ export default function InfluencerPage() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["influencer"] }); },
   });
 
+  const handleExport = () => {
+    if (!data?.data || data.data.length === 0) return;
+    const exportData = data.data.map((item: Influencer) => ({
+      "Client Name": item.clientName,
+      "Instagram ID": item.instaId || "-",
+      "Phone Number": item.phoneNumber,
+      "Status": item.status,
+      "Total Package": item.package || "-",
+      "Total Amount": item.total || 0,
+      "Advance Paid": item.advance || 0,
+      "Balance Due": item.balance || 0,
+      "Shoot Name": item.shootName || "-",
+      "Shoot Date": item.shootDateAndTime ? new Date(item.shootDateAndTime).toLocaleString() : "-",
+      "Delivery Deadline": item.deliveryDeadline ? new Date(item.deliveryDeadline).toLocaleDateString() : "-",
+      "City": item.address?.city || "-",
+      "Notes": item.notes || "-",
+    }));
+
+    const apiSummary = data?.summary || {};
+    const summaryData = {
+      "Total Records": apiSummary.total || 0,
+      "Total Revenue": apiSummary.totalRevenue || 0,
+      "Total Received": apiSummary.totalReceived || 0,
+      "Total Due": apiSummary.totalDue || 0,
+      "Total Expenses": apiSummary.totalExpenses || 0,
+      "Total Profit": apiSummary.totalProfit || 0
+    };
+
+    exportToExcel(exportData, "Influencer_Leads", summaryData);
+  };
+
   const clearFilters = () => setFilters({
     clientName: "",
     phoneNumber: "",
@@ -667,9 +699,14 @@ export default function InfluencerPage() {
           </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>Manage influencer campaigns, packages, and payments.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate("/dashboard/influencer/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Plus size={20} /> Add Influencer
-        </button>
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          <button className="btn" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--bg-surface-3)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}>
+            <Download size={20} /> Export Excel
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate("/dashboard/influencer/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Plus size={20} /> Add Influencer
+          </button>
+        </div>
       </header>
 
       {/* Summary Cards */}

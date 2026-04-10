@@ -596,7 +596,7 @@
 import {
   Building2, Phone, Calendar, Plus, Edit, Trash2,
   Search, X, ChevronDown, ChevronUp, MapPin, Package,
-  TrendingUp, CreditCard, AlertCircle, CheckCircle2
+  TrendingUp, CreditCard, AlertCircle, CheckCircle2, Download
 } from "lucide-react";
 import { useState } from "react";
 import Loader from "../components/Loader";
@@ -608,6 +608,7 @@ import {
   type CorporateEvent,
 } from "@/api/corporateEvents";
 import StatCard from "@/components/StatCard";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 // Shared currency formatter
 const formatCurrency = (value?: number) => {
@@ -723,6 +724,35 @@ export default function CorporatePage() {
     },
   });
 
+  const handleExport = () => {
+    if (!data || data.length === 0) return;
+    const exportData = data.map((item: CorporateEvent) => ({
+      "Client Name": item.clientName,
+      "Event Name": item.eventName || "-",
+      "Phone Number": item.phoneNumber,
+      "Status": item.status,
+      "Total Package": item.package || "-",
+      "Total Amount": item.total || 0,
+      "Advance Paid": item.advance || 0,
+      "Balance Due": item.balance || 0,
+      "Event Date": item.eventDateAndTime ? new Date(item.eventDateAndTime).toLocaleString() : "-",
+      "Delivery Deadline": item.deliveryDeadline ? new Date(item.deliveryDeadline).toLocaleDateString() : "-",
+      "City": item.address?.city || "-",
+      "Notes": item.notes || "-",
+    }));
+
+    const summaryData = {
+      "Total Records": summary.totalRecords || 0,
+      "Total Revenue": summary.totalRevenue || 0,
+      "Total Received": summary.totalReceived || 0,
+      "Total Due": summary.totalDue || 0,
+      "Total Expenses": summary.totalExpenses || 0,
+      "Total Profit": summary.totalProfit || 0
+    };
+
+    exportToExcel(exportData, "Corporate_Events", summaryData);
+  };
+
   // Clear filters
   const clearFilters = () => {
     setFilters({
@@ -756,9 +786,14 @@ export default function CorporatePage() {
             B2B client management, contract tracking, and event coordination.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate("/dashboard/corporate/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Plus size={20} /> Add Event
-        </button>
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          <button className="btn" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--bg-surface-3)", border: "1px solid var(--border)" }}>
+            <Download size={20} /> Export Excel
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate("/dashboard/corporate/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Plus size={20} /> Add Event
+          </button>
+        </div>
       </header>
 
       {/* Summary Cards */}

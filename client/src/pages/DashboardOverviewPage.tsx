@@ -713,6 +713,7 @@ import {
   Plus,
   Trash2,
   Pencil,
+  Download,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import StatCard from "@/components/StatCard";
@@ -723,6 +724,7 @@ import {
   deleteStudioExpense,
   type StudioExpense
 } from "@/api/studioExpenses";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -1042,6 +1044,27 @@ export default function DashboardOverviewPage() {
     setIsExpenseModalOpen(true);
   };
 
+  const handleExportExpenses = () => {
+    if (!expensesData || expensesData.length === 0) return;
+    const exportData = expensesData.map((expense: StudioExpense) => ({
+      "Date": new Date(expense.date).toLocaleDateString("en-IN"),
+      "Category": expense.category,
+      "Amount": expense.amount,
+      "Notes": expense.notes || "-"
+    }));
+
+    const gt = data?.globalTotals || {};
+    const summaryData = {
+      "Total Revenue": gt.totalRevenue || 0,
+      "Total Received": gt.totalAdvance || 0,
+      "Total Due": gt.totalBalance || 0,
+      "Total Expenses": gt.totalExpenses || 0,
+      "Total Profit": gt.totalProfit || 0
+    };
+
+    exportToExcel(exportData, "Studio_Expenses", summaryData);
+  };
+
   const handleSyncAll = async () => {
     setSyncing(true);
     setSyncMessage("");
@@ -1215,9 +1238,14 @@ export default function DashboardOverviewPage() {
             <CreditCard size={20} color="var(--color-danger)" />
             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Studio Expenses</h2>
           </div>
-          <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-            <Plus size={16} /> Add
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button onClick={handleExportExpenses} className="btn-ghost" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem", border: "1px solid var(--border)" }}>
+              <Download size={16} /> Export
+            </button>
+            <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <Plus size={16} /> Add
+            </button>
+          </div>
         </div>
 
         {isMobile ? (

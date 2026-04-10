@@ -510,8 +510,10 @@ import {
   AlertCircle,
   Clock,
   Flag,
+  Download,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
+import { exportToExcel } from "@/utils/exportToExcel";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -631,6 +633,36 @@ export default function MaternityPage() {
     },
   });
 
+  const handleExport = () => {
+    if (!results?.data) return;
+    const exportData = results.data.map((item: Maternity) => ({
+      "Client Name": item.clientName,
+      "Baby Name": item.babyName || "-",
+      "Phone Number": item.phoneNumber,
+      "Status": item.status,
+      "Total Package": item.package || "-",
+      "Total Amount": item.total || 0,
+      "Advance Paid": item.advance || 0,
+      "Balance Due": item.balance || 0,
+      "Shoot Date": item.shootDateAndTime ? new Date(item.shootDateAndTime).toLocaleString() : "-",
+      "Delivery Deadline": item.deliveryDeadline ? new Date(item.deliveryDeadline).toLocaleDateString() : "-",
+      "City": item.address?.city || "-",
+      "Notes": item.notes || "-",
+    }));
+
+    const apiSummary = results?.summary || {};
+    const summaryData = {
+      "Total Records": apiSummary.total || 0,
+      "Total Revenue": apiSummary.totalRevenue || 0,
+      "Total Received": apiSummary.totalReceived || 0,
+      "Total Due": apiSummary.totalDue || 0,
+      "Total Expenses": apiSummary.totalExpenses || 0,
+      "Total Profit": apiSummary.totalProfit || 0
+    };
+
+    exportToExcel(exportData, "Maternity_Leads", summaryData);
+  };
+
   const clearFilters = () => {
     setFilters({
       clientName: "",
@@ -671,9 +703,14 @@ export default function MaternityPage() {
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>Management & tracking for maternity shoots.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate("/dashboard/maternity/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "12px", boxShadow: "0 4px 12px rgba(244, 114, 182, 0.3)" }}>
-          <Plus size={20} /> New Record
-        </button>
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <button className="btn" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "12px", background: "var(--bg-surface-3)", border: "1px solid var(--border)" }}>
+            <Download size={20} /> Export Excel
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate("/dashboard/maternity/new")} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "12px", boxShadow: "0 4px 12px rgba(244, 114, 182, 0.3)" }}>
+            <Plus size={20} /> New Record
+          </button>
+        </div>
       </header>
 
       {/* Stats Grid */}
