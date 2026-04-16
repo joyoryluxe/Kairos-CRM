@@ -2,10 +2,17 @@ import mongoose from 'mongoose';
 import { Response } from 'express';
 import Lead from '../models/Lead';
 import { AuthRequest } from '../middleware/authenticate';
+import { sanitizeCommonBody } from '../utils/sanitizer';
 
 // ─── Create Lead ──────────────────────────────────────────────────────────────
 export const createLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    sanitizeCommonBody(
+      req.body,
+      ['inquiryDate', 'eventDate', 'lastContactedDate', 'nextFollowUpDate'],
+      ['status', 'source', 'eventType']
+    );
+
     const lead = await Lead.create({
       ...req.body,
       user: req.user?.id,
@@ -19,7 +26,7 @@ export const createLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Get All Leads (Scoped to User) ───────────────────────────────────────────
 export const getLeads = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const leads = await Lead.find({}).sort({ createdAt: -1 });
+    const leads = await Lead.find({ user: req.user?.id }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: leads.length, data: leads });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -29,7 +36,7 @@ export const getLeads = async (req: AuthRequest, res: Response): Promise<void> =
 // ─── Get Single Lead ──────────────────────────────────────────────────────────
 export const getLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lead = await Lead.findById(req.params.id);
+    const lead = await Lead.findOne({ _id: req.params.id, user: req.user?.id });
     if (!lead) {
       res.status(404).json({ success: false, message: 'Lead not found' });
       return;
@@ -43,8 +50,14 @@ export const getLead = async (req: AuthRequest, res: Response): Promise<void> =>
 // ─── Update Lead ──────────────────────────────────────────────────────────────
 export const updateLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    sanitizeCommonBody(
+      req.body,
+      ['inquiryDate', 'eventDate', 'lastContactedDate', 'nextFollowUpDate'],
+      ['status', 'source', 'eventType']
+    );
+
     const lead = await Lead.findOneAndUpdate(
-      { _id: req.params.id },
+      { _id: req.params.id, user: req.user?.id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -61,7 +74,7 @@ export const updateLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Delete Lead ──────────────────────────────────────────────────────────────
 export const deleteLead = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const lead = await Lead.findByIdAndDelete(req.params.id);
+    const lead = await Lead.findOneAndDelete({ _id: req.params.id, user: req.user?.id });
     if (!lead) {
       res.status(404).json({ success: false, message: 'Lead not found' });
       return;
@@ -75,8 +88,9 @@ export const deleteLead = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Lead Stats (for dashboard) ───────────────────────────────────────────────
 export const getLeadStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = new mongoose.Types.ObjectId(req.user?.id);
     const stats = await Lead.aggregate([
-      { $match: {} },
+      { $match: { user: userId } },
       {
         $group: {
           _id: '$status',
@@ -86,7 +100,7 @@ export const getLeadStats = async (req: AuthRequest, res: Response): Promise<voi
     ]);
 
     const sourceStats = await Lead.aggregate([
-      { $match: {} },
+      { $match: { user: userId } },
       {
         $group: {
           _id: '$source',

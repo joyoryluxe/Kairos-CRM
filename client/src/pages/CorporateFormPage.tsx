@@ -3,7 +3,7 @@ import {
   ArrowLeft, Save, ChevronRight, Clock, MapPin, History as HistoryIcon
 } from "lucide-react";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
-import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
+import AutocompleteInput from "@/components/AutocompleteInput";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Loader from "../components/Loader";
@@ -147,8 +147,15 @@ export default function CorporateFormPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+
+    // Sanitize arrays: remove items with empty descriptions/amounts
+    const cleanExtras = (form.extras || []).filter(ex => ex.description.trim() !== "" || ex.amount > 0);
+    const cleanPayments = (form.payments || []).filter(p => p.amount > 0);
+
     const payload: any = {
       ...form,
+      extras: cleanExtras,
+      payments: cleanPayments,
       eventDateAndTime: form.eventDateAndTime || null,
       deliveryDeadline: form.deliveryDeadline || null,
       total,
@@ -291,23 +298,40 @@ export default function CorporateFormPage() {
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Company / Client Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                <FieldHistoryDropdown formId="corporate" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
               </div>
-              <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Tata Corp Ltd" style={inputCls} />
+              <AutocompleteInput 
+                model="corporate" 
+                field="clientName" 
+                required 
+                value={form.clientName} 
+                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                placeholder="e.g. Tata Corp Ltd" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                <FieldHistoryDropdown formId="corporate" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
               </div>
-              <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+              <AutocompleteInput 
+                model="corporate" 
+                field="phoneNumber" 
+                required 
+                value={form.phoneNumber} 
+                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
+                placeholder="+91 98765 43210" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Email Address</label>
-                <FieldHistoryDropdown formId="corporate" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
               </div>
-              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="corp@example.com" style={inputCls} />
+              <AutocompleteInput 
+                model="corporate" 
+                field="email" 
+                value={form.email || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
+                placeholder="corp@example.com" 
+              />
             </div>
           </div>
         </Section>
@@ -320,11 +344,12 @@ export default function CorporateFormPage() {
                 <label style={labelStyle}>
                   {field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
-                <input
+                <AutocompleteInput
+                  model="corporate"
+                  field={`address.${field}`}
                   value={form.address[field]}
-                  onChange={(e) => setForm((f) => ({ ...f, address: { ...f.address, [field]: e.target.value } }))}
+                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))}
                   placeholder={field === "zipCode" ? "400001" : ""}
-                  style={inputCls}
                 />
               </div>
             ))}
@@ -336,7 +361,13 @@ export default function CorporateFormPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Event Name</label>
-              <input value={form.eventName} onChange={(e) => setForm((f) => ({ ...f, eventName: e.target.value }))} placeholder="e.g. Annual Gala 2026" style={inputCls} />
+              <AutocompleteInput 
+                model="corporate" 
+                field="eventName" 
+                value={form.eventName || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, eventName: v }))} 
+                placeholder="e.g. Annual Gala 2026" 
+              />
             </div>
             <div>
               <label style={labelStyle}>Event Date & Time</label>
@@ -359,7 +390,14 @@ export default function CorporateFormPage() {
               <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input required value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} placeholder="e.g. Special Deal" style={inputCls} />
+                  <AutocompleteInput 
+                    model="corporate" 
+                    field="package" 
+                    required 
+                    value={form.package || ""} 
+                    onChange={(v: string) => setForm(f => ({ ...f, package: v }))} 
+                    placeholder="e.g. Special Deal" 
+                  />
                   <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
                 </div>
               ) : (

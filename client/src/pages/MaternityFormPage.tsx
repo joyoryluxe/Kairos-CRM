@@ -15,7 +15,7 @@ import {
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
 import { History as HistoryIcon, X } from "lucide-react";
-import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
+import AutocompleteInput from "@/components/AutocompleteInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -170,12 +170,20 @@ export default function MaternityFormPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+
+    // Sanitize arrays: remove items with empty descriptions/amounts
+    const cleanExtras = (form.extras || []).filter(ex => ex.description.trim() !== "" || ex.amount > 0);
+    const cleanPayments = (form.payments || []).filter(p => p.amount > 0);
+
     const payload: any = {
       ...form,
+      extras: cleanExtras,
+      payments: cleanPayments,
       total,
       advance: paid,
       balance,
     };
+
     if (isEdit) {
       updateMutation.mutate({ payload });
     } else {
@@ -334,27 +342,44 @@ export default function MaternityFormPage() {
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
                   Client Name <span style={{ color: "var(--color-danger)" }}>*</span>
                 </label>
-                <FieldHistoryDropdown formId="maternity" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
               </div>
-              <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Priya Sharma" style={inputCls} />
+              <AutocompleteInput 
+                model="maternity" 
+                field="clientName" 
+                required 
+                value={form.clientName} 
+                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                placeholder="e.g. Priya Sharma" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
                   Phone <span style={{ color: "var(--color-danger)" }}>*</span>
                 </label>
-                <FieldHistoryDropdown formId="maternity" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
               </div>
-              <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+              <AutocompleteInput 
+                model="maternity" 
+                field="phoneNumber" 
+                required 
+                value={form.phoneNumber} 
+                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
+                placeholder="+91 98765 43210" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
                   Email Address
                 </label>
-                <FieldHistoryDropdown formId="maternity" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
               </div>
-              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="client@example.com" style={inputCls} />
+              <AutocompleteInput 
+                model="maternity" 
+                field="email" 
+                value={form.email || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
+                placeholder="client@example.com" 
+              />
             </div>
           </div>
         </Section>
@@ -367,11 +392,12 @@ export default function MaternityFormPage() {
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>
                   {field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
-                <input
+                <AutocompleteInput
+                  model="maternity"
+                  field={`address.${field}`}
                   value={form.address[field]}
-                  onChange={(e) => setForm((f) => ({ ...f, address: { ...f.address, [field]: e.target.value } }))}
+                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))}
                   placeholder={field === "zipCode" ? "400001" : ""}
-                  style={inputCls}
                 />
               </div>
             ))}
@@ -383,7 +409,13 @@ export default function MaternityFormPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
             <div>
               <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Baby Name</label>
-              <input value={form.babyName} onChange={(e) => setForm((f) => ({ ...f, babyName: e.target.value }))} placeholder="e.g. Aanya" style={inputCls} />
+              <AutocompleteInput 
+                model="maternity" 
+                field="babyName" 
+                value={form.babyName || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, babyName: v }))} 
+                placeholder="e.g. Aanya" 
+              />
             </div>
             <div>
               <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Birth Date</label>
@@ -407,7 +439,14 @@ export default function MaternityFormPage() {
               <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input required value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} placeholder="e.g. Special Deal" style={inputCls} />
+                  <AutocompleteInput 
+                    model="maternity" 
+                    field="package" 
+                    required 
+                    value={form.package || ""} 
+                    onChange={(v: string) => setForm(f => ({ ...f, package: v }))} 
+                    placeholder="e.g. Special Deal" 
+                  />
                   <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
                 </div>
               ) : (

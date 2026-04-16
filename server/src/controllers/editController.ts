@@ -2,10 +2,17 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import Edit from '../models/Edit';
 import { AuthRequest } from '../middleware/authenticate';
+import { sanitizeCommonBody } from '../utils/sanitizer';
 
 // ─── Create Edit ──────────────────────────────────────────────────────────────
 export const createEdit = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    sanitizeCommonBody(
+      req.body,
+      ['receivedDate', 'deadline'],
+      ['status', 'priority']
+    );
+
     const edit = await Edit.create({
       ...req.body,
       user: req.user?.id,
@@ -20,7 +27,7 @@ export const createEdit = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Get All Edits (Scoped to User) ───────────────────────────────────────────
 export const getEdits = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const edits = await Edit.find({}).sort({ deadline: 1 });
+    const edits = await Edit.find({ user: req.user?.id }).sort({ deadline: 1 });
     res.status(200).json({ success: true, count: edits.length, data: edits });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -30,7 +37,7 @@ export const getEdits = async (req: AuthRequest, res: Response): Promise<void> =
 // ─── Get Single Edit ──────────────────────────────────────────────────────────
 export const getEdit = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const edit = await Edit.findById(req.params.id);
+    const edit = await Edit.findOne({ _id: req.params.id, user: req.user?.id });
     if (!edit) {
       res.status(404).json({ success: false, message: 'Edit not found' });
       return;
@@ -44,8 +51,14 @@ export const getEdit = async (req: AuthRequest, res: Response): Promise<void> =>
 // ─── Update Edit ──────────────────────────────────────────────────────────────
 export const updateEdit = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    sanitizeCommonBody(
+      req.body,
+      ['receivedDate', 'deadline'],
+      ['status', 'priority']
+    );
+
     const edit = await Edit.findOneAndUpdate(
-      { _id: req.params.id },
+      { _id: req.params.id, user: req.user?.id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -63,7 +76,7 @@ export const updateEdit = async (req: AuthRequest, res: Response): Promise<void>
 // ─── Delete Edit ──────────────────────────────────────────────────────────────
 export const deleteEdit = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const edit = await Edit.findByIdAndDelete(req.params.id);
+    const edit = await Edit.findOneAndDelete({ _id: req.params.id, user: req.user?.id });
     if (!edit) {
       res.status(404).json({ success: false, message: 'Edit not found' });
       return;
@@ -78,7 +91,7 @@ export const deleteEdit = async (req: AuthRequest, res: Response): Promise<void>
 export const getEditStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const stats = await Edit.aggregate([
-      { $match: {} },
+      { $match: { user: new mongoose.Types.ObjectId(req.user?.id) } },
       {
         $group: {
           _id: '$status',

@@ -10,6 +10,7 @@ import packageRoutes from "./packageRoutes";
 import studioExpenseRoutes from "./studioExpenseRoutes";
 import leadRoutes from "./leadRoutes";
 import editRoutes from "./editRoutes";
+import suggestionRoutes from "./suggestionRoutes";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/packages", packageRoutes);
 router.use("/studio-expenses", studioExpenseRoutes);
 router.use("/leads", leadRoutes);
 router.use("/edits", editRoutes);
+router.use("/suggestions", suggestionRoutes);
 
 export default router;

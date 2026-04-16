@@ -175,40 +175,17 @@ import Influencer from '../models/Influencer';
 import { User } from '../models/User';
 import { googleCalendarService } from '../services/googleCalendarService';
 import { AuthRequest } from '../middleware/authenticate';
-
-// ─── Shared sanitizer ─────────────────────────────────────────────────────────
-/**
- * Normalize the request body before it reaches Mongoose.
- *
- * Fixes addressed:
- *  1. `package: ""` → undefined   (was failing the enum validator → 400)
- *  2. `shootDateAndTime: ""` → null
- *  3. `deliveryDeadline: ""` → null
- *  4. Empty strings inside payments[].date → null
- *  5. Non-array extras / payments → []
- */
-function sanitizeBody(body: any): void {
-  // Date fields — Mongoose rejects "" as an invalid Date
-  if (body.shootDateAndTime === '') body.shootDateAndTime = null;
-  if (body.deliveryDeadline === '') body.deliveryDeadline = null;
-
-  // Package — enum (and later: any string) field must not be empty string
-  if (body.package === '') body.package = undefined;
-
-  // Array fields — guard against accidental string values
-  if (!Array.isArray(body.extras)) body.extras = [];
-  if (!Array.isArray(body.payments)) body.payments = [];
-
-  // Normalize dates inside payments
-  body.payments.forEach((p: any) => {
-    if (p.date === '') p.date = null;
-  });
-}
+import { sanitizeCommonBody } from '../utils/sanitizer';
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 export const createInfluencer = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    sanitizeBody(req.body);
+    sanitizeCommonBody(
+      req.body,
+      ['shootDateAndTime', 'deliveryDeadline'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
 
     const influencer = await Influencer.create(req.body);
 
@@ -328,7 +305,12 @@ export const getInfluencerById = async (req: AuthRequest, res: Response): Promis
 // ─── Update ───────────────────────────────────────────────────────────────────
 export const updateInfluencer = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    sanitizeBody(req.body);
+    sanitizeCommonBody(
+      req.body,
+      ['shootDateAndTime', 'deliveryDeadline'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
 
     const influencer = await Influencer.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

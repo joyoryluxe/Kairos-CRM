@@ -48,8 +48,10 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200,
+    max: env.NODE_ENV === "development" ? 5000 : 1000, // Much higher limit for dev
     message: { success: false, message: "Too many requests, slow down!" },
+    standardHeaders: true,
+    legacyHeaders: false,
   })
 );
 

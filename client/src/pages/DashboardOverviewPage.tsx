@@ -1014,9 +1014,9 @@ export default function DashboardOverviewPage() {
     notes: ""
   });
 
-  const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
-  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: getDashboardOverview });
-  const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: getStudioExpenses });
+  const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: () => getMe() });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: () => getDashboardOverview() });
+  const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: () => getStudioExpenses() });
 
   const createExpenseMutation = useMutation({
     mutationFn: createStudioExpense,
@@ -1053,7 +1053,7 @@ export default function DashboardOverviewPage() {
       "Notes": expense.notes || "-"
     }));
 
-    const gt = data?.globalTotals || {};
+    const gt: any = data?.globalTotals || {};
     const summaryData = {
       "Total Revenue": gt.totalRevenue || 0,
       "Total Received": gt.totalAdvance || 0,
@@ -1109,21 +1109,37 @@ export default function DashboardOverviewPage() {
 
   const renderEventContent = useCallback((info: any) => {
     const { isDeadline, type } = info.event.extendedProps;
-    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
+    const isLead = type === "Lead" || type === "leads";
+    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : isLead ? "🏢" : "🏢";
     const backgroundColor = info.event.backgroundColor;
 
-    // Use a more vibrant semi-transparent background for the event
-    const eventBg = isDeadline ? "rgba(239, 68, 68, 0.15)" : `${backgroundColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
+    // Fix: If backgroundColor already has alpha (8 chars), don't append more
+    const baseColor = backgroundColor.slice(0, 7);
+    const eventBg = isDeadline 
+      ? "rgba(239, 68, 68, 0.15)" 
+      : isLead 
+        ? "rgba(255, 255, 255, 0.08)" // Distinct look for leads
+        : `${baseColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
+
+    const textColor = isDeadline 
+      ? "#ff5f5f" 
+      : isLead 
+        ? "#93c5fd" // Light blue for leads
+        : "var(--text-primary)";
 
     return (
       <div style={{
-        display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", padding: "2px 6px", borderRadius: "4px",
-        background: isDeadline ? "rgba(239, 68, 68, 0.15)" : eventBg,
-        backdropFilter: "blur(2px)", borderLeft: `3px solid ${backgroundColor}`, fontSize: "0.75rem", fontWeight: isDeadline ? 700 : 500,
-        height: "100%", width: "100%", color: isDeadline ? "#ff5f5f" : "var(--text-primary)"
+        display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", padding: "4px 8px", borderRadius: "10px",
+        background: eventBg,
+        backdropFilter: "blur(4px)", 
+        borderLeft: `4px solid ${isDeadline ? "#ef4444" : isLead ? "#3b82f6" : backgroundColor}`, 
+        fontSize: "0.75rem", fontWeight: isDeadline || isLead ? 700 : 500,
+        height: "100%", width: "100%", color: textColor,
+        border: isLead ? "1px solid rgba(59, 130, 246, 0.3)" : "none",
+        transition: "all 0.2s ease"
       }}>
-        <span style={{ fontSize: "10px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{info.event.title}</span>
+        <span style={{ fontSize: "11px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, letterSpacing: "0.01em" }}>{info.event.title}</span>
       </div>
     );
   }, []);
@@ -1534,6 +1550,39 @@ export default function DashboardOverviewPage() {
         .fc-event { border: none !important; background: transparent !important; margin: 1px 2px !important; }
         .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
         .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
+        
+        /* Popover Styling Fixes */
+        .fc-popover {
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-strong) !important;
+          box-shadow: var(--shadow-lg) !important;
+          border-radius: var(--radius-md) !important;
+          z-index: 1000 !important;
+        }
+        .fc-popover-header {
+          background: var(--bg-surface-2) !important;
+          color: var(--text-primary) !important;
+          padding: 8px 12px !important;
+          border-bottom: 1px solid var(--border) !important;
+          border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+          font-weight: 700 !important;
+          font-size: 0.85rem !important;
+        }
+        .fc-popover-body {
+          padding: 8px !important;
+          background: var(--bg-surface) !important;
+        }
+        .fc-daygrid-more-link {
+          color: var(--color-accent) !important;
+          font-weight: 700 !important;
+          font-size: 0.75rem !important;
+          text-decoration: none !important;
+          transition: var(--transition) !important;
+        }
+        .fc-daygrid-more-link:hover {
+          color: var(--color-primary) !important;
+          opacity: 0.8;
+        }
         
         .btn-syncing {
           background: var(--bg-surface-3) !important;

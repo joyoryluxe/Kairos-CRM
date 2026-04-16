@@ -80,6 +80,7 @@ import Package from '../models/Package';
 import { User } from '../models/User';
 import { googleCalendarService } from '../services/googleCalendarService';
 import { AuthRequest } from '../middleware/authenticate';
+import { sanitizeCommonBody } from '../utils/sanitizer';
 
 // ─── Get all package options (for frontend dropdowns) ──────────────────────────
 export const getPackages = async (_req: AuthRequest, res: Response): Promise<void> => {
@@ -104,22 +105,14 @@ export const getPackages = async (_req: AuthRequest, res: Response): Promise<voi
 // }
 export const createMaternity = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
-    if (req.body.shootDateAndTime === "") req.body.shootDateAndTime = null;
-    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
-    if (req.body.birthDate === "") req.body.birthDate = null;
-
-    // Ensure extras and payments are arrays if provided
-    if (req.body.extras === "") req.body.extras = [];
-    if (req.body.payments === "") req.body.payments = [];
+    // Unified sanitization
+    sanitizeCommonBody(
+      req.body,
+      ['shootDateAndTime', 'deliveryDeadline', 'birthDate'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
     
-    // Normalize dates inside payments array
-    if (Array.isArray(req.body.payments)) {
-      req.body.payments.forEach((p: any) => {
-        if (p.date === "") p.date = null;
-      });
-    }
-
     const maternity = new Maternity(req.body);
     await maternity.save(); // triggers pre-save calculations
 
@@ -251,18 +244,13 @@ export const updateMaternity = async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    // Apply only the fields sent in the request
-    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
-    if (req.body.shootDateAndTime === "") req.body.shootDateAndTime = null;
-    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
-    if (req.body.birthDate === "") req.body.birthDate = null;
-
-    // Normalize dates inside payments array if it's being updated
-    if (Array.isArray(req.body.payments)) {
-      req.body.payments.forEach((p: any) => {
-        if (p.date === "") p.date = null;
-      });
-    }
+    // Unified sanitization
+    sanitizeCommonBody(
+      req.body,
+      ['shootDateAndTime', 'deliveryDeadline', 'birthDate'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
 
     Object.assign(maternity, req.body);
     await maternity.save(); // triggers pre-save recalculation

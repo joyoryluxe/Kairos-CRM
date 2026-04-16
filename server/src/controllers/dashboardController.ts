@@ -287,7 +287,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
         return {
           id: l._id,
           clientName: l.clientName,
-          type: 'Lead Follow-up',
+          type: 'leads',
           deadline: l.nextFollowUpDate,
           daysRemaining: diffDays,
           priority,

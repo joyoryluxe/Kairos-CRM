@@ -26,10 +26,20 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const responseData = error.response?.data;
+    const errorMessage = responseData?.message || error.message || "An unexpected error occurred";
+
     if (error.response?.status === 401) {
       localStorage.removeItem("kairos_token");
-      window.location.href = "/login";
+      if (!window.location.pathname.endsWith("/login")) {
+        window.location.href = "/login";
+      }
+    } else if (error.response?.status >= 400) {
+      // Show descriptive error to user if they are in dev mode or seeing 400s
+      console.error("API Error:", errorMessage);
+      alert(`Error (${error.response.status}): ${errorMessage}`);
     }
+    
     return Promise.reject(error);
   }
 );

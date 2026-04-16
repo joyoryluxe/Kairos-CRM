@@ -15,7 +15,7 @@ import {
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
 import { History as HistoryIcon, X } from "lucide-react";
-import FieldHistoryDropdown from "@/components/FieldHistoryDropdown";
+import AutocompleteInput from "@/components/AutocompleteInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -163,8 +163,15 @@ export default function InfluencerFormPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+
+    // Sanitize arrays: remove items with empty descriptions/amounts
+    const cleanExtras = (form.extras || []).filter(ex => ex.description.trim() !== "" || ex.amount > 0);
+    const cleanPayments = (form.payments || []).filter(p => p.amount > 0);
+
     const payload: any = {
       ...form,
+      extras: cleanExtras,
+      payments: cleanPayments,
       total,
       advance: paid,
       balance,
@@ -306,40 +313,69 @@ export default function InfluencerFormPage() {
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                <FieldHistoryDropdown formId="influencer" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
               </div>
-              <input required value={form.clientName} onChange={(e) => setForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Riya Mehta" style={inputCls} />
+              <AutocompleteInput 
+                model="influencer" 
+                field="clientName" 
+                required 
+                value={form.clientName} 
+                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                placeholder="e.g. Riya Mehta" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
-                <FieldHistoryDropdown formId="influencer" fieldName="phoneNumber" onSelect={(v) => setForm(f => ({ ...f, phoneNumber: v }))} />
               </div>
-              <input required value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="+91 98765 43210" style={inputCls} />
+              <AutocompleteInput 
+                model="influencer" 
+                field="phoneNumber" 
+                required 
+                value={form.phoneNumber} 
+                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
+                placeholder="+91 98765 43210" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Email Address</label>
-                <FieldHistoryDropdown formId="influencer" fieldName="email" onSelect={(v) => setForm(f => ({ ...f, email: v }))} />
               </div>
-              <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="influencer@example.com" style={inputCls} />
+              <AutocompleteInput 
+                model="influencer" 
+                field="email" 
+                value={form.email || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
+                placeholder="influencer@example.com" 
+              />
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Instagram ID</label>
-                <FieldHistoryDropdown formId="influencer" fieldName="instaId" onSelect={(v) => setForm(f => ({ ...f, instaId: v }))} />
               </div>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}><Instagram size={15} /></span>
-                <input value={form.instaId} onChange={(e) => setForm((f) => ({ ...f, instaId: e.target.value }))} placeholder="@handle" style={{ ...inputCls, paddingLeft: "2.25rem" }} />
+                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", zIndex: 10 }}><Instagram size={15} /></span>
+                <AutocompleteInput 
+                  model="influencer" 
+                  field="instaId" 
+                  value={form.instaId || ""} 
+                  onChange={(v: string) => setForm((f) => ({ ...f, instaId: v }))} 
+                  placeholder="@handle" 
+                  style={{ width: "100%" }}
+                  className="pl-9"
+                />
               </div>
             </div>
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
                 <label style={labelStyle}>Reference By</label>
-                <FieldHistoryDropdown formId="influencer" fieldName="referredBy" onSelect={(v) => setForm(f => ({ ...f, referredBy: v }))} />
               </div>
-              <input value={form.referredBy} onChange={(e) => setForm((f) => ({ ...f, referredBy: e.target.value }))} placeholder="Friend / Agency" style={inputCls} />
+              <AutocompleteInput 
+                model="influencer" 
+                field="referredBy" 
+                value={form.referredBy || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, referredBy: v }))} 
+                placeholder="Friend / Agency" 
+              />
             </div>
           </div>
         </Section>
@@ -350,7 +386,12 @@ export default function InfluencerFormPage() {
             {(["street", "city", "state", "zipCode"] as const).map((field) => (
               <div key={field}>
                 <label style={labelStyle}>{field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}</label>
-                <input value={form.address[field]} onChange={(e) => setForm((f) => ({ ...f, address: { ...f.address, [field]: e.target.value } }))} style={inputCls} />
+                <AutocompleteInput 
+                  model="influencer" 
+                  field={`address.${field}`} 
+                  value={form.address[field]} 
+                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))} 
+                />
               </div>
             ))}
           </div>
@@ -361,7 +402,13 @@ export default function InfluencerFormPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Campaign Name</label>
-              <input value={form.shootName} onChange={(e) => setForm((f) => ({ ...f, shootName: e.target.value }))} placeholder="e.g. Summer Collection" style={inputCls} />
+              <AutocompleteInput 
+                model="influencer" 
+                field="shootName" 
+                value={form.shootName || ""} 
+                onChange={(v: string) => setForm((f) => ({ ...f, shootName: v }))} 
+                placeholder="e.g. Summer Collection" 
+              />
             </div>
             <div>
               <label style={labelStyle}>Shoot Date & Time</label>
@@ -384,7 +431,14 @@ export default function InfluencerFormPage() {
               <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input required value={form.package} onChange={(e) => setForm((f) => ({ ...f, package: e.target.value }))} placeholder="e.g. Special Deal" style={inputCls} />
+                  <AutocompleteInput 
+                    model="influencer" 
+                    field="package" 
+                    required 
+                    value={form.package || ""} 
+                    onChange={(v: string) => setForm((f) => ({ ...f, package: v }))} 
+                    placeholder="e.g. Special Deal" 
+                  />
                   <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
                 </div>
               ) : (

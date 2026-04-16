@@ -17,13 +17,13 @@ export default function DashboardLayout() {
 
   const { data: dashboardData } = useQuery({
     queryKey: ["dashboard-overview"],
-    queryFn: getDashboardOverview,
+    queryFn: () => getDashboardOverview(),
     refetchInterval: 60000,
   });
 
   const { data: authData } = useQuery({
     queryKey: ["auth-me"],
-    queryFn: getMe,
+    queryFn: () => getMe(),
     retry: 1,
   });
 

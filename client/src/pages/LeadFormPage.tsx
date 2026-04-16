@@ -2261,7 +2261,7 @@ import {
   X
 } from "lucide-react";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "../utils/formHistory";
-import FieldHistoryDropdown from "../components/FieldHistoryDropdown";
+import AutocompleteInput from "../components/AutocompleteInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -2647,6 +2647,9 @@ const LeadFormPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Strip empty/placeholder items from array if any (none in Leads yet, but good for future)
+    
     const payload = {
       ...form,
       eventType: isCustomEvent ? (customEventName as LeadEventType) : form.eventType,
@@ -2816,16 +2819,18 @@ const LeadFormPage: React.FC = () => {
                 <div className="form-field">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <label>Client Name *</label>
-                    <FieldHistoryDropdown formId="lead" fieldName="clientName" onSelect={(v) => set({ clientName: v })} style={{ marginBottom: "-4px" }} />
                   </div>
                   <div className="field-wrap">
-                    <User size={14} className="field-icon" />
-                    <input
-                      type="text"
-                      required
-                      value={form.clientName}
-                      onChange={(e) => set({ clientName: e.target.value })}
-                      placeholder="e.g. Rahul Gupta"
+                    <User size={14} className="field-icon" style={{ zIndex: 10 }} />
+                    <AutocompleteInput 
+                      model="lead" 
+                      field="clientName" 
+                      required 
+                      value={form.clientName} 
+                      onChange={(v: string) => set({ clientName: v })} 
+                      placeholder="e.g. Rahul Gupta" 
+                      style={{ width: "100%" }}
+                      className="pl-9"
                     />
                   </div>
                 </div>
@@ -2835,31 +2840,35 @@ const LeadFormPage: React.FC = () => {
                   <div className="form-field">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <label>Phone Number *</label>
-                      <FieldHistoryDropdown formId="lead" fieldName="phoneNumber" onSelect={(v) => set({ phoneNumber: v })} style={{ marginBottom: "-4px" }} />
                     </div>
                     <div className="field-wrap">
-                      <Phone size={14} className="field-icon" />
-                      <input
-                        type="text"
-                        required
-                        value={form.phoneNumber}
-                        onChange={(e) => set({ phoneNumber: e.target.value })}
-                        placeholder="+91 9876543210"
+                      <Phone size={14} className="field-icon" style={{ zIndex: 10 }} />
+                      <AutocompleteInput 
+                        model="lead" 
+                        field="phoneNumber" 
+                        required 
+                        value={form.phoneNumber} 
+                        onChange={(v: string) => set({ phoneNumber: v })} 
+                        placeholder="+91 9876543210" 
+                        style={{ width: "100%" }}
+                        className="pl-9"
                       />
                     </div>
                   </div>
                   <div className="form-field">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <label>Email Address</label>
-                      <FieldHistoryDropdown formId="lead" fieldName="email" onSelect={(v) => set({ email: v })} style={{ marginBottom: "-4px" }} />
                     </div>
                     <div className="field-wrap">
-                      <Mail size={14} className="field-icon" />
-                      <input
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => set({ email: e.target.value })}
-                        placeholder="example@mail.com"
+                      <Mail size={14} className="field-icon" style={{ zIndex: 10 }} />
+                      <AutocompleteInput 
+                        model="lead" 
+                        field="email" 
+                        value={form.email || ""} 
+                        onChange={(v: string) => set({ email: v })} 
+                        placeholder="example@mail.com" 
+                        style={{ width: "100%" }}
+                        className="pl-9"
                       />
                     </div>
                   </div>
@@ -2884,15 +2893,16 @@ const LeadFormPage: React.FC = () => {
                     {/* Inline custom input appears right below the dropdown */}
                     {isCustomSource && (
                       <div className="field-wrap custom-input-fade" style={{ marginTop: "8px" }}>
-                        <Globe size={14} className="field-icon" />
-                        <input
-                          type="text"
-                          required
-                          autoFocus
-                          value={customSourceName}
-                          onChange={(e) => setCustomSourceName(e.target.value)}
-                          placeholder="e.g. Newspaper, Friend…"
-                          style={{ paddingLeft: "38px" }}
+                        <Globe size={14} className="field-icon" style={{ zIndex: 10 }} />
+                        <AutocompleteInput 
+                          model="lead" 
+                          field="source" 
+                          required 
+                          value={customSourceName} 
+                          onChange={(v: string) => setCustomSourceName(v)} 
+                          placeholder="e.g. Newspaper, Friend…" 
+                          style={{ width: "100%" }}
+                          className="pl-9"
                         />
                       </div>
                     )}
@@ -2940,15 +2950,16 @@ const LeadFormPage: React.FC = () => {
                     {/* Inline custom input appears right below the dropdown */}
                     {isCustomEvent && (
                       <div className="field-wrap custom-input-fade" style={{ marginTop: "8px" }}>
-                        <Tag size={14} className="field-icon" />
-                        <input
-                          type="text"
-                          required
-                          autoFocus
-                          value={customEventName}
-                          onChange={(e) => setCustomEventName(e.target.value)}
-                          placeholder="e.g. Birthday, Gala…"
-                          style={{ paddingLeft: "38px" }}
+                        <Tag size={14} className="field-icon" style={{ zIndex: 10 }} />
+                        <AutocompleteInput 
+                          model="lead" 
+                          field="eventType" 
+                          required 
+                          value={customEventName} 
+                          onChange={(v: string) => setCustomEventName(v)} 
+                          placeholder="e.g. Birthday, Gala…" 
+                          style={{ width: "100%" }}
+                          className="pl-9"
                         />
                       </div>
                     )}
@@ -2989,12 +3000,15 @@ const LeadFormPage: React.FC = () => {
                 <div className="form-field">
                   <label>Location / Venue</label>
                   <div className="field-wrap">
-                    <MapPin size={14} className="field-icon" />
-                    <input
-                      type="text"
-                      value={form.eventLocation}
-                      onChange={(e) => set({ eventLocation: e.target.value })}
-                      placeholder="City / Venue name"
+                    <MapPin size={14} className="field-icon" style={{ zIndex: 10 }} />
+                    <AutocompleteInput 
+                      model="lead" 
+                      field="eventLocation" 
+                      value={form.eventLocation || ""} 
+                      onChange={(v: string) => set({ eventLocation: v })} 
+                      placeholder="City / Venue name" 
+                      style={{ width: "100%" }}
+                      className="pl-9"
                     />
                   </div>
                 </div>

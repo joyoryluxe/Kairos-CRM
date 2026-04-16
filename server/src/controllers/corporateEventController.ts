@@ -3,24 +3,18 @@ import CorporateEvent from '../models/CorporateEvent';
 import { User } from '../models/User';
 import { googleCalendarService } from '../services/googleCalendarService';
 import { AuthRequest } from '../middleware/authenticate';
+import { sanitizeCommonBody } from '../utils/sanitizer';
 
 // Create a new Corporate Event record
 export const createCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
-    if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
-    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
-
-    // Ensure extras and payments are arrays if provided
-    if (req.body.extras === "") req.body.extras = [];
-    if (req.body.payments === "") req.body.payments = [];
-    
-    // Normalize dates inside payments array
-    if (Array.isArray(req.body.payments)) {
-      req.body.payments.forEach((p: any) => {
-        if (p.date === "") p.date = null;
-      });
-    }
+    // Unified sanitization
+    sanitizeCommonBody(
+      req.body,
+      ['eventDateAndTime', 'deliveryDeadline'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
 
     const corporateEvent = await CorporateEvent.create(req.body);
 
@@ -135,16 +129,13 @@ export const getCorporateEventById = async (req: AuthRequest, res: Response): Pr
 // Update a Corporate Event record
 export const updateCorporateEvent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    // Normalize date fields: convert empty strings to null to avoid Mongoose validation errors
-    if (req.body.eventDateAndTime === "") req.body.eventDateAndTime = null;
-    if (req.body.deliveryDeadline === "") req.body.deliveryDeadline = null;
-
-    // Normalize dates inside payments array if it's being updated
-    if (Array.isArray(req.body.payments)) {
-      req.body.payments.forEach((p: any) => {
-        if (p.date === "") p.date = null;
-      });
-    }
+    // Unified sanitization
+    sanitizeCommonBody(
+      req.body,
+      ['eventDateAndTime', 'deliveryDeadline'],
+      ['package', 'status'],
+      ['extras', 'payments']
+    );
 
     const corporateEvent = await CorporateEvent.findByIdAndUpdate(req.params.id, req.body, {
       new: true,

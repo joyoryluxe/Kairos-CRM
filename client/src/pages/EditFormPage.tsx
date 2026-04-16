@@ -15,7 +15,7 @@ import {
   X
 } from "lucide-react";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "../utils/formHistory";
-import FieldHistoryDropdown from "../components/FieldHistoryDropdown";
+import AutocompleteInput from "../components/AutocompleteInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -116,10 +116,14 @@ const EditFormPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Ensure numeric fields are numbers (though they should be already)
+    const payload = { ...form };
+
     if (isEdit) {
-      updateMutation.mutate(form);
+      updateMutation.mutate(payload);
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(payload);
     }
   };
 
@@ -226,27 +230,27 @@ const EditFormPage: React.FC = () => {
               <div className="form-group-premium grow">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
                   <label style={{ marginBottom: 0 }}>Project Title</label>
-                  <FieldHistoryDropdown formId="edit" fieldName="title" onSelect={(v) => setForm(f => ({ ...f, title: v }))} />
                 </div>
-                <input 
+                <AutocompleteInput 
+                  model="edit" 
+                  field="title" 
                   required 
-                  type="text" 
-                  value={form.title}
-                  onChange={e => setForm({...form, title: e.target.value})}
-                  placeholder="e.g. Grand Finale Reel"
+                  value={form.title} 
+                  onChange={(v: string) => setForm(f => ({ ...f, title: v }))} 
+                  placeholder="e.g. Grand Finale Reel" 
                 />
               </div>
               <div className="form-group-premium grow">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
                   <label style={{ marginBottom: 0 }}>Client Name</label>
-                  <FieldHistoryDropdown formId="edit" fieldName="clientName" onSelect={(v) => setForm(f => ({ ...f, clientName: v }))} />
                 </div>
-                <input 
+                <AutocompleteInput 
+                  model="edit" 
+                  field="clientName" 
                   required 
-                  type="text" 
-                  value={form.clientName}
-                  onChange={e => setForm({...form, clientName: e.target.value})}
-                  placeholder="Assigned client"
+                  value={form.clientName} 
+                  onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                  placeholder="Assigned client" 
                 />
               </div>
             </div>
@@ -262,14 +266,14 @@ const EditFormPage: React.FC = () => {
               <div className="form-group-premium">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
                   <label style={{ marginBottom: 0 }}>Edit Category</label>
-                  <FieldHistoryDropdown formId="edit" fieldName="type" onSelect={(v) => setForm(f => ({ ...f, type: v }))} />
                 </div>
-                <input 
+                <AutocompleteInput 
+                  model="edit" 
+                  field="type" 
                   required 
-                  type="text" 
-                  value={form.type}
-                  onChange={e => setForm({...form, type: e.target.value})}
-                  placeholder="e.g. Reel, Album, VFX"
+                  value={form.type} 
+                  onChange={(v: string) => setForm(f => ({ ...f, type: v }))} 
+                  placeholder="e.g. Reel, Album, VFX" 
                 />
               </div>
               <div className="form-group-premium">

@@ -6,7 +6,7 @@ import api from "@/api/axios";
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["auth-me"], queryFn: getMe });
+  const { data, isLoading } = useQuery({ queryKey: ["auth-me"], queryFn: () => getMe() });
   const user = data?.user;
 
   const [form, setForm] = useState({ name: "", email: "" });
