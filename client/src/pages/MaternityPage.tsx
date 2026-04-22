@@ -590,7 +590,16 @@ function buildWhatsAppMessage(record: Maternity): string {
   const lines = [
     `👤 *Client:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
+    record.email ? `📧 *Email:* ${record.email}` : null,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
+    record.babyName ? `👶 *Baby Name:* ${record.babyName}` : null,
+    record.birthDate ? `🎂 *Birth Date:* ${formatDate(record.birthDate)}` : null,
+    record.shootDateAndTime ? `🕒 *Shoot Date & Time:* ${formatDateTime(record.shootDateAndTime)}` : null,
+    record.deliveryDeadline ? `⏳ *Delivery Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
+    record.status ? `📊 *Status:* ${record.status}` : null,
+    record.package ? `📦 *Package:* ${record.package}` : null,
+    record.referredBy ? `🤝 *Referred By:* ${record.referredBy}` : null,
+    record.notes ? `📝 *Notes:* ${record.notes}` : null,
   ].filter((l) => l !== null).join("\n");
 
   return lines;

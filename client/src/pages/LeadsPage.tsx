@@ -475,11 +475,27 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 }
 
 // ─── Build WhatsApp message from lead ───────────────────────────────────────
+const safeFormatDate = (dateStr?: string) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return format(d, "MMM dd, yyyy");
+};
+
 function buildWhatsAppMessage(lead: Lead): string {
   const lines = [
     `👤 *Name:* ${lead.clientName}`,
     `📞 *Phone:* ${lead.phoneNumber}`,
+    lead.email ? `📧 *Email:* ${lead.email}` : null,
+    lead.source ? `🌐 *Source:* ${lead.source}` : null,
+    lead.eventType ? `🎉 *Event Type:* ${lead.eventType}` : null,
+    lead.eventDate ? `📅 *Event Date:* ${safeFormatDate(lead.eventDate)}` : null,
     lead.eventLocation ? `📍 *Location:* ${lead.eventLocation}` : null,
+    lead.status ? `📊 *Status:* ${lead.status}` : null,
+    lead.inquiryDate ? `📅 *Inquiry Date:* ${safeFormatDate(lead.inquiryDate)}` : null,
+    lead.lastContactedDate ? `☎️ *Last Contacted:* ${safeFormatDate(lead.lastContactedDate)}` : null,
+    lead.nextFollowUpDate ? `⏰ *Next Follow-up:* ${safeFormatDate(lead.nextFollowUpDate)}` : null,
+    lead.notes ? `📝 *Notes:* ${lead.notes}` : null,
   ].filter((l) => l !== null).join("\n");
 
   return lines;

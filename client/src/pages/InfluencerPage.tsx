@@ -580,7 +580,16 @@ function buildWhatsAppMessage(record: Influencer): string {
   const lines = [
     `👤 *Name:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
+    record.email ? `📧 *Email:* ${record.email}` : null,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
+    record.instaId ? `📷 *Instagram:* @${record.instaId}` : null,
+    record.shootName ? `🎬 *Shoot Name:* ${record.shootName}` : null,
+    record.shootDateAndTime ? `🕒 *Shoot Date & Time:* ${formatDateTime(record.shootDateAndTime)}` : null,
+    record.deliveryDeadline ? `⏳ *Delivery Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
+    record.status ? `📊 *Status:* ${record.status}` : null,
+    record.package ? `📦 *Package:* ${record.package}` : null,
+    record.referredBy ? `🤝 *Referred By:* ${record.referredBy}` : null,
+    record.notes ? `📝 *Notes:* ${record.notes}` : null,
   ].filter((l) => l !== null).join("\n");
 
   return lines;

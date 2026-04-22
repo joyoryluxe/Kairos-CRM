@@ -78,9 +78,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+        {/* <div style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
           Don't have an account? <Link to="/signup" style={{ fontWeight: 500 }}>Sign Up</Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );

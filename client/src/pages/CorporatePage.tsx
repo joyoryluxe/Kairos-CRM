@@ -662,7 +662,14 @@ function buildWhatsAppMessage(record: CorporateEvent): string {
   const lines = [
     `👤 *Client:* ${record.clientName}`,
     `📞 *Phone:* ${record.phoneNumber}`,
+    record.email ? `📧 *Email:* ${record.email}` : null,
     addressParts ? `📍 *Address:* ${addressParts}` : null,
+    record.eventName ? `🎉 *Event Name:* ${record.eventName}` : null,
+    record.eventDateAndTime ? `🕒 *Event Date & Time:* ${formatDateTime(record.eventDateAndTime)}` : null,
+    record.deliveryDeadline ? `⏳ *Delivery Deadline:* ${formatDate(record.deliveryDeadline)}` : null,
+    record.status ? `📊 *Status:* ${record.status}` : null,
+    record.package ? `📦 *Package:* ${record.package}` : null,
+    record.notes ? `📝 *Notes:* ${record.notes}` : null,
   ].filter((l) => l !== null).join("\n");
 
   return lines;
