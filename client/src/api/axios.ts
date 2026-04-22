@@ -3,7 +3,7 @@ import axios from "axios";
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const defaultBaseUrl = isLocalhost 
   ? "http://localhost:5000/api" 
-  : "https://kairos-crm-g7af.onrender.com/api";
+  : "https://kairos-djb5.onrender.com/api";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,
