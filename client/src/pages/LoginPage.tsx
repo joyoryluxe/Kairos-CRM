@@ -1,4 +1,5 @@
 import { useState, FormEvent } from "react";
+import logoImage from "../Kairos Logo.png";
 import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,6 +46,7 @@ export default function LoginPage() {
     <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", padding: "1.5rem", backgroundColor: "var(--bg-page)" }}>
       <div className="card" style={{ width: "100%", maxWidth: 420, padding: "clamp(1.5rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem)" }}>
         <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+          <img src={logoImage} alt="Kairos CRM Logo" style={{ maxHeight: "60px", width: "auto", marginBottom: "1rem" }} />
           <h1 style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>Sign In</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
             Welcome back to KAIROS CRM

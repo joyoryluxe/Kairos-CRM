@@ -1,4 +1,5 @@
 import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
+import logoImage from "../Kairos Logo.png";
 import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package, Users, FileText } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,17 +85,8 @@ export default function DashboardLayout() {
         className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem", paddingLeft: "0.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: "6px",
-              background: "linear-gradient(135deg, var(--color-primary), var(--color-accent))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700, color: "#fff", fontSize: "1rem",
-              boxShadow: "var(--shadow-primary)",
-            }}>K</div>
-            <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1.2rem", letterSpacing: "-0.02em" }}>
-              KAIROS
-            </span>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <img src={logoImage} alt="Kairos CRM Logo" style={{ maxHeight: "40px", width: "auto" }} />
           </div>
           <button
             className="mobile-only"
