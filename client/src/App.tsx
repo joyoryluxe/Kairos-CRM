@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
+// import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import MaternityPage from "./pages/MaternityPage";

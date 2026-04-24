@@ -154,7 +154,7 @@ export default function MaternityFormPage() {
       saveFieldHistory("maternity", "email", form.email);
       saveFieldHistory("maternity", "city", form.address.city);
 
-      queryClient.invalidateQueries({ queryKey: ["maternity"] });
+      queryClient.invalidateQueries({ queryKey: ["maternities"] });
       navigate("/dashboard/maternity");
     },
   });
@@ -163,7 +163,7 @@ export default function MaternityFormPage() {
     mutationFn: ({ payload }: { payload: Partial<MaternityInput> }) =>
       updateMaternity(id!, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["maternity"] });
+      queryClient.invalidateQueries({ queryKey: ["maternities"] });
       navigate("/dashboard/maternity");
     },
   });
