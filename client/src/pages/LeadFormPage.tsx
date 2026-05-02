@@ -2709,6 +2709,44 @@ const LeadFormPage: React.FC = () => {
 
   const hasHistory = !isEdit && !!getFormHistory("lead");
 
+  const handleSelectFullRecord = (record: any) => {
+    setForm((prev) => ({
+      ...prev,
+      phoneNumber: record.phoneNumber || prev.phoneNumber,
+      email: record.email || prev.email,
+      eventLocation: record.eventLocation || prev.eventLocation,
+      budget: record.budget || prev.budget,
+    }));
+    
+    // Handle source
+    if (record.source) {
+      const isStdSource = STANDARD_SOURCES.includes(record.source);
+      if (isStdSource) {
+        setForm((prev) => ({ ...prev, source: record.source as LeadSource }));
+        setIsCustomSource(false);
+        setCustomSourceName("");
+      } else {
+        setForm((prev) => ({ ...prev, source: "Other" }));
+        setIsCustomSource(true);
+        setCustomSourceName(record.source);
+      }
+    }
+
+    // Handle event type
+    if (record.eventType) {
+      const isStdEvent = STANDARD_EVENT_TYPES.includes(record.eventType);
+      if (isStdEvent) {
+        setForm((prev) => ({ ...prev, eventType: record.eventType as LeadEventType }));
+        setIsCustomEvent(false);
+        setCustomEventName("");
+      } else {
+        setForm((prev) => ({ ...prev, eventType: "Other" }));
+        setIsCustomEvent(true);
+        setCustomEventName(record.eventType);
+      }
+    }
+  };
+
   /* Handle event type select change */
   const handleEventTypeChange = (val: string) => {
     if (val === "Other") {
@@ -2828,6 +2866,7 @@ const LeadFormPage: React.FC = () => {
                       required 
                       value={form.clientName} 
                       onChange={(v: string) => set({ clientName: v })} 
+                      onSelectFullRecord={handleSelectFullRecord}
                       placeholder="e.g. Rahul Gupta" 
                       style={{ width: "100%" }}
                       className="pl-9"

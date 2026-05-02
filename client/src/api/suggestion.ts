@@ -6,3 +6,10 @@ export const getFieldSuggestions = async (model: string, field: string, query: s
   });
   return data.data;
 };
+
+export const getRecordByField = async (model: string, field: string, query: string): Promise<any> => {
+  const { data } = await api.get(`/suggestions/${model}/${field}/record`, {
+    params: { q: query }
+  });
+  return data.data;
+};

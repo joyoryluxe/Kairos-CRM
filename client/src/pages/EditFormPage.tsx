@@ -151,6 +151,16 @@ const EditFormPage: React.FC = () => {
 
   const hasHistory = !isEdit && !!getFormHistory("edit");
 
+  const handleSelectFullRecord = (record: any) => {
+    setForm((prev) => ({
+      ...prev,
+      type: record.type || prev.type,
+      status: record.status || prev.status,
+      priority: record.priority || prev.priority,
+      notes: record.notes || prev.notes,
+    }));
+  };
+
   if (isEdit && isFetching) return <Loader fullPage message="Retrieving task details..." />;
 
   return (
@@ -250,6 +260,7 @@ const EditFormPage: React.FC = () => {
                   required 
                   value={form.clientName} 
                   onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                  onSelectFullRecord={handleSelectFullRecord}
                   placeholder="Assigned client" 
                 />
               </div>

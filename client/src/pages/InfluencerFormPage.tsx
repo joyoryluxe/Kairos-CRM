@@ -101,7 +101,7 @@ export default function InfluencerFormPage() {
   });
 
   useEffect(() => {
-    if (isEdit && isSuccess && existingRecord && !loaded && packages.length > 0) {
+    if (isEdit && isSuccess && existingRecord && !loaded) {
       const m = existingRecord;
       setForm({
         clientName: m.clientName,
@@ -232,6 +232,38 @@ export default function InfluencerFormPage() {
 
   const hasHistory = !isEdit && !!getFormHistory("influencer");
 
+  const handleSelectFullRecord = (record: any) => {
+    setForm((prev) => ({
+      ...prev,
+      phoneNumber: record.phoneNumber || prev.phoneNumber,
+      email: record.email || prev.email,
+      address: record.address || prev.address,
+      instaId: record.instaId || prev.instaId,
+      referredBy: record.referredBy || prev.referredBy,
+      shootName: record.shootName || prev.shootName,
+    }));
+
+    setTimeout(() => {
+      const confirm = window.confirm("Do you also want to fill up the package details, payments, and expenses from this client's previous record?");
+      if (confirm) {
+        setForm((prev) => ({
+          ...prev,
+          package: record.package || prev.package,
+          packagePrice: record.packagePrice || prev.packagePrice,
+          extras: Array.isArray(record.extras) ? record.extras : prev.extras,
+          expenses: record.expenses || prev.expenses,
+          payments: Array.isArray(record.payments) ? record.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : prev.payments,
+          notes: record.notes || prev.notes,
+        }));
+        if (record.package && !packages.some(p => p.name === record.package)) {
+          setIsCustomPackage(true);
+        } else {
+          setIsCustomPackage(false);
+        }
+      }
+    }, 100);
+  };
+
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
       {isPending && <Loader fullPage message="Saving influencer data..." />}
@@ -320,6 +352,7 @@ export default function InfluencerFormPage() {
                 required 
                 value={form.clientName} 
                 onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                onSelectFullRecord={handleSelectFullRecord}
                 placeholder="e.g. Riya Mehta" 
               />
             </div>

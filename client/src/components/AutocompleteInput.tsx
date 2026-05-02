@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getFieldSuggestions } from "@/api/suggestion";
+import { getFieldSuggestions, getRecordByField } from "@/api/suggestion";
 import { Search, Loader2 } from "lucide-react";
 
 interface AutocompleteInputProps {
@@ -12,6 +12,7 @@ interface AutocompleteInputProps {
   required?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  onSelectFullRecord?: (record: any) => void;
 }
 
 export default function AutocompleteInput({
@@ -23,6 +24,7 @@ export default function AutocompleteInput({
   required,
   style,
   className,
+  onSelectFullRecord,
 }: AutocompleteInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -54,6 +56,22 @@ export default function AutocompleteInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleSelect = async (suggestion: string) => {
+    onChange(suggestion);
+    setIsOpen(false);
+    
+    if (onSelectFullRecord) {
+      try {
+        const record = await getRecordByField(model, field, suggestion);
+        if (record) {
+          onSelectFullRecord(record);
+        }
+      } catch (error) {
+        console.error("Failed to fetch full record:", error);
+      }
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -63,8 +81,7 @@ export default function AutocompleteInput({
       setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
     } else if (e.key === "Enter" && highlightedIndex >= 0) {
       e.preventDefault();
-      onChange(suggestions[highlightedIndex]);
-      setIsOpen(false);
+      handleSelect(suggestions[highlightedIndex]);
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -114,10 +131,7 @@ export default function AutocompleteInput({
           {suggestions.map((suggestion, index) => (
             <div
               key={suggestion}
-              onClick={() => {
-                onChange(suggestion);
-                setIsOpen(false);
-              }}
+              onClick={() => handleSelect(suggestion)}
               onMouseEnter={() => setHighlightedIndex(index)}
               style={{
                 padding: "0.75rem 1rem",
