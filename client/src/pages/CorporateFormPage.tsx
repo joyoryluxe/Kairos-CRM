@@ -15,6 +15,7 @@ import {
   type CorporateEventInput,
 } from "@/api/corporateEvents";
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
+import DateTimePicker from "@/components/DateTimePicker";
 
 // ─── Date Helpers ─────────────────────────────────────────────────────────────
 const toLocalISOString = (date?: string | Date) => {
@@ -418,7 +419,7 @@ export default function CorporateFormPage() {
             </div>
             <div>
               <label style={labelStyle}>Event Date & Time</label>
-              <input type="datetime-local" value={form.eventDateAndTime} onChange={(e) => setForm((f) => ({ ...f, eventDateAndTime: e.target.value }))} style={inputCls} />
+              <DateTimePicker value={form.eventDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, eventDateAndTime: val }))} />
             </div>
             <div>
               <label style={labelStyle}>Delivery Deadline</label>

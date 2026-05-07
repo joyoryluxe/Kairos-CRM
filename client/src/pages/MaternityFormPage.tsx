@@ -16,6 +16,7 @@ import { getActivePackages, type Package as PackageType } from "@/api/packages";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
 import { History as HistoryIcon, X } from "lucide-react";
 import AutocompleteInput from "@/components/AutocompleteInput";
+import DateTimePicker from "@/components/DateTimePicker";
 
 // ─── Date Helpers ─────────────────────────────────────────────────────────────
 const toLocalISOString = (date?: string | Date) => {
@@ -469,7 +470,7 @@ export default function MaternityFormPage() {
             </div>
             <div>
               <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Shoot Date & Time</label>
-              <input type="datetime-local" value={form.shootDateAndTime} onChange={(e) => setForm((f) => ({ ...f, shootDateAndTime: e.target.value }))} style={inputCls} />
+              <DateTimePicker value={form.shootDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, shootDateAndTime: val }))} />
             </div>
             <div>
               <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Delivery Deadline</label>
