@@ -16,6 +16,22 @@ import {
 } from "@/api/corporateEvents";
 import { getActivePackages, type Package as PackageType } from "@/api/packages";
 
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+const toLocalISOString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+};
+
+const toLocalDateString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 // ─── Section Card ──────────────────────────────────────────────────────────────
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -97,13 +113,13 @@ export default function CorporateFormPage() {
         email: m.email ?? "",
         address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
         eventName: m.eventName ?? "",
-        eventDateAndTime: m.eventDateAndTime ? new Date(m.eventDateAndTime).toISOString().slice(0, 16) : "",
-        deliveryDeadline: m.deliveryDeadline ? new Date(m.deliveryDeadline).toISOString().slice(0, 10) : "",
+        eventDateAndTime: toLocalISOString(m.eventDateAndTime),
+        deliveryDeadline: toLocalDateString(m.deliveryDeadline),
         package: m.package ?? "",
         packagePrice: m.packagePrice ?? 0,
         notes: m.notes ?? "",
         extras: Array.isArray(m.extras) ? m.extras : [],
-        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
+        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: toLocalDateString(p.date) })) : [],
         expenses: m.expenses ?? 0,
         status: m.status ?? "Pending",
       });
@@ -155,9 +171,9 @@ export default function CorporateFormPage() {
     const payload: any = {
       ...form,
       extras: cleanExtras,
-      payments: cleanPayments,
-      eventDateAndTime: form.eventDateAndTime || null,
-      deliveryDeadline: form.deliveryDeadline || null,
+      payments: cleanPayments.map(p => ({ ...p, date: p.date ? new Date(p.date).toISOString() : undefined })),
+      eventDateAndTime: form.eventDateAndTime ? new Date(form.eventDateAndTime).toISOString() : undefined,
+      deliveryDeadline: form.deliveryDeadline ? new Date(form.deliveryDeadline).toISOString() : undefined,
       total,
       advance: paid,
       balance,

@@ -2274,6 +2274,14 @@ import {
   type LeadEventType,
 } from "../api/lead";
 
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+const toLocalDateString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 interface FormState {
   clientName: string;
   phoneNumber: string;
@@ -2294,7 +2302,7 @@ const EMPTY_FORM: FormState = {
   phoneNumber: "",
   email: "",
   source: "Instagram",       // start on a real value so onChange fires when "Other" is picked
-  inquiryDate: new Date().toISOString().split("T")[0],
+  inquiryDate: toLocalDateString(new Date()),
   eventType: "Wedding",      // start on a real value so onChange fires when "Other" is picked
   eventDate: "",
   eventLocation: "",
@@ -2594,14 +2602,14 @@ const LeadFormPage: React.FC = () => {
         phoneNumber: lead.phoneNumber,
         email: lead.email || "",
         source: isStdSource ? lead.source : "Other",
-        inquiryDate: lead.inquiryDate ? new Date(lead.inquiryDate).toISOString().split("T")[0] : "",
+        inquiryDate: toLocalDateString(lead.inquiryDate),
         eventType: isStdEvent ? lead.eventType : "Other",
-        eventDate: lead.eventDate ? new Date(lead.eventDate).toISOString().split("T")[0] : "",
+        eventDate: toLocalDateString(lead.eventDate),
         eventLocation: lead.eventLocation || "",
         budget: lead.budget || 0,
         status: lead.status,
         notes: lead.notes || "",
-        nextFollowUpDate: lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toISOString().split("T")[0] : "",
+        nextFollowUpDate: toLocalDateString(lead.nextFollowUpDate),
       });
 
       if (!isStdEvent) { setIsCustomEvent(true); setCustomEventName(lead.eventType); }
@@ -2650,8 +2658,11 @@ const LeadFormPage: React.FC = () => {
 
     // Strip empty/placeholder items from array if any (none in Leads yet, but good for future)
     
-    const payload = {
+    const payload: any = {
       ...form,
+      inquiryDate: form.inquiryDate ? new Date(form.inquiryDate).toISOString() : new Date().toISOString(),
+      eventDate: form.eventDate ? new Date(form.eventDate).toISOString() : undefined,
+      nextFollowUpDate: form.nextFollowUpDate ? new Date(form.nextFollowUpDate).toISOString() : undefined,
       eventType: isCustomEvent ? (customEventName as LeadEventType) : form.eventType,
       source: isCustomSource ? (customSourceName as LeadSource) : form.source,
     };

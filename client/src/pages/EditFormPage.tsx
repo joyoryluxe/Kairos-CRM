@@ -28,6 +28,14 @@ import {
 } from "../api/edit";
 import Loader from "../components/Loader";
 
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+const toLocalDateString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const EMPTY_FORM: EditInput = {
   title: "",
   type: "",
@@ -76,8 +84,8 @@ const EditFormPage: React.FC = () => {
         clientName: edit.clientName,
         status: edit.status,
         priority: edit.priority,
-        receivedDate: edit.receivedDate ? new Date(edit.receivedDate).toISOString().split('T')[0] : "",
-        deadline: edit.deadline ? new Date(edit.deadline).toISOString().split('T')[0] : "",
+        receivedDate: toLocalDateString(edit.receivedDate),
+        deadline: toLocalDateString(edit.deadline),
         notes: edit.notes || "",
         photoClipCount: edit.photoClipCount || 0,
       });
@@ -118,7 +126,11 @@ const EditFormPage: React.FC = () => {
     e.preventDefault();
     
     // Ensure numeric fields are numbers (though they should be already)
-    const payload = { ...form };
+    const payload = { 
+      ...form,
+      receivedDate: form.receivedDate ? new Date(form.receivedDate).toISOString() : undefined,
+      deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
+    } as EditInput;
 
     if (isEdit) {
       updateMutation.mutate(payload);
