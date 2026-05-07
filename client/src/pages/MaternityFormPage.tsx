@@ -17,6 +17,22 @@ import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formH
 import { History as HistoryIcon, X } from "lucide-react";
 import AutocompleteInput from "@/components/AutocompleteInput";
 
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+const toLocalISOString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+};
+
+const toLocalDateString = (date?: string | Date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
   clientName: string;
@@ -108,19 +124,15 @@ export default function MaternityFormPage() {
         phoneNumber: m.phoneNumber,
         email: m.email ?? "",
         address: m.address ?? { street: "", city: "", state: "", zipCode: "" },
-        shootDateAndTime: m.shootDateAndTime
-          ? new Date(m.shootDateAndTime).toISOString().slice(0, 16)
-          : "",
-        deliveryDeadline: m.deliveryDeadline
-          ? new Date(m.deliveryDeadline).toISOString().slice(0, 10)
-          : "",
-        birthDate: m.birthDate ? new Date(m.birthDate).toISOString().slice(0, 10) : "",
+        shootDateAndTime: toLocalISOString(m.shootDateAndTime),
+        deliveryDeadline: toLocalDateString(m.deliveryDeadline),
+        birthDate: toLocalDateString(m.birthDate),
         babyName: m.babyName ?? "",
         package: m.package ?? "",
         packagePrice: m.packagePrice ?? 0,
         extras: Array.isArray(m.extras) ? m.extras : [],
         expenses: m.expenses ?? 0,
-        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : [],
+        payments: Array.isArray(m.payments) ? m.payments.map((p: any) => ({ ...p, date: toLocalDateString(p.date) })) : [],
         notes: m.notes ?? "",
         status: m.status ?? "Pending",
       });
@@ -177,8 +189,11 @@ export default function MaternityFormPage() {
 
     const payload: any = {
       ...form,
+      shootDateAndTime: form.shootDateAndTime ? new Date(form.shootDateAndTime).toISOString() : undefined,
+      deliveryDeadline: form.deliveryDeadline ? new Date(form.deliveryDeadline).toISOString() : undefined,
+      birthDate: form.birthDate ? new Date(form.birthDate).toISOString() : undefined,
       extras: cleanExtras,
-      payments: cleanPayments,
+      payments: cleanPayments.map(p => ({ ...p, date: p.date ? new Date(p.date).toISOString() : undefined })),
       total,
       advance: paid,
       balance,
@@ -265,7 +280,7 @@ export default function MaternityFormPage() {
           packagePrice: record.packagePrice || prev.packagePrice,
           extras: Array.isArray(record.extras) ? record.extras : prev.extras,
           expenses: record.expenses || prev.expenses,
-          payments: Array.isArray(record.payments) ? record.payments.map((p: any) => ({ ...p, date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "" })) : prev.payments,
+          payments: Array.isArray(record.payments) ? record.payments.map((p: any) => ({ ...p, date: toLocalDateString(p.date) })) : prev.payments,
           notes: record.notes || prev.notes,
         }));
         if (record.package && !packages.some(p => p.name === record.package)) {
