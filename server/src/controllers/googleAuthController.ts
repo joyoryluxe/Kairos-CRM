@@ -27,6 +27,7 @@ export const getGoogleAuthUrl = (req: Request, res: Response) => {
 
 export const googleAuthCallback = async (req: Request, res: Response) => {
   const { code, state } = req.query;
+  const clientOrigin = env.CLIENT_ORIGIN.split(',')[0].trim().replace(/\/$/, "");
 
   if (!code) {
     return res.status(400).send('No authorization code provided');
@@ -46,7 +47,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
         } else if (!user.googleRefreshToken) {
           // No new token and no existing token — connection incomplete.
           console.warn('Google Auth: No refresh token returned and no token on file. Prompt re-consent.');
-          return res.redirect(`${env.CLIENT_ORIGIN}/dashboard?googleError=${encodeURIComponent('No refresh token received. Please disconnect and reconnect your Google account.')}`);
+          return res.redirect(`${clientOrigin}/dashboard?googleError=${encodeURIComponent('No refresh token received. Please disconnect and reconnect your Google account.')}`);
         }
         // If refreshToken is undefined but we already have one stored, keep the existing one.
         user.googleCalendarConnected = true;
@@ -54,13 +55,12 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
       }
     }
 
-    // Redirect user back to frontend
     // Redirect user back to frontend with a clean URL
-    res.redirect(`${env.CLIENT_ORIGIN}/dashboard?googleConnected=true`);
+    res.redirect(`${clientOrigin}/dashboard?googleConnected=true`);
   } catch (error: any) {
     console.error('Google Auth Callback Error:', error);
     // If it's a "code already used" or similar, it might still have connected.
-    res.redirect(`${env.CLIENT_ORIGIN}/dashboard?googleError=${encodeURIComponent(error.message)}`);
+    res.redirect(`${clientOrigin}/dashboard?googleError=${encodeURIComponent(error.message)}`);
   }
 };
 

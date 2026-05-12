@@ -450,7 +450,7 @@
 //               {(record.extras ?? []).map((e: any, idx: number) => (
 //                 <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
 //                   <span>{e.description}</span>
-//                   <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(e.amount)}</span>
+//                   <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(e.amount || 0)}</span>
 //                 </div>
 //               ))}
 //             </div>
@@ -527,6 +527,7 @@ import { useNavigate } from "react-router-dom";
 import {
   deleteInfluencer,
   getInfluencers,
+  updateInfluencer,
   type Influencer,
 } from "@/api/influencer";
 import { getActivePackages } from "@/api/packages";
@@ -635,6 +636,49 @@ export default function InfluencerPage() {
     mutationFn: (id: string) => deleteInfluencer(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["influencer"] }); },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<Influencer> }) => updateInfluencer(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["influencer"] });
+      alert("Payment recorded and influencer record updated!");
+    },
+    onError: (err: any) => {
+      alert("Failed to update influencer record: " + err.message);
+    }
+  });
+
+  const handleQuickPay = (record: Influencer) => {
+    // Real-time calculation for perfection
+    const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    const total = (record.packagePrice || 0) + extrasTotal;
+    const paid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const balance = total - paid;
+
+    if (balance <= 0) return;
+
+    const newPayment = {
+      amount: balance,
+      date: new Date().toISOString(),
+      note: "Full Payment successfully received - Punit Desai."
+    };
+
+    const updatedPayments = [...(record.payments || []), newPayment];
+    const updatedAdvance = paid + balance;
+    const updatedBalance = 0;
+
+    updateMutation.mutate({
+      id: record._id,
+      payload: {
+        ...record, // Preserve all existing data (extras, expenses, package, etc.)
+        payments: updatedPayments,
+        advance: updatedAdvance,
+        balance: updatedBalance,
+        total: total,
+        status: "Completed"
+      }
+    });
+  };
 
   const handleExport = () => {
     if (!data?.data || data.data.length === 0) return;
@@ -863,6 +907,8 @@ export default function InfluencerPage() {
                   onEdit={() => navigate(`/dashboard/influencer/${inf._id}/edit`)}
                   onDelete={() => deleteMutation.mutate(inf._id)}
                   isDeleting={deleteMutation.isPending}
+                  onQuickPay={() => handleQuickPay(inf)}
+                  isUpdating={updateMutation.isPending && updateMutation.variables?.id === inf._id}
                 />
               ))
             )}
@@ -874,9 +920,22 @@ export default function InfluencerPage() {
 }
 
 // ─── Record Card ───────────────────────────────────────────────────────────────
-function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influencer; onEdit: () => void; onDelete: () => void; isDeleting: boolean }) {
+function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdating }: {
+  record: Influencer;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+  onQuickPay: () => void;
+  isUpdating: boolean;
+}) {
   const [showExtras, setShowExtras] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
+
+  const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const calculatedTotal = (record.packagePrice || 0) + extrasTotal;
+  const calculatedPaid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const calculatedBalance = calculatedTotal - calculatedPaid;
+  const calculatedProfit = calculatedTotal - (record.expenses || 0);
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
 
@@ -960,6 +1019,45 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
               >
                 <WhatsAppIcon size={15} />
               </a>
+
+              {/* Quick Pay Button */}
+              {calculatedBalance > 0 && (
+                <button
+                  type="button"
+                  title="Quick Full Payment"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    marginTop: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(52, 211, 153, 0.25)";
+                    (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(52, 211, 153, 0.15)";
+                    (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={15} />
+                  )}
+                </button>
+              )}
             </div>
           )}
 
@@ -990,6 +1088,36 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
               >
                 <WhatsAppIcon size={13} /> Share on WhatsApp
               </a>
+
+              {/* Quick Pay Button (Pill version) */}
+              {calculatedBalance > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "10px", height: "10px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={13} />
+                  )}
+                  Quick Pay
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1024,22 +1152,34 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
         </div>
 
         {/* Financials */}
-        <div style={{ fontSize: "0.9rem" }}>
+        <div style={{ fontSize: "0.9rem", minWidth: "180px" }}>
+          {extrasTotal > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Extras</span>
+              <strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(extrasTotal)}</strong>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Total</span>
-            <strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.total ?? 0)}</strong>
+            <strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(calculatedTotal)}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Advance</span>
-            <span style={{ color: "hsl(142,71%,45%)" }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.advance ?? 0)}</span>
+            <span style={{ color: "hsl(142,71%,45%)" }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(calculatedPaid)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Balance</span>
-            <span style={{ color: (record.balance ?? 0) > 0 ? "var(--color-danger)" : "inherit", fontWeight: 600 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.balance ?? 0)}</span>
+            <span style={{ color: calculatedBalance > 0 ? "var(--color-danger)" : "inherit", fontWeight: 600 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(calculatedBalance)}</span>
           </div>
+          {(record.expenses || 0) > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Expenses</span>
+              <span style={{ color: "var(--color-danger)" }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.expenses || 0)}</span>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--border)", marginTop: "0.25rem", paddingTop: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Profit</span>
-            <span style={{ color: "#10b981", fontWeight: 700 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.profit ?? ((record.total || 0) - (record.expenses || 0)))}</span>
+            <span style={{ color: "#10b981", fontWeight: 700 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(calculatedProfit)}</span>
           </div>
         </div>
       </div>
@@ -1055,7 +1195,7 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Influenc
               {(record.extras ?? []).map((e: any, idx: number) => (
                 <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
                   <span>{e.description}</span>
-                  <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(e.amount)}</span>
+                  <span>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(e.amount || 0)}</span>
                 </div>
               ))}
             </div>

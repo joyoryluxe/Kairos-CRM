@@ -8,13 +8,11 @@ import {
   ArrowLeft, 
   Save, 
   ChevronRight,
-  Sparkles,
   Layers,
   Clock,
-  History as HistoryIcon,
-  X
+  History as HistoryIcon
 } from "lucide-react";
-import { saveFormHistory, getFormHistory, saveFieldHistory } from "../utils/formHistory";
+import { getFormHistory } from "../utils/formHistory";
 import AutocompleteInput from "../components/AutocompleteInput";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,22 +46,45 @@ const EMPTY_FORM: EditInput = {
   photoClipCount: 0,
 };
 
-const PremiumSection: React.FC<{ title: string; subtitle?: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, subtitle, icon, children }) => (
-  <div className="glass-section">
-    <div className="section-header">
-      <div className="section-icon">{icon}</div>
-      <div>
-        <h3>{title}</h3>
-        {subtitle && <p className="section-subtitle">{subtitle}</p>}
+// ─── Premium Components ──────────────────────────────────────────────────
+function Section({ title, icon, children, description }: { title: string; icon: React.ReactNode; children: React.ReactNode; description?: string }) {
+  return (
+    <div style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: "1.25rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ 
+          background: "var(--color-primary-glow)", 
+          color: "var(--color-primary)", 
+          padding: "0.6rem", 
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {icon}
+        </div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#f8fafc" }}>{title}</h3>
+          {description && <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>{description}</p>}
+        </div>
       </div>
-    </div>
-    <div className="section-content">
       {children}
     </div>
-  </div>
-);
+  );
+}
 
-const EditFormPage: React.FC = () => {
+const labelStyle: React.CSSProperties = { fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em", marginBottom: "0.5rem", display: "block" };
+
+const inputCls = { width: "100%", padding: "0.75rem 1rem", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "0.75rem", color: "#f8fafc", fontSize: "0.95rem", outline: "none" };
+
+export default function EditFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
   const isEdit = Boolean(id);
@@ -95,20 +116,6 @@ const EditFormPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createEdit,
     onSuccess: () => {
-      // Save to history
-      const historyData = {
-        title: form.title,
-        clientName: form.clientName,
-        type: form.type,
-        priority: form.priority,
-      };
-      saveFormHistory("edit", historyData);
-
-      // Save individual fields history
-      saveFieldHistory("edit", "title", form.title);
-      saveFieldHistory("edit", "clientName", form.clientName);
-      saveFieldHistory("edit", "type", form.type);
-
       queryClient.invalidateQueries({ queryKey: ["edits"] });
       navigate("/dashboard/edits");
     },
@@ -124,44 +131,22 @@ const EditFormPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Ensure numeric fields are numbers (though they should be already)
     const payload = { 
       ...form,
       receivedDate: form.receivedDate ? new Date(form.receivedDate).toISOString() : undefined,
       deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
     } as EditInput;
-
-    if (isEdit) {
-      updateMutation.mutate(payload);
-    } else {
-      createMutation.mutate(payload);
-    }
+    isEdit ? updateMutation.mutate(payload) : createMutation.mutate(payload);
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const [backupState, setBackupState] = useState<EditInput | null>(null);
-
   const handleLoadHistory = () => {
     const history = getFormHistory("edit");
     if (history) {
-      setBackupState({ ...form });
-      setForm((f) => ({
-        ...f,
-        ...history,
-      }));
+      setForm((f) => ({ ...f, ...history }));
     }
   };
-
-  const handleUndoHistory = () => {
-    if (backupState) {
-      setForm(backupState);
-      setBackupState(null);
-    }
-  };
-
-  const hasHistory = !isEdit && !!getFormHistory("edit");
 
   const handleSelectFullRecord = (record: any) => {
     setForm((prev) => ({
@@ -176,100 +161,66 @@ const EditFormPage: React.FC = () => {
   if (isEdit && isFetching) return <Loader fullPage message="Retrieving task details..." />;
 
   return (
-    <div className="form-page-container">
-      {/* Dynamic Background Elements */}
-      <div className="bg-glow bg-glow-1"></div>
-      <div className="bg-glow bg-glow-2"></div>
+    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 3rem" }}>
+      {/* ── Header ── */}
+      <div style={{ marginBottom: "2rem" }}>
+        <button onClick={() => navigate("/dashboard/edits")} style={{ 
+          display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", 
+          color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem" 
+        }}>
+          <ArrowLeft size={16} /> Back to Library
+        </button>
 
-      <div className="form-content">
-        {/* Navigation & Breadcrumbs */}
-        <div className="form-header">
-           <button onClick={() => navigate("/dashboard/edits")} className="btn-back-premium">
-            <ArrowLeft size={18} />
-            <span>Back to Tasks</span>
-          </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.75rem", fontWeight: 600 }}>
+          <span>Library</span>
+          <ChevronRight size={14} />
+          <span style={{ color: "var(--text-primary)" }}>{isEdit ? "Refine Task" : "Initialize"}</span>
+        </div>
 
-          <div className="breadcrumb-premium">
-            <span>Library</span>
-            <ChevronRight size={14} />
-            <span>Edits</span>
-            <ChevronRight size={14} />
-            <span className="current">{isEdit ? "Refine Task" : "New Creation"}</span>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+           <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
+             <Layers size={26} />
+           </div>
+           <div>
+             <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
+               {isEdit ? "Refine Edit Task" : "Initialize New Task"}
+             </h1>
+             <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+               Post-production Workflow
+             </p>
+           </div>
+        </div>
+      </div>
 
-          <div className="title-row">
-            <div className="title-icon">
-              {isEdit ? <Layers size={24} /> : <Sparkles size={24} />}
-            </div>
-            <div>
-                <h1>{isEdit ? "Refine Edit Task" : "Create New Task"}</h1>
-                <p>Define the parameters for your post-production workflow.</p>
-              </div>
-            </div>
+      {!isEdit && !!getFormHistory("edit") && (
+        <button onClick={handleLoadHistory} style={{ 
+          marginBottom: "2.5rem", width: "100%", padding: "1.25rem", borderRadius: "1.25rem", 
+          background: "rgba(124, 58, 237, 0.08)", border: "1px dashed rgba(124, 58, 237, 0.3)", 
+          color: "var(--color-primary)", fontWeight: 800, cursor: "pointer", display: "flex", 
+          alignItems: "center", justifyContent: "center", gap: "1rem", fontSize: "1.05rem" 
+        }}>
+          <HistoryIcon size={20} />
+          Restore Configuration from Last Session
+        </button>
+      )}
 
-            {hasHistory && (
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.5rem" }}>
-                {backupState && (
-                  <button
-                    type="button"
-                    onClick={handleUndoHistory}
-                    className="btn-back-premium"
-                    style={{
-                      borderColor: "var(--color-danger-glow)",
-                      color: "var(--color-danger)",
-                      backgroundColor: "var(--bg-surface-3)",
-                    }}
-                    title="Restore before fill"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleLoadHistory}
-                  className="btn-back-premium"
-                  style={{
-                    borderColor: "var(--color-primary-glow)",
-                    color: "var(--color-primary)",
-                    backgroundColor: "var(--bg-surface-3)",
-                  }}
-                >
-                  <HistoryIcon size={18} />
-                  <span>Fill from Last Submission</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-        <form onSubmit={handleSubmit} className="premium-form">
-          {/* Section: Basic Metadata */}
-          <PremiumSection 
-            title="Identity & Ownership" 
-            subtitle="Core identification for the edit project"
-            icon={<User size={20} />}
-          >
-            <div className="form-grid">
-              <div className="form-group-premium grow">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                  <label style={{ marginBottom: 0 }}>Project Title</label>
-                </div>
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <Section title="Identity & Ownership" icon={<User size={22} />} description="Core identification for the edit project">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Project Title</label>
                 <AutocompleteInput 
-                  model="edit" 
-                  field="title" 
-                  required 
+                  model="edit" field="title" required 
                   value={form.title} 
                   onChange={(v: string) => setForm(f => ({ ...f, title: v }))} 
                   placeholder="e.g. Grand Finale Reel" 
                 />
               </div>
-              <div className="form-group-premium grow">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                  <label style={{ marginBottom: 0 }}>Client Name</label>
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Client Name</label>
                 <AutocompleteInput 
-                  model="edit" 
-                  field="clientName" 
-                  required 
+                  model="edit" field="clientName" required 
                   value={form.clientName} 
                   onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
                   onSelectFullRecord={handleSelectFullRecord}
@@ -277,353 +228,96 @@ const EditFormPage: React.FC = () => {
                 />
               </div>
             </div>
-          </PremiumSection>
+          </Section>
 
-          {/* Section: Categorization & Priority */}
-          <PremiumSection 
-            title="Classification" 
-            subtitle="Categorize and prioritize the workload"
-            icon={<Tag size={20} />}
-          >
-            <div className="form-grid row-3">
-              <div className="form-group-premium">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                  <label style={{ marginBottom: 0 }}>Edit Category</label>
-                </div>
+          <Section title="Classification" icon={<Tag size={22} />} description="Categorize and prioritize the workload">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Edit Category</label>
                 <AutocompleteInput 
-                  model="edit" 
-                  field="type" 
-                  required 
+                  model="edit" field="type" required 
                   value={form.type} 
                   onChange={(v: string) => setForm(f => ({ ...f, type: v }))} 
                   placeholder="e.g. Reel, Album, VFX" 
                 />
               </div>
-              <div className="form-group-premium">
-                <label>Execution Status</label>
-                <div className="select-premium">
-                  <select value={form.status} onChange={e => setForm({...form, status: e.target.value as EditStatus})}>
-                    <option value="Pending">Pending Review</option>
-                    <option value="In Progress">Active Execution</option>
-                    <option value="Done">Completed</option>
-                    <option value="Delivered">Successfully Delivered</option>
-                  </select>
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Execution Status</label>
+                <select style={inputCls} value={form.status} onChange={e => setForm({...form, status: e.target.value as EditStatus})}>
+                  <option value="Pending">Pending Review</option>
+                  <option value="In Progress">Active Execution</option>
+                  <option value="Done">Completed</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
               </div>
-              <div className="form-group-premium">
-                <label>Urgency Level</label>
-                <div className="select-premium">
-                  <select value={form.priority} onChange={e => setForm({...form, priority: e.target.value as EditPriority})}>
-                    <option value="Low">Standard (Low)</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="High">Urgent (High)</option>
-                  </select>
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Urgency Level</label>
+                <select style={inputCls} value={form.priority} onChange={e => setForm({...form, priority: e.target.value as EditPriority})}>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
               </div>
             </div>
-          </PremiumSection>
+          </Section>
 
-          {/* Section: Timeline & Quantification */}
-          <PremiumSection 
-            title="Timeline & Assets" 
-            subtitle="Set expectations and asset volume"
-            icon={<Calendar size={20} />}
-          >
-            <div className="form-grid row-3">
-              <div className="form-group-premium">
-                <label>Assets Received</label>
-                <input required type="date" value={form.receivedDate} onChange={e => setForm({...form, receivedDate: e.target.value})} />
+          <Section title="Timeline & Assets" icon={<Calendar size={22} />} description="Set expectations and asset volume">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Assets Received</label>
+                <input required type="date" style={{ ...inputCls, colorScheme: "dark" }} value={form.receivedDate} onChange={e => setForm({...form, receivedDate: e.target.value})} />
               </div>
-              <div className="form-group-premium">
-                <label>Commitment Deadline</label>
-                <input required type="date" value={form.deadline} onChange={e => setForm({...form, deadline: e.target.value})} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Commitment Deadline</label>
+                <input required type="date" style={{ ...inputCls, colorScheme: "dark" }} value={form.deadline} onChange={e => setForm({...form, deadline: e.target.value})} />
               </div>
-              <div className="form-group-premium">
-                <label>Quantity of Items</label>
-                <div className="input-with-icon">
-                  <Hash size={16} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Quantity of Items</label>
+                <div style={{ position: "relative" }}>
+                  <Hash size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
                   <input 
-                    required 
-                    type="number" 
-                    min="0"
+                    required type="number" min="0" style={{ ...inputCls, paddingLeft: "2.5rem" }}
                     value={form.photoClipCount}
                     onChange={e => setForm({...form, photoClipCount: parseInt(e.target.value) || 0})}
                   />
                 </div>
               </div>
             </div>
-          </PremiumSection>
+          </Section>
+        </div>
 
-          {/* Section: Narrative Notes */}
-          <PremiumSection 
-            title="Strategic Notes" 
-            subtitle="Detailed instructions and client vision"
-            icon={<MessageSquare size={20} />}
-          >
-            <div className="form-group-premium full">
-              <textarea 
-                value={form.notes}
-                onChange={e => setForm({...form, notes: e.target.value})}
-                placeholder="Elaborate on specific requirements, transitions, or corrections..."
-                rows={5}
-              />
-            </div>
-          </PremiumSection>
+        <Section title="Strategic Notes" icon={<MessageSquare size={22} />} description="Detailed instructions and client vision">
+          <textarea 
+            style={{ ...inputCls, minHeight: "180px", resize: "vertical" }} 
+            value={form.notes}
+            onChange={e => setForm({...form, notes: e.target.value})}
+            placeholder="Elaborate on specific requirements, transitions, or corrections..."
+          />
+        </Section>
 
-          {/* Actions Bar */}
-          <div className="actions-bar-premium">
-            <button type="button" className="btn-cancel-premium" onClick={() => navigate("/dashboard/edits")}>Dismiss Changes</button>
-            <button type="submit" className="btn-save-premium" disabled={isPending}>
-              {isPending ? <Clock size={18} className="spin" /> : <Save size={18} />}
-              <span>{isPending ? "Syncing..." : isEdit ? "Update Project" : "Initialize Project"}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-
+        <div style={{ 
+          display: "flex", justifyContent: "flex-end", gap: "2rem", marginTop: "1rem", 
+          padding: "3rem 0", borderTop: "2px solid rgba(255,255,255,0.05)", alignItems: "center" 
+        }}>
+          <button type="button" onClick={() => navigate("/dashboard/edits")} style={{ 
+            background: "transparent", border: "none", color: "#94a3b8", fontWeight: 800, 
+            fontSize: "1.1rem", cursor: "pointer", transition: "0.3s" 
+          }}>Dismiss Changes</button>
+          
+          <button type="submit" disabled={isPending} style={{ 
+            background: "linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%)", color: "white", 
+            padding: "1.25rem 3.5rem", borderRadius: "24px", fontWeight: 900, border: "none", 
+            display: "flex", alignItems: "center", gap: "1rem", fontSize: "1.2rem", cursor: "pointer", 
+            boxShadow: "0 15px 35px rgba(124, 58, 237, 0.4)", transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)" 
+          }}>
+            {isPending ? <Clock size={22} style={{ animation: "spin 2s linear infinite" }} /> : <Save size={22} />}
+            <span>{isPending ? "Syncing..." : isEdit ? "Update Project" : "Initialize Project"}</span>
+          </button>
+        </div>
+      </form>
       <style>{`
-        .form-page-container {
-          min-height: 100vh;
-          position: relative;
-          background: var(--bg-page);
-          overflow-x: hidden;
-        }
-        .bg-glow {
-          position: fixed;
-          width: 600px;
-          height: 600px;
-          border-radius: 50%;
-          filter: blur(140px);
-          z-index: 0;
-          opacity: 0.15;
-          pointer-events: none;
-        }
-        .bg-glow-1 { top: -200px; right: -200px; background: var(--color-primary); }
-        .bg-glow-2 { bottom: -200px; left: -200px; background: #7c3aed; }
-
-        .form-content {
-          position: relative;
-          z-index: 1;
-          max-width: 1000px;
-          margin: 0 auto;
-          padding: 2.5rem 2rem 5rem;
-          animation: formFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        @keyframes formFadeUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .form-header { margin-bottom: 3.5rem; }
-        
-        .btn-back-premium {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--text-muted);
-          padding: 0.6rem 1.2rem;
-          border-radius: 14px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-bottom: 1.5rem;
-        }
-        .btn-back-premium:hover {
-          color: var(--text-primary);
-          border-color: var(--text-muted);
-          background: var(--bg-surface-2);
-        }
-
-        .breadcrumb-premium {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          font-weight: 700;
-          color: var(--text-muted);
-          margin-bottom: 1.25rem;
-        }
-        .breadcrumb-premium .current { color: var(--color-primary); }
-
-        .title-row {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-        .title-icon {
-          width: 64px;
-          height: 64px;
-          background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
-          color: white;
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 12px 24px rgba(124, 58, 237, 0.3);
-        }
-        .title-row h1 {
-          font-size: 2.5rem;
-          font-weight: 950;
-          letter-spacing: -0.05em;
-          margin: 0;
-        }
-        .title-row p {
-          margin: 4px 0 0;
-          color: var(--text-muted);
-          font-size: 1.1rem;
-          font-weight: 500;
-        }
-
-        .glass-section {
-          background: var(--bg-surface-2);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border: 1px solid var(--border);
-          border-radius: 32px;
-          padding: 2.5rem;
-          margin-bottom: 2rem;
-          box-shadow: 0 15px 40px rgba(0,0,0,0.03);
-          transition: transform 0.3s ease;
-        }
-        .glass-section:hover { transform: scale(1.005); }
-
-        .section-header {
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-          margin-bottom: 2.5rem;
-        }
-        .section-icon {
-          width: 44px;
-          height: 44px;
-          background: var(--bg-surface-3);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--color-primary);
-          border: 1px solid var(--border);
-        }
-        .section-header h3 {
-          margin: 0;
-          font-size: 1.4rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-        }
-        .section-subtitle {
-          margin: 4px 0 0;
-          font-size: 0.95rem;
-          color: var(--text-muted);
-          font-weight: 500;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 2rem;
-        }
-        .form-grid.row-3 { grid-template-columns: 1fr 1fr 1fr; }
-
-        .form-group-premium label {
-          display: block;
-          font-size: 0.85rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.75rem;
-          color: var(--text-muted);
-        }
-        .form-group-premium input, 
-        .form-group-premium textarea, 
-        .form-group-premium select {
-          width: 100%;
-          background: var(--bg-page);
-          border: 2px solid var(--border);
-          padding: 1rem 1.25rem;
-          border-radius: 16px;
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--text-primary);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          outline: none;
-          color-scheme: dark;
-        }
-        .form-group-premium select option {
-          background: var(--bg-surface-2);
-          color: var(--text-primary);
-        }
-        .form-group-premium input:focus, 
-        .form-group-premium textarea:focus,
-        .form-group-premium select:focus {
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 5px var(--color-primary-glow);
-        }
-
-        .input-with-icon { position: relative; }
-        .input-with-icon svg {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-        }
-        .input-with-icon input { padding-left: 38px; }
-
-        .actions-bar-premium {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1.5rem;
-          padding: 3rem 0;
-          border-top: 2px solid var(--border);
-        }
-
-        .btn-cancel-premium {
-          background: transparent;
-          border: none;
-          color: var(--text-muted);
-          font-weight: 800;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: color 0.3s;
-        }
-        .btn-cancel-premium:hover { color: var(--color-danger); }
-
-        .btn-save-premium {
-          background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
-          color: white;
-          padding: 1.1rem 2.5rem;
-          border-radius: 20px;
-          font-weight: 850;
-          border: none;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          font-size: 1.1rem;
-          cursor: pointer;
-          box-shadow: 0 15px 35px rgba(124, 58, 237, 0.4);
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .btn-save-premium:hover {
-          transform: translateY(-4px) scale(1.02);
-          box-shadow: 0 20px 50px rgba(124, 58, 237, 0.5);
-        }
-        .btn-save-premium:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-
-        .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        @media (max-width: 900px) {
-          .form-grid, .form-grid.row-3 { grid-template-columns: 1fr; }
-          .glass-section { padding: 1.5rem; }
-          .title-row h1 { font-size: 2rem; }
-          .btn-save-premium { width: 100%; justify-content: center; }
-        }
       `}</style>
     </div>
   );
-};
-
-export default EditFormPage;
+}

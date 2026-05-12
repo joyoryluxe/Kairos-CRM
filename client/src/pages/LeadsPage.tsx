@@ -438,6 +438,7 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Download,
+  CheckCircle2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getLeads, updateLead, type Lead, type LeadStatus } from "../api/lead";
@@ -1069,6 +1070,21 @@ const LeadsPage: React.FC = () => {
     exportToExcel(exportData, "Leads_Pipeline", summaryData);
   };
 
+  const updateLeadMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<Lead> }) => updateLead(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      alert("Lead marked as Booked!");
+    },
+    onError: (err: any) => {
+      alert("Failed to update lead: " + err.message);
+    }
+  });
+
+  const handleQuickBooked = (id: string) => {
+    updateLeadMutation.mutate({ id, payload: { status: "Booked" } });
+  };
+
   const getLeadsByStatus = (status: LeadStatus) =>
     filteredLeads.filter((lead) => lead.status === status);
 
@@ -1185,6 +1201,8 @@ const LeadsPage: React.FC = () => {
                           onStatusChange={(ns) =>
                             updateStatusMutation.mutate({ id: lead._id, status: ns })
                           }
+                          onQuickBooked={() => handleQuickBooked(lead._id)}
+                          isUpdating={updateLeadMutation.isPending && updateLeadMutation.variables?.id === lead._id}
                         />
                       ))
                     )}
@@ -1279,6 +1297,22 @@ const LeadsPage: React.FC = () => {
                           >
                             <WhatsAppIcon size={14} />
                           </a>
+                          {lead.status !== "Booked" && (
+                            <button
+                              type="button"
+                              className="icon-btn"
+                              title="Mark as Booked"
+                              onClick={(e) => { e.stopPropagation(); handleQuickBooked(lead._id); }}
+                              disabled={updateLeadMutation.isPending && updateLeadMutation.variables?.id === lead._id}
+                              style={{ color: "#10b981" }}
+                            >
+                              {updateLeadMutation.isPending && updateLeadMutation.variables?.id === lead._id ? (
+                                <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                              ) : (
+                                <CheckCircle2 size={14} />
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1297,7 +1331,9 @@ const LeadsPage: React.FC = () => {
 const LeadCard: React.FC<{
   lead: Lead;
   onStatusChange: (status: LeadStatus) => void;
-}> = ({ lead, onStatusChange }) => {
+  onQuickBooked: () => void;
+  isUpdating: boolean;
+}> = ({ lead, onStatusChange, onQuickBooked, isUpdating }) => {
   const navigate = useNavigate();
   const color = getStatusColor(lead.status);
 
@@ -1376,6 +1412,35 @@ const LeadCard: React.FC<{
           >
             <WhatsAppIcon size={13} />
           </a>
+
+          {/* Quick Booked Button */}
+          {lead.status !== "Booked" && (
+            <button
+              type="button"
+              title="Mark as Booked"
+              onClick={(e) => { e.stopPropagation(); onQuickBooked(); }}
+              disabled={isUpdating}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                backgroundColor: "rgba(52, 211, 153, 0.15)",
+                color: "#10b981",
+                border: "1px solid rgba(52, 211, 153, 0.3)",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {isUpdating ? (
+                <div className="animate-spin" style={{ width: "10px", height: "10px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+              ) : (
+                <CheckCircle2 size={14} />
+              )}
+            </button>
+          )}
         </div>
         <button
           className="details-btn"

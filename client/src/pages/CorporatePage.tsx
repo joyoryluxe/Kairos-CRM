@@ -594,7 +594,7 @@
 
 
 import {
-  Building2, Phone, Calendar, Plus, Edit, Trash2,
+  Building2, Phone, Plus, Edit, Trash2,
   Search, X, ChevronDown, ChevronUp, MapPin, Package,
   TrendingUp, CreditCard, AlertCircle, CheckCircle2, Download
 } from "lucide-react";
@@ -605,6 +605,7 @@ import { useNavigate } from "react-router-dom";
 import {
   deleteCorporateEvent,
   getCorporateEvents,
+  updateCorporateEvent,
   type CorporateEvent,
 } from "@/api/corporateEvents";
 import StatCard from "@/components/StatCard";
@@ -730,6 +731,49 @@ export default function CorporatePage() {
       queryClient.invalidateQueries({ queryKey: ["corporate-events"] });
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<CorporateEvent> }) => updateCorporateEvent(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["corporate-events"] });
+      alert("Payment recorded and corporate event updated!");
+    },
+    onError: (err: any) => {
+      alert("Failed to update corporate event: " + err.message);
+    }
+  });
+
+  const handleQuickPay = (record: CorporateEvent) => {
+    // Real-time calculation for perfection
+    const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    const total = (record.packagePrice || 0) + extrasTotal;
+    const paid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const balance = total - paid;
+
+    if (balance <= 0) return;
+
+    const newPayment = {
+      amount: balance,
+      date: new Date().toISOString(),
+      note: "Full Payment successfully received - Punit Desai."
+    };
+
+    const updatedPayments = [...(record.payments || []), newPayment];
+    const updatedAdvance = paid + balance;
+    const updatedBalance = 0;
+
+    updateMutation.mutate({
+      id: record._id,
+      payload: {
+        ...record, // Preserve all existing data
+        payments: updatedPayments,
+        advance: updatedAdvance,
+        balance: updatedBalance,
+        total: total, // Sync correct total
+        status: "Completed"
+      }
+    });
+  };
 
   const handleExport = () => {
     if (!data || data.length === 0) return;
@@ -1063,6 +1107,8 @@ export default function CorporatePage() {
                   onEdit={() => navigate(`/dashboard/corporate/${eItem._id}/edit`)}
                   onDelete={() => deleteMutation.mutate(eItem._id)}
                   isDeleting={deleteMutation.isPending}
+                  onQuickPay={() => handleQuickPay(eItem)}
+                  isUpdating={updateMutation.isPending && updateMutation.variables?.id === eItem._id}
                 />
               ))
             )}
@@ -1076,9 +1122,23 @@ export default function CorporatePage() {
 // ----------------------------------------------------------------------
 // Record Card Component
 // ----------------------------------------------------------------------
-function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: CorporateEvent; onEdit: () => void; onDelete: () => void; isDeleting: boolean }) {
+function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdating }: {
+  record: CorporateEvent;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+  onQuickPay: () => void;
+  isUpdating: boolean;
+}) {
   const [showExtras, setShowExtras] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
+
+  // Real-time calculation
+  const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const calculatedTotal = (record.packagePrice || 0) + extrasTotal;
+  const calculatedPaid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const calculatedBalance = calculatedTotal - calculatedPaid;
+  const calculatedProfit = calculatedTotal - (record.expenses || 0);
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
 
@@ -1118,23 +1178,48 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Corporat
             <Phone size={14} /> <span>{record.phoneNumber}</span>
           </div>
 
-          {/* ── Address + WhatsApp button side by side ── */}
-          {record.address && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-              <MapPin size={14} style={{ marginTop: 2, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                {record.address.street && <div>{record.address.street}</div>}
-                {(record.address.city || record.address.state || record.address.zipCode) && (
-                  <div>{[record.address.city, record.address.state, record.address.zipCode].filter(Boolean).join(", ")}</div>
-                )}
-              </div>
-              {/* WhatsApp share button */}
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Share event details on WhatsApp"
-                onClick={(e) => e.stopPropagation()}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            <MapPin size={14} style={{ marginTop: 2, flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              {record.address?.street && <div>{record.address.street}</div>}
+              {(record.address?.city || record.address?.state || record.address?.zipCode) && (
+                <div>{[record.address?.city, record.address?.state, record.address?.zipCode].filter(Boolean).join(", ")}</div>
+              )}
+            </div>
+
+            {/* WhatsApp share button */}
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Share on WhatsApp"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                backgroundColor: "#25D36620",
+                color: "#25D366",
+                border: "1px solid #25D36640",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                textDecoration: "none",
+              }}
+            >
+              <WhatsAppIcon size={15} />
+            </a>
+
+            {/* Quick Pay Button */}
+            {calculatedBalance > 0 && (
+              <button
+                type="button"
+                title="Quick Full Payment"
+                onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                disabled={isUpdating}
                 style={{
                   flexShrink: 0,
                   display: "inline-flex",
@@ -1143,67 +1228,20 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Corporat
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  backgroundColor: "#25D36620",
-                  color: "#25D366",
-                  border: "1px solid #25D36640",
+                  backgroundColor: "rgba(52, 211, 153, 0.15)",
+                  color: "#10b981",
+                  border: "1px solid rgba(52, 211, 153, 0.3)",
                   cursor: "pointer",
-                  transition: "background 0.15s, transform 0.15s",
-                  textDecoration: "none",
-                  marginTop: 1,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#25D36635";
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.1)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#25D36620";
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)";
+                  transition: "all 0.15s",
                 }}
               >
-                <WhatsAppIcon size={15} />
-              </a>
-            </div>
-          )}
-
-          {/* Show WhatsApp button even if no address (just contact share) */}
-          {!record.address && (
-            <div style={{ marginTop: "0.35rem" }}>
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Share event details on WhatsApp"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "var(--radius-md)",
-                  backgroundColor: "#25D36620",
-                  color: "#25D366",
-                  border: "1px solid #25D36640",
-                  cursor: "pointer",
-                  transition: "background 0.15s",
-                  textDecoration: "none",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                }}
-              >
-                <WhatsAppIcon size={13} /> Share on WhatsApp
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* Event Details */}
-        <div style={{ fontSize: "0.9rem" }}>
-          <div style={{ fontWeight: 700, marginBottom: "0.5rem", color: "var(--text-primary)" }}>{record.eventName || "Untitled Event"}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)" }}>
-            <Calendar size={14} /> <span>Date: {formatDateTime(record.eventDateAndTime)}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: (record.deliveryDeadline && new Date(record.deliveryDeadline) < new Date()) ? "var(--color-danger)" : "var(--text-muted)" }}>
-            <Calendar size={14} /> <span>Deadline: {formatDate(record.deliveryDeadline)}</span>
+                {isUpdating ? (
+                  <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                ) : (
+                  <CreditCard size={15} />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1220,28 +1258,38 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Corporat
               <span style={{ fontWeight: 600 }}>{formatCurrency(record.packagePrice)}</span>
             </div>
           )}
-          <div style={{ fontSize: "0.9rem" }}>
+          {extrasTotal > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-              <span style={{ color: "var(--text-muted)" }}>Total</span>
-              <strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.total ?? 0)}</strong>
+              <span style={{ color: "var(--text-muted)" }}>Extras</span>
+              <span>{formatCurrency(extrasTotal)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-              <span style={{ color: "var(--text-muted)" }}>Advance</span>
-              <span style={{ color: "hsl(142,71%,45%)" }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.advance ?? 0)}</span>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+            <span style={{ color: "var(--text-muted)" }}>Total</span>
+            <strong>{formatCurrency(calculatedTotal)}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+            <span style={{ color: "var(--text-muted)" }}>Paid</span>
+            <span style={{ color: "var(--color-success)" }}>{formatCurrency(calculatedPaid)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--border)", marginTop: "0.5rem", paddingTop: "0.5rem" }}>
+            <span style={{ fontWeight: 600 }}>Balance</span>
+            <span style={{ fontWeight: 800, color: calculatedBalance > 0 ? "var(--color-danger)" : "var(--color-success)" }}>{formatCurrency(calculatedBalance)}</span>
+          </div>
+          {(record.expenses || 0) > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.25rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Expenses</span>
+              <span style={{ color: "var(--color-danger)" }}>{formatCurrency(record.expenses)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-              <span style={{ color: "var(--text-muted)" }}>Balance</span>
-              <span style={{ color: (record.balance ?? 0) > 0 ? "var(--color-danger)" : "inherit", fontWeight: 600 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.balance ?? 0)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--border)", marginTop: "0.25rem", paddingTop: "0.25rem" }}>
-              <span style={{ color: "var(--text-muted)" }}>Profit</span>
-              <span style={{ color: "#10b981", fontWeight: 700 }}>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(record.profit ?? ((record.total || 0) - (record.expenses || 0)))}</span>
-            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.25rem" }}>
+            <span style={{ color: "var(--text-muted)" }}>Profit</span>
+            <span style={{ color: "#10b981", fontWeight: 700 }}>{formatCurrency(calculatedProfit)}</span>
           </div>
         </div>
       </div>
 
-      {/* Expanded Sections (Extras / Payments / Notes) */}
+      {/* Expanded Sections */}
       {((record.extras?.length ?? 0) > 0 || (record.payments?.length ?? 0) > 0 || record.notes) && (
         <div style={{ marginTop: "1rem", borderTop: "1px solid var(--border)", paddingTop: "1rem", display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
           {(record.extras?.length ?? 0) > 0 && (

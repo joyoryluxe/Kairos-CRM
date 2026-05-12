@@ -1,5 +1,5 @@
 import {
-  Building2, Phone, Calendar, Package, Plus, X,
+  Building2, Calendar, Package, Plus, X,
   ArrowLeft, Save, ChevronRight, Clock, MapPin, History as HistoryIcon
 } from "lucide-react";
 import { saveFormHistory, getFormHistory, saveFieldHistory } from "@/utils/formHistory";
@@ -34,22 +34,42 @@ const toLocalDateString = (date?: string | Date) => {
 };
 
 // ─── Section Card ──────────────────────────────────────────────────────────────
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, description }: { title: string; icon: React.ReactNode; children: React.ReactNode; description?: string }) {
   return (
-    <div style={{
-      background: "var(--bg-surface-2)", border: "1px solid var(--border)",
-      borderRadius: "var(--radius-lg)", padding: "1.5rem", marginBottom: "1.25rem",
+    <div className="form-section-card" style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: "1.25rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      boxSizing: "border-box",
+      width: "100%",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem", paddingBottom: "0.75rem", borderBottom: "1px solid var(--border)" }}>
-        <span style={{ color: "var(--color-primary)" }}>{icon}</span>
-        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ 
+          background: "var(--color-primary-glow)", 
+          color: "var(--color-primary)", 
+          padding: "0.6rem", 
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {icon}
+        </div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#f8fafc" }}>{title}</h3>
+          {description && <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>{description}</p>}
+        </div>
       </div>
       {children}
     </div>
   );
 }
 
-const labelStyle: React.CSSProperties = { fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" };
+const labelStyle: React.CSSProperties = { fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em", marginBottom: "0.5rem", display: "block" };
 const inputCls = { width: "100%" };
 
 const formatCurrency = (v?: number) =>
@@ -277,7 +297,7 @@ export default function CorporateFormPage() {
           <span>Corporate & Events</span><ChevronRight size={14} />
           <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{isEdit ? "Edit Event" : "New Event"}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
             <Building2 size={26} />
           </div>
@@ -337,15 +357,19 @@ export default function CorporateFormPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 
         {/* ─── Client Info ─────────────────────────────────────────── */}
-        <Section title="Client Information" icon={<Phone size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Company / Client Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
-              </div>
+        <Section 
+          title="Company Information" 
+          icon={<Building2 size={20} />} 
+          description="B2B client and contact details"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Company / Client Name <span style={{ color: "#ef4444" }}>*</span>
+              </label>
               <AutocompleteInput 
                 model="corporate" 
                 field="clientName" 
@@ -353,32 +377,30 @@ export default function CorporateFormPage() {
                 value={form.clientName} 
                 onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
                 onSelectFullRecord={handleSelectFullRecord}
-                placeholder="e.g. Tata Corp Ltd" 
+                placeholder="Full corporate name" 
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Phone Number <span style={{ color: "#ef4444" }}>*</span>
+              </label>
               <AutocompleteInput 
                 model="corporate" 
                 field="phoneNumber" 
                 required 
                 value={form.phoneNumber} 
                 onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
-                placeholder="+91 98765 43210" 
+                placeholder="+91" 
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Email Address</label>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Email Address</label>
               <AutocompleteInput 
                 model="corporate" 
                 field="email" 
                 value={form.email || ""} 
                 onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
-                placeholder="corp@example.com" 
+                placeholder="email@example.com" 
               />
             </div>
           </div>
@@ -386,55 +408,84 @@ export default function CorporateFormPage() {
 
         {/* ─── Address ─────────────────────────────────────────── */}
         <Section title="Address" icon={<MapPin size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
-            {(["street", "city", "state", "zipCode"] as const).map((field) => (
-              <div key={field}>
-                <label style={labelStyle}>
-                  {field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}
-                </label>
-                <AutocompleteInput
-                  model="corporate"
-                  field={`address.${field}`}
-                  value={form.address[field]}
-                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))}
-                  placeholder={field === "zipCode" ? "400001" : ""}
-                />
-              </div>
-            ))}
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Street / Area</label>
+              <AutocompleteInput 
+                model="corporate" 
+                field="address.street" 
+                value={form.address.street} 
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, street: v } }))} 
+                placeholder="e.g. Studio Street"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>City</label>
+              <AutocompleteInput 
+                model="corporate" 
+                field="address.city" 
+                value={form.address.city} 
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, city: v } }))} 
+                placeholder="Mumbai"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>State</label>
+              <AutocompleteInput 
+                model="corporate" 
+                field="address.state" 
+                value={form.address.state} 
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, state: v } }))} 
+                placeholder="Maharashtra"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Zip Code</label>
+              <AutocompleteInput 
+                model="corporate" 
+                field="address.zipCode" 
+                value={form.address.zipCode} 
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, zipCode: v } }))} 
+                placeholder="400001"
+              />
+            </div>
           </div>
         </Section>
 
         {/* ─── Event Details ────────────────────────────────────────── */}
         <Section title="Event Details" icon={<Calendar size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
-              <label style={labelStyle}>Event Name</label>
-              <AutocompleteInput 
-                model="corporate" 
-                field="eventName" 
-                value={form.eventName || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, eventName: v }))} 
-                placeholder="e.g. Annual Gala 2026" 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Event Date & Time</label>
-              <DateTimePicker value={form.eventDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, eventDateAndTime: val }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Delivery Deadline</label>
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-warning)" }}><Clock size={15} /></span>
-                <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ ...inputCls, paddingLeft: "2.25rem" }} />
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Event Name</label>
+                <AutocompleteInput 
+                  model="corporate" 
+                  field="eventName" 
+                  value={form.eventName || ""} 
+                  onChange={(v: string) => setForm((f) => ({ ...f, eventName: v }))} 
+                  placeholder="e.g. Annual Gala" 
+                />
               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Delivery Deadline</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}><Clock size={15} /></span>
+                  <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ ...inputCls, padding: "0.75rem 0.75rem 0.75rem 2.25rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", colorScheme: "dark" }} />
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Event Date & Time</label>
+              <DateTimePicker value={form.eventDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, eventDateAndTime: val }))} />
             </div>
           </div>
         </Section>
 
         {/* ─── Package ─────────────────────────────────────────────── */}
         <Section title="Package" icon={<Package size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -445,8 +496,9 @@ export default function CorporateFormPage() {
                     value={form.package || ""} 
                     onChange={(v: string) => setForm(f => ({ ...f, package: v }))} 
                     placeholder="e.g. Special Deal" 
+                    style={{ flex: 1 }}
                   />
-                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
+                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "#ef4444" }} title="Back to list"><X size={20} /></button>
                 </div>
               ) : (
                 <select value={form.package ?? ""} onChange={(e) => {
@@ -458,7 +510,7 @@ export default function CorporateFormPage() {
                     const pkg = packages.find(p => p.name === val);
                     setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
                   }
-                }} style={inputCls}>
+                }} style={{ ...inputCls, borderRadius: "0.75rem", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}>
                   <option value="">— No package —</option>
                   {packages.map((p) => (
                     <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
@@ -467,10 +519,10 @@ export default function CorporateFormPage() {
                 </select>
               )}
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b", fontWeight: 600 }}>₹</span>
                 <input
                   type="number"
                   readOnly={!isCustomPackage}
@@ -479,22 +531,25 @@ export default function CorporateFormPage() {
                   placeholder="0"
                   style={{ 
                     ...inputCls, 
-                    paddingLeft: "1.75rem",
-                    background: isCustomPackage ? "var(--bg-surface)" : "var(--bg-surface-3)", 
+                    padding: "0.75rem 0.75rem 0.75rem 2rem",
+                    background: isCustomPackage ? "var(--bg-surface-3)" : "rgba(15, 23, 42, 0.3)", 
+                    borderRadius: "0.75rem",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
                     cursor: isCustomPackage ? "text" : "not-allowed", 
                     color: "var(--color-primary)", 
-                    fontWeight: 700 
+                    fontWeight: 700,
+                    fontSize: "1.1rem"
                   }} 
                 />
               </div>
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Status</label>
-              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={inputCls}>
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={{ ...inputCls, borderRadius: "0.75rem", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}>
+                <option value="Pending">🕒 Pending</option>
+                <option value="Confirmed">✅ Confirmed</option>
+                <option value="Completed">✨ Completed</option>
+                <option value="Cancelled">❌ Cancelled</option>
               </select>
             </div>
           </div>
@@ -547,44 +602,67 @@ export default function CorporateFormPage() {
 
         {/* ─── Expenses & Notes ──────────────────────────────────────── */}
         <Section title="Expenses & Notes" icon={<Building2 size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
-            <div>
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Shoot Expenses (₹)</label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b", fontWeight: 600 }}>₹</span>
                 <input
                   type="number"
                   min="0"
                   value={form.expenses || ""}
                   onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))}
                   placeholder="0"
-                  style={{ ...inputCls, paddingLeft: "1.75rem" }}
+                  style={{ ...inputCls, padding: "0.75rem 0.75rem 0.75rem 2rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}
                 />
               </div>
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Notes</label>
-              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Contract terms, special requirements, notes…" rows={2} style={{ width: "100%", resize: "vertical" }} />
+              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Contract terms, special requirements, notes…" rows={2} style={{ width: "100%", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", resize: "none" }} />
             </div>
           </div>
         </Section>
 
-        {/* ─── Financial Summary ────────────────────────────────────── */}
-        <div style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", overflow: "hidden", marginBottom: "1.5rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>Financial Summary</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+        {/* ─── Financial Summary ─────────────────────────────────────── */}
+        <div style={{
+          borderRadius: "1.5rem",
+          overflow: "hidden",
+          marginBottom: "2.5rem",
+          background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+        }}>
+          <div style={{ 
+            padding: "1.25rem 2rem", 
+            background: "rgba(255, 255, 255, 0.03)", 
+            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.5rem"
+          }}>
+            <span style={{ fontWeight: 800, fontSize: "1rem", letterSpacing: "0.05em", color: "#94a3b8", textTransform: "uppercase" }}>Financial Summary</span>
+            <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Total: <strong style={{ color: "#f8fafc" }}>{formatCurrency(total)}</strong></span>
+              <span style={{ color: "var(--text-muted)" }}>Balance: <strong style={{ color: balance > 0 ? "#ef4444" : "#10b981" }}>{formatCurrency(balance)}</strong></span>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
             {[
-              { label: "Package", value: formatCurrency(form.packagePrice || 0), color: "var(--color-primary)" },
-              { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
-              { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-              { label: "Expenses", value: formatCurrency(form.expenses), color: "var(--color-danger)" },
-              { label: "Profit", value: formatCurrency(total - (form.expenses || 0)), color: "#10b981", bold: true },
-              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
-              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
-            ].map(({ label, value, color, bold }) => (
-              <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-                <div style={{ fontSize: "1.2rem", fontWeight: bold ? 800 : 600, color }}>{value}</div>
+              { label: "Base Package", value: formatCurrency(form.packagePrice || 0), color: "#f8fafc", sub: "Primary cost" },
+              { label: "Extras", value: formatCurrency(extrasTotal), color: "#f8fafc", sub: "Add-ons total" },
+              { label: "Gross Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true, sub: "Before payments" },
+              { label: "Amount Paid", value: formatCurrency(paid), color: "#10b981", sub: "Total collected" },
+              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "#ef4444" : "#10b981", bold: true, sub: "Remaining" },
+              { label: "Shoot Expenses", value: formatCurrency(form.expenses || 0), color: "#f43f5e", sub: "Direct costs" },
+              { label: "Estimated Profit", value: formatCurrency(total - (form.expenses || 0)), color: "#10b981", bold: true, sub: "Net earnings" },
+            ].map(({ label, value, color, bold, sub }) => (
+              <div key={label} style={{ padding: "1rem 1.25rem", borderRight: "1px solid rgba(255, 255, 255, 0.05)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", boxSizing: "border-box" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "0.4rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: bold ? 900 : 700, color, marginBottom: "0.2rem" }}>{value}</div>
+                <div style={{ fontSize: "0.7rem", color: "#475569" }}>{sub}</div>
               </div>
             ))}
           </div>

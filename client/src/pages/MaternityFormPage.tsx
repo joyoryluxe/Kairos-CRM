@@ -77,18 +77,35 @@ const formatCurrency = (v?: number) =>
     : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(v);
 
 // ─── Section Card ──────────────────────────────────────────────────────────────
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, description }: { title: string; icon: React.ReactNode; children: React.ReactNode; description?: string }) {
   return (
-    <div style={{
-      background: "var(--bg-surface-2)",
-      border: "1px solid var(--border)",
-      borderRadius: "var(--radius-lg)",
-      padding: "1.5rem",
-      marginBottom: "1.25rem",
+    <div className="form-section-card" style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: "1.25rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      boxSizing: "border-box",
+      width: "100%",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem", paddingBottom: "0.75rem", borderBottom: "1px solid var(--border)" }}>
-        <span style={{ color: "var(--color-primary)" }}>{icon}</span>
-        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, letterSpacing: "-0.01em" }}>{title}</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{
+          background: "var(--color-primary-glow)",
+          color: "var(--color-primary)",
+          padding: "0.6rem",
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {icon}
+        </div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#f8fafc" }}>{title}</h3>
+          {description && <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>{description}</p>}
+        </div>
       </div>
       {children}
     </div>
@@ -160,7 +177,7 @@ export default function MaternityFormPage() {
         packagePrice: form.packagePrice,
       };
       saveFormHistory("maternity", historyData);
-      
+
       // Save individual fields history
       saveFieldHistory("maternity", "clientName", form.clientName);
       saveFieldHistory("maternity", "phoneNumber", form.phoneNumber);
@@ -316,7 +333,7 @@ export default function MaternityFormPage() {
           <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{isEdit ? "Edit Record" : "New Record"}</span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
             <Baby size={26} />
           </div>
@@ -378,123 +395,165 @@ export default function MaternityFormPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 
         {/* ─── Client Info ───────────────────────────────────────────── */}
-        <Section title="Client Information" icon={<Phone size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                  Client Name <span style={{ color: "var(--color-danger)" }}>*</span>
-                </label>
-              </div>
-              <AutocompleteInput 
-                model="maternity" 
-                field="clientName" 
-                required 
-                value={form.clientName} 
-                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+        <Section
+          title="Client Information"
+          icon={<Phone size={20} />}
+          description="Essential contact details for the client"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Client Name <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <AutocompleteInput
+                model="maternity"
+                field="clientName"
+                required
+                value={form.clientName}
+                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
                 onSelectFullRecord={handleSelectFullRecord}
-                placeholder="e.g. Priya Sharma" 
+                placeholder="Full name"
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                  Phone <span style={{ color: "var(--color-danger)" }}>*</span>
-                </label>
-              </div>
-              <AutocompleteInput 
-                model="maternity" 
-                field="phoneNumber" 
-                required 
-                value={form.phoneNumber} 
-                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
-                placeholder="+91 98765 43210" 
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Phone Number <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <AutocompleteInput
+                model="maternity"
+                field="phoneNumber"
+                required
+                value={form.phoneNumber}
+                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))}
+                placeholder="+91"
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                  Email Address
-                </label>
-              </div>
-              <AutocompleteInput 
-                model="maternity" 
-                field="email" 
-                value={form.email || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
-                placeholder="client@example.com" 
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Email Address</label>
+              <AutocompleteInput
+                model="maternity"
+                field="email"
+                value={form.email || ""}
+                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))}
+                placeholder="email@example.com"
               />
             </div>
           </div>
         </Section>
 
         {/* ─── Address ───────────────────────────────────────────────── */}
-        <Section title="Address" icon={<MapPin size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
-            {(["street", "city", "state", "zipCode"] as const).map((field) => (
-              <div key={field}>
-                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>
-                  {field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}
-                </label>
-                <AutocompleteInput
-                  model="maternity"
-                  field={`address.${field}`}
-                  value={form.address[field]}
-                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))}
-                  placeholder={field === "zipCode" ? "400001" : ""}
-                />
-              </div>
-            ))}
+        <Section
+          title="Shoot Location"
+          icon={<MapPin size={20} />}
+          description="Where the photography session will take place"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Street / Area</label>
+              <AutocompleteInput
+                model="maternity"
+                field="address.street"
+                value={form.address.street}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, street: v } }))}
+                placeholder="e.g. 123 Studio Street"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>City</label>
+              <AutocompleteInput
+                model="maternity"
+                field="address.city"
+                value={form.address.city}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, city: v } }))}
+                placeholder="Mumbai"
+              />
+            </div>
+          </div>
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>State</label>
+              <AutocompleteInput
+                model="maternity"
+                field="address.state"
+                value={form.address.state}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, state: v } }))}
+                placeholder="Maharashtra"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Zip Code</label>
+              <AutocompleteInput
+                model="maternity"
+                field="address.zipCode"
+                value={form.address.zipCode}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, zipCode: v } }))}
+                placeholder="400001"
+              />
+            </div>
           </div>
         </Section>
 
         {/* ─── Baby & Shoot ──────────────────────────────────────────── */}
-        <Section title="Baby & Shoot Details" icon={<Baby size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Baby Name</label>
-              <AutocompleteInput 
-                model="maternity" 
-                field="babyName" 
-                value={form.babyName || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, babyName: v }))} 
-                placeholder="e.g. Aanya" 
-              />
+        <Section
+          title="Booking Details"
+          icon={<Baby size={20} />}
+          description="Timeline and specific shoot information"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Baby Name</label>
+                <AutocompleteInput
+                  model="maternity"
+                  field="babyName"
+                  value={form.babyName || ""}
+                  onChange={(v: string) => setForm((f) => ({ ...f, babyName: v }))}
+                  placeholder="e.g. Baby"
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Birth Date</label>
+                <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} style={{ ...inputCls, padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", colorScheme: "dark" }} />
+              </div>
             </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Birth Date</label>
-              <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} style={inputCls} />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Shoot Date & Time</label>
-              <DateTimePicker value={form.shootDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, shootDateAndTime: val }))} />
-            </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Delivery Deadline</label>
-              <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={inputCls} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Shoot Date & Time</label>
+                <DateTimePicker value={form.shootDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, shootDateAndTime: val }))} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Delivery Deadline</label>
+                <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ ...inputCls, padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", colorScheme: "dark" }} />
+              </div>
             </div>
           </div>
         </Section>
 
         {/* ─── Package ───────────────────────────────────────────────── */}
-        <Section title="Package" icon={<Package size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
+        <Section
+          title="Pricing Plan"
+          icon={<Package size={20} />}
+          description="Select a package or create a custom one"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <AutocompleteInput 
-                    model="maternity" 
-                    field="package" 
-                    required 
-                    value={form.package || ""} 
-                    onChange={(v: string) => setForm(f => ({ ...f, package: v }))} 
-                    placeholder="e.g. Special Deal" 
+                  <AutocompleteInput
+                    model="maternity"
+                    field="package"
+                    required
+                    value={form.package || ""}
+                    onChange={(v: string) => setForm(f => ({ ...f, package: v }))}
+                    placeholder="e.g. Special Deal"
+                    style={{ flex: 1 }}
                   />
-                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
+                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "#ef4444" }} title="Back to list"><X size={20} /></button>
                 </div>
               ) : (
                 <select
@@ -509,7 +568,7 @@ export default function MaternityFormPage() {
                       setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
                     }
                   }}
-                  style={inputCls}
+                  style={{ ...inputCls, borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}
                 >
                   <option value="">— No package —</option>
                   {packages.map((p) => (
@@ -519,34 +578,37 @@ export default function MaternityFormPage() {
                 </select>
               )}
             </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b", fontWeight: 600 }}>₹</span>
                 <input
                   type="number"
                   readOnly={!isCustomPackage}
                   value={form.packagePrice || ""}
                   onChange={(e) => setForm(f => ({ ...f, packagePrice: e.target.valueAsNumber || 0 }))}
                   placeholder="0"
-                  style={{ 
-                    ...inputCls, 
-                    paddingLeft: "1.75rem",
-                    background: isCustomPackage ? "var(--bg-surface)" : "var(--bg-surface-3)", 
-                    cursor: isCustomPackage ? "text" : "not-allowed", 
-                    color: "var(--color-primary)", 
-                    fontWeight: 700 
+                  style={{
+                    ...inputCls,
+                    padding: "0.75rem 0.75rem 0.75rem 2rem",
+                    background: isCustomPackage ? "var(--bg-surface-3)" : "rgba(15, 23, 42, 0.3)",
+                    borderRadius: "0.75rem",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    cursor: isCustomPackage ? "text" : "not-allowed",
+                    color: "var(--color-primary)",
+                    fontWeight: 700,
+                    fontSize: "1.1rem"
                   }}
                 />
               </div>
             </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Status</label>
-              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={inputCls}>
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Status</label>
+              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={{ ...inputCls, borderRadius: "0.75rem", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}>
+                <option value="Pending">🕒 Pending</option>
+                <option value="Confirmed">✅ Confirmed</option>
+                <option value="Completed">✨ Completed</option>
+                <option value="Cancelled">❌ Cancelled</option>
               </select>
             </div>
           </div>
@@ -617,42 +679,57 @@ export default function MaternityFormPage() {
 
         {/* ─── Other ─────────────────────────────────────────────────── */}
         <Section title="Expenses & Notes" icon={<MapPin size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Expenses (₹)</label>
-              <input type="number" min="0" value={form.expenses} onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))} style={inputCls} />
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Expenses (₹)</label>
+              <input type="number" min="0" value={form.expenses} onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))} style={{ ...inputCls, padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }} />
             </div>
-            <div>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" }}>Notes</label>
-              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Any additional notes for this record…" rows={2} style={{ width: "100%", resize: "vertical" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Notes</label>
+              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Any additional notes for this record…" rows={2} style={{ width: "100%", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", resize: "none" }} />
             </div>
           </div>
         </Section>
 
         {/* ─── Financial Summary ─────────────────────────────────────── */}
         <div style={{
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid var(--border)",
+          borderRadius: "1.5rem",
           overflow: "hidden",
-          marginBottom: "1.5rem",
-          background: "var(--bg-surface-2)",
+          marginBottom: "2.5rem",
+          background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
         }}>
-          <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>
-            Financial Summary
+          <div style={{
+            padding: "1.25rem 2rem",
+            background: "rgba(255, 255, 255, 0.03)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.5rem"
+          }}>
+            <span style={{ fontWeight: 800, fontSize: "1rem", letterSpacing: "0.05em", color: "#94a3b8", textTransform: "uppercase" }}>Financial Summary</span>
+            <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Total: <strong style={{ color: "#f8fafc" }}>{formatCurrency(total)}</strong></span>
+              <span style={{ color: "var(--text-muted)" }}>Balance: <strong style={{ color: balance > 0 ? "#ef4444" : "#10b981" }}>{formatCurrency(balance)}</strong></span>
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
             {[
-              { label: "Package", value: formatCurrency(form.packagePrice || 0), color: "var(--color-primary)" },
-              { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
-              { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
-              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
-              { label: "Expenses", value: formatCurrency(form.expenses || 0), color: "var(--color-danger)" },
-              { label: "Profit", value: formatCurrency(profit), color: "#10b981", bold: true },
-            ].map(({ label, value, color, bold }) => (
-              <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-                <div style={{ fontSize: "1.2rem", fontWeight: bold ? 800 : 600, color }}>{value}</div>
+              { label: "Base Package", value: formatCurrency(form.packagePrice || 0), color: "#f8fafc", sub: "Primary cost" },
+              { label: "Extras", value: formatCurrency(extrasTotal), color: "#f8fafc", sub: "Add-ons total" },
+              { label: "Gross Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true, sub: "Before payments" },
+              { label: "Amount Paid", value: formatCurrency(paid), color: "#10b981", sub: "Total collected" },
+              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "#ef4444" : "#10b981", bold: true, sub: "Remaining" },
+              { label: "Shoot Expenses", value: formatCurrency(form.expenses || 0), color: "#f43f5e", sub: "Direct costs" },
+              { label: "Estimated Profit", value: formatCurrency(profit), color: "#10b981", bold: true, sub: "Net earnings" },
+            ].map(({ label, value, color, bold, sub }) => (
+              <div key={label} style={{ padding: "1rem 1.25rem", borderRight: "1px solid rgba(255, 255, 255, 0.05)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", boxSizing: "border-box" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "0.4rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: bold ? 900 : 700, color, marginBottom: "0.2rem" }}>{value}</div>
+                <div style={{ fontSize: "0.7rem", color: "#475569" }}>{sub}</div>
               </div>
             ))}
           </div>

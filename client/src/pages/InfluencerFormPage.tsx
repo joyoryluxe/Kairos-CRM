@@ -1,6 +1,6 @@
 import {
-  Megaphone, Phone, Calendar, MapPin, Package, Plus,
-  ArrowLeft, Save, ChevronRight, Instagram, Clock,
+  Megaphone, Calendar, MapPin, Package, Plus,
+  ArrowLeft, Save, Clock, User,
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -77,22 +77,42 @@ const formatCurrency = (v?: number) =>
   v == null ? "—" : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0 }).format(v);
 
 // ─── Section Card ──────────────────────────────────────────────────────────────
-function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, children, description }: { title: string; icon: React.ReactNode; children: React.ReactNode; description?: string }) {
   return (
-    <div style={{
-      background: "var(--bg-surface-2)", border: "1px solid var(--border)",
-      borderRadius: "var(--radius-lg)", padding: "1.5rem", marginBottom: "1.25rem",
+    <div className="form-section-card" style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: "1.25rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      boxSizing: "border-box",
+      width: "100%",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem", paddingBottom: "0.75rem", borderBottom: "1px solid var(--border)" }}>
-        <span style={{ color: "var(--color-primary)" }}>{icon}</span>
-        <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{
+          background: "var(--color-primary-glow)",
+          color: "var(--color-primary)",
+          padding: "0.6rem",
+          borderRadius: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {icon}
+        </div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#f8fafc" }}>{title}</h3>
+          {description && <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "var(--text-muted)" }}>{description}</p>}
+        </div>
       </div>
       {children}
     </div>
   );
 }
 
-const labelStyle: React.CSSProperties = { fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.35rem", color: "var(--text-secondary)" };
+const labelStyle: React.CSSProperties = { fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em", marginBottom: "0.5rem", display: "block" };
 const inputCls = { width: "100%" };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -138,7 +158,6 @@ export default function InfluencerFormPage() {
         notes: m.notes ?? "",
         status: m.status ?? "Pending",
       });
-      // If the package is not in the list (and not empty), it's custom
       if (m.package && !packages.some(p => p.name === m.package)) {
         setIsCustomPackage(true);
       }
@@ -149,7 +168,6 @@ export default function InfluencerFormPage() {
   const createMutation = useMutation({
     mutationFn: createInfluencer,
     onSuccess: () => {
-      // Save to history
       const historyData = {
         clientName: form.clientName,
         phoneNumber: form.phoneNumber,
@@ -162,7 +180,6 @@ export default function InfluencerFormPage() {
       };
       saveFormHistory("influencer", historyData);
 
-      // Save individual fields history
       saveFieldHistory("influencer", "clientName", form.clientName);
       saveFieldHistory("influencer", "phoneNumber", form.phoneNumber);
       saveFieldHistory("influencer", "email", form.email);
@@ -181,7 +198,6 @@ export default function InfluencerFormPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    // Sanitize arrays: remove items with empty descriptions/amounts
     const cleanExtras = (form.extras || []).filter(ex => ex.description.trim() !== "" || ex.amount > 0);
     const cleanPayments = (form.payments || []).filter(p => p.amount > 0);
 
@@ -200,9 +216,7 @@ export default function InfluencerFormPage() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
-  const mutError = createMutation.error || updateMutation.error;
 
-  // Arrays
   const extras = Array.isArray(form.extras) ? form.extras : [];
   const payments = Array.isArray(form.payments) ? form.payments : [];
 
@@ -216,12 +230,13 @@ export default function InfluencerFormPage() {
   const updatePayment = (i: number, k: "amount" | "date" | "note", v: string | number) =>
     setForm((f) => { const a = [...payments]; a[i] = { ...a[i], [k]: v }; return { ...f, payments: a }; });
 
-  // Totals
   const extrasTotal = extras.reduce((s, e) => s + (e.amount || 0), 0);
   const total = (form.packagePrice || 0) + extrasTotal;
   const paid = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const balance = total - paid;
   const profit = total - (form.expenses || 0);
+
+  const mutError = createMutation.error || updateMutation.error;
 
   const [backupState, setBackupState] = useState<FormState | null>(null);
 
@@ -286,17 +301,13 @@ export default function InfluencerFormPage() {
   return (
     <div className="animate-fade-up" style={{ maxWidth: 900, margin: "0 auto", padding: "0 1rem 3rem" }}>
       {isPending && <Loader fullPage message="Saving influencer data..." />}
-      {/* ─── Header ──────────────────────────────────────────────────── */}
+
       <div style={{ marginBottom: "2rem" }}>
         <button type="button" onClick={() => navigate("/dashboard/influencer")}
           style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem" }}>
           <ArrowLeft size={16} /> Back to Influencer
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
-          <span>Influencer</span><ChevronRight size={14} />
-          <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{isEdit ? "Edit Record" : "New Record"}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
           <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
             <Megaphone size={26} />
           </div>
@@ -356,77 +367,74 @@ export default function InfluencerFormPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
 
-        {/* ─── Profile ─────────────────────────────────────────────── */}
-        <Section title="Influencer Profile" icon={<Phone size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Name <span style={{ color: "var(--color-danger)" }}>*</span></label>
-              </div>
-              <AutocompleteInput 
-                model="influencer" 
-                field="clientName" 
-                required 
-                value={form.clientName} 
-                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+        {/* ─── Client Info ───────────────────────────────────────────── */}
+        <Section
+          title="Influencer Details"
+          icon={<User size={20} />}
+          description="Basic profile and contact information"
+        >
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Client Name <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <AutocompleteInput
+                model="influencer"
+                field="clientName"
+                required
+                value={form.clientName}
+                onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
                 onSelectFullRecord={handleSelectFullRecord}
-                placeholder="e.g. Riya Mehta" 
+                placeholder="Full name"
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Phone <span style={{ color: "var(--color-danger)" }}>*</span></label>
-              </div>
-              <AutocompleteInput 
-                model="influencer" 
-                field="phoneNumber" 
-                required 
-                value={form.phoneNumber} 
-                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))} 
-                placeholder="+91 98765 43210" 
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                Phone Number <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <AutocompleteInput
+                model="influencer"
+                field="phoneNumber"
+                required
+                value={form.phoneNumber}
+                onChange={(v: string) => setForm((f) => ({ ...f, phoneNumber: v }))}
+                placeholder="+91"
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Email Address</label>
-              </div>
-              <AutocompleteInput 
-                model="influencer" 
-                field="email" 
-                value={form.email || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))} 
-                placeholder="influencer@example.com" 
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Email Address</label>
+              <AutocompleteInput
+                model="influencer"
+                field="email"
+                value={form.email || ""}
+                onChange={(v: string) => setForm((f) => ({ ...f, email: v }))}
+                placeholder="email@example.com"
               />
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Instagram ID</label>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Instagram ID</label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", zIndex: 10 }}><Instagram size={15} /></span>
-                <AutocompleteInput 
-                  model="influencer" 
-                  field="instaId" 
-                  value={form.instaId || ""} 
-                  onChange={(v: string) => setForm((f) => ({ ...f, instaId: v }))} 
-                  placeholder="@handle" 
-                  style={{ width: "100%" }}
+                {/* <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#64748b", zIndex: 10 }}><Instagram size={15} /></span> */}
+                <AutocompleteInput
+                  model="influencer"
+                  field="instaId"
+                  value={form.instaId || ""}
+                  onChange={(v: string) => setForm((f) => ({ ...f, instaId: v }))}
+                  placeholder="handle"
                   className="pl-9"
                 />
               </div>
             </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                <label style={labelStyle}>Reference By</label>
-              </div>
-              <AutocompleteInput 
-                model="influencer" 
-                field="referredBy" 
-                value={form.referredBy || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, referredBy: v }))} 
-                placeholder="Friend / Agency" 
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Reference By</label>
+              <AutocompleteInput
+                model="influencer"
+                field="referredBy"
+                value={form.referredBy || ""}
+                onChange={(v: string) => setForm((f) => ({ ...f, referredBy: v }))}
+                placeholder="Friend / Agency"
               />
             </div>
           </div>
@@ -434,64 +442,97 @@ export default function InfluencerFormPage() {
 
         {/* ─── Location ─────────────────────────────────────────────── */}
         <Section title="Location" icon={<MapPin size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
-            {(["street", "city", "state", "zipCode"] as const).map((field) => (
-              <div key={field}>
-                <label style={labelStyle}>{field === "zipCode" ? "Zip Code" : field.charAt(0).toUpperCase() + field.slice(1)}</label>
-                <AutocompleteInput 
-                  model="influencer" 
-                  field={`address.${field}`} 
-                  value={form.address[field]} 
-                  onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, [field]: v } }))} 
-                />
-              </div>
-            ))}
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Street / Area</label>
+              <AutocompleteInput
+                model="influencer"
+                field="address.street"
+                value={form.address.street}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, street: v } }))}
+                placeholder="e.g. Studio Street"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>City</label>
+              <AutocompleteInput
+                model="influencer"
+                field="address.city"
+                value={form.address.city}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, city: v } }))}
+                placeholder="Mumbai"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>State</label>
+              <AutocompleteInput
+                model="influencer"
+                field="address.state"
+                value={form.address.state}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, state: v } }))}
+                placeholder="Maharashtra"
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Zip Code</label>
+              <AutocompleteInput
+                model="influencer"
+                field="address.zipCode"
+                value={form.address.zipCode}
+                onChange={(v: string) => setForm((f) => ({ ...f, address: { ...f.address, zipCode: v } }))}
+                placeholder="400001"
+              />
+            </div>
           </div>
         </Section>
 
         {/* ─── Campaign ─────────────────────────────────────────────── */}
         <Section title="Campaign Details" icon={<Megaphone size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
-            <div>
-              <label style={labelStyle}>Campaign Name</label>
-              <AutocompleteInput 
-                model="influencer" 
-                field="shootName" 
-                value={form.shootName || ""} 
-                onChange={(v: string) => setForm((f) => ({ ...f, shootName: v }))} 
-                placeholder="e.g. Summer Collection" 
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Shoot Date & Time</label>
-              <DateTimePicker value={form.shootDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, shootDateAndTime: val }))} />
-            </div>
-            <div>
-              <label style={labelStyle}>Delivery Deadline</label>
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-warning)" }}><Clock size={15} /></span>
-                <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ ...inputCls, paddingLeft: "2.25rem" }} />
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "2rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Campaign Name</label>
+                <AutocompleteInput
+                  model="influencer"
+                  field="shootName"
+                  value={form.shootName || ""}
+                  onChange={(v: string) => setForm((f) => ({ ...f, shootName: v }))}
+                  placeholder="e.g. Summer Collection"
+                />
               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Delivery Deadline</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}><Clock size={15} /></span>
+                  <input type="date" value={form.deliveryDeadline} onChange={(e) => setForm((f) => ({ ...f, deliveryDeadline: e.target.value }))} style={{ ...inputCls, padding: "0.75rem 0.75rem 0.75rem 2.25rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", colorScheme: "dark" }} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.02em" }}>Shoot Date & Time</label>
+              <DateTimePicker value={form.shootDateAndTime || ""} onChange={(val) => setForm((f) => ({ ...f, shootDateAndTime: val }))} />
             </div>
           </div>
         </Section>
 
         {/* ─── Package & Status ─────────────────────────────────────── */}
         <Section title="Package & Status" icon={<Package size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
-            <div>
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>{isCustomPackage ? "Custom Package Name" : "Select Package"}</label>
               {isCustomPackage ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <AutocompleteInput 
-                    model="influencer" 
-                    field="package" 
-                    required 
-                    value={form.package || ""} 
-                    onChange={(v: string) => setForm((f) => ({ ...f, package: v }))} 
-                    placeholder="e.g. Special Deal" 
+                  <AutocompleteInput
+                    model="influencer"
+                    field="package"
+                    required
+                    value={form.package || ""}
+                    onChange={(v: string) => setForm((f) => ({ ...f, package: v }))}
+                    placeholder="e.g. Special Deal"
+                    style={{ flex: 1 }}
                   />
-                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "var(--color-primary)" }} title="Back to list"><X size={18} /></button>
+                  <button type="button" onClick={() => { setIsCustomPackage(false); setForm(f => ({ ...f, package: "" })); }} className="btn-ghost" style={{ padding: "0.5rem", color: "#ef4444" }} title="Back to list"><X size={20} /></button>
                 </div>
               ) : (
                 <select value={form.package} onChange={(e) => {
@@ -503,7 +544,7 @@ export default function InfluencerFormPage() {
                     const pkg = packages.find(p => p.name === val);
                     setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
                   }
-                }} style={inputCls}>
+                }} style={{ ...inputCls, borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}>
                   <option value="">— No package —</option>
                   {packages.map((p) => (
                     <option key={p._id} value={p.name}>{p.name} (₹{p.price.toLocaleString("en-IN")})</option>
@@ -512,34 +553,37 @@ export default function InfluencerFormPage() {
                 </select>
               )}
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Package Price {isCustomPackage ? "(editable)" : "(auto)"}</label>
               <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontWeight: 600 }}>₹</span>
+                <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b", fontWeight: 600 }}>₹</span>
                 <input
                   type="number"
                   readOnly={!isCustomPackage}
                   value={form.packagePrice || ""}
                   onChange={(e) => setForm(f => ({ ...f, packagePrice: e.target.valueAsNumber || 0 }))}
                   placeholder="0"
-                  style={{ 
-                    ...inputCls, 
-                    paddingLeft: "1.75rem",
-                    background: isCustomPackage ? "var(--bg-surface)" : "var(--bg-surface-3)", 
-                    cursor: isCustomPackage ? "text" : "not-allowed", 
-                    color: "var(--color-primary)", 
-                    fontWeight: 700 
-                  }} 
+                  style={{
+                    ...inputCls,
+                    padding: "0.75rem 0.75rem 0.75rem 2rem",
+                    background: isCustomPackage ? "var(--bg-surface-3)" : "rgba(15, 23, 42, 0.3)",
+                    borderRadius: "0.75rem",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    cursor: isCustomPackage ? "text" : "not-allowed",
+                    color: "var(--color-primary)",
+                    fontWeight: 700,
+                    fontSize: "1.1rem"
+                  }}
                 />
               </div>
             </div>
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Status</label>
-              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={inputCls}>
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+              <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))} style={{ ...inputCls, borderRadius: "0.75rem", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}>
+                <option value="Pending">🕒 Pending</option>
+                <option value="Confirmed">✅ Confirmed</option>
+                <option value="Completed">✨ Completed</option>
+                <option value="Cancelled">❌ Cancelled</option>
               </select>
             </div>
           </div>
@@ -590,40 +634,64 @@ export default function InfluencerFormPage() {
           )}
         </Section>
 
-        {/* ─── Expenses & Notes ─────────────────────────────────────── */}
-        <Section title="Expenses & Notes" icon={<MapPin size={18} />}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem" }}>
-            <div>
-              <label style={labelStyle}>Expenses (₹)</label>
-              <input type="number" min="0" value={form.expenses} onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))} style={inputCls} />
-            </div>
-            <div>
-              <label style={labelStyle}>Notes</label>
-              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Campaign notes, deliverables, etc." rows={2} style={{ width: "100%", resize: "vertical" }} />
+        {/* ─── Financial Summary ─────────────────────────────────────────────── */}
+        <div style={{
+          borderRadius: "1.5rem",
+          overflow: "hidden",
+          marginBottom: "2.5rem",
+          background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+        }}>
+          <div style={{
+            padding: "1.25rem 2rem",
+            background: "rgba(255, 255, 255, 0.03)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.5rem"
+          }}>
+            <span style={{ fontWeight: 800, fontSize: "1rem", letterSpacing: "0.05em", color: "#94a3b8", textTransform: "uppercase" }}>Financial Summary</span>
+            <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Total: <strong style={{ color: "#f8fafc" }}>{formatCurrency(total)}</strong></span>
+              <span style={{ color: "var(--text-muted)" }}>Balance: <strong style={{ color: balance > 0 ? "#ef4444" : "#10b981" }}>{formatCurrency(balance)}</strong></span>
             </div>
           </div>
-        </Section>
-
-        {/* ─── Financial Summary ────────────────────────────────────── */}
-        <div style={{ borderRadius: "var(--radius-lg)", border: "1px solid var(--border)", overflow: "hidden", marginBottom: "1.5rem", background: "var(--bg-surface-2)" }}>
-          <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", fontWeight: 700, fontSize: "0.9rem" }}>Financial Summary</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
             {[
-              { label: "Package", value: formatCurrency(form.packagePrice), color: "var(--color-primary)" },
-              { label: "Extras", value: formatCurrency(extrasTotal), color: "var(--text-primary)" },
-              { label: "Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true },
-              { label: "Paid", value: formatCurrency(paid), color: "hsl(142,71%,45%)" },
-              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "var(--color-danger)" : "hsl(142,71%,45%)", bold: true },
-              { label: "Expenses", value: formatCurrency(form.expenses || 0), color: "var(--color-danger)" },
-              { label: "Profit", value: formatCurrency(profit), color: "#10b981", bold: true },
-            ].map(({ label, value, color, bold }) => (
-              <div key={label} style={{ padding: "1rem 1.5rem", borderRight: "1px solid var(--border)" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-                <div style={{ fontSize: "1.2rem", fontWeight: bold ? 800 : 600, color }}>{value}</div>
+              { label: "Base Package", value: formatCurrency(form.packagePrice || 0), color: "#f8fafc", sub: "Primary cost" },
+              { label: "Extras", value: formatCurrency(extrasTotal), color: "#f8fafc", sub: "Add-ons total" },
+              { label: "Gross Total", value: formatCurrency(total), color: "var(--color-primary)", bold: true, sub: "Before payments" },
+              { label: "Amount Paid", value: formatCurrency(paid), color: "#10b981", sub: "Total collected" },
+              { label: "Balance Due", value: formatCurrency(balance), color: balance > 0 ? "#ef4444" : "#10b981", bold: true, sub: "Remaining" },
+              { label: "Shoot Expenses", value: formatCurrency(form.expenses || 0), color: "#f43f5e", sub: "Direct costs" },
+              { label: "Estimated Profit", value: formatCurrency(profit), color: "#10b981", bold: true, sub: "Net earnings" },
+            ].map(({ label, value, color, bold, sub }) => (
+              <div key={label} style={{ padding: "1rem 1.25rem", borderRight: "1px solid rgba(255, 255, 255, 0.05)", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", boxSizing: "border-box" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "0.4rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: bold ? 900 : 700, color, marginBottom: "0.2rem" }}>{value}</div>
+                <div style={{ fontSize: "0.7rem", color: "#475569" }}>{sub}</div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* ─── Expenses & Notes ─────────────────────────────────────── */}
+        <Section title="Expenses & Notes" icon={<MapPin size={18} />}>
+          <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Expenses (₹)</label>
+              <input type="number" min="0" value={form.expenses} onChange={(e) => setForm((f) => ({ ...f, expenses: e.target.valueAsNumber || 0 }))} style={{ ...inputCls, padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={labelStyle}>Notes</label>
+              <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Campaign notes, deliverables, etc." rows={2} style={{ width: "100%", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc", resize: "none" }} />
+            </div>
+          </div>
+        </Section>
+
 
         {mutError && (
           <div style={{ marginBottom: "1rem", padding: "0.75rem 1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--radius-md)", color: "var(--color-danger)", fontSize: "0.9rem" }}>

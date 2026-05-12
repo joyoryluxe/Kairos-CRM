@@ -389,11 +389,16 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       if (!r) return;
 
       const { type, clientName = 'Unknown Client', status, _id, updatedAt } = r;
-      const isCompletedOrCancelled = status === 'Completed' || status === 'Cancelled';
+      // Calendar should only show active things. 
+      // 'Completed' can stay on calendar if it's in the past? 
+      // User says "records of its shooting date or deadline is upcoming then shows properly"
+      // So let's show all SHOOTS (even completed ones if user wants to see past schedule?)
+      // Usually, calendar shows everything. But let's follow user "upcoming" hint.
+
+      const isCancelled = status === 'Cancelled';
       const color = categoryColor[type] ?? '#94a3b8';
 
-      // 1. Calendar Events (ONLY for non-completed/non-cancelled)
-      if (!isCompletedOrCancelled) {
+      if (!isCancelled) {
         // ── shoot / event ──
         const shootISO = toISO(r.shootDateAndTime ?? r.eventDateAndTime);
         if (shootISO) {
@@ -401,8 +406,8 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
             id: `${_id}-shoot`,
             title: `${clientName}`,
             start: shootISO,
-            backgroundColor: color,
-            borderColor: color,
+            backgroundColor: status === 'Completed' ? '#475569' : color, // Gray out completed
+            borderColor: status === 'Completed' ? '#475569' : color,
             allDay: false,
             extendedProps: { type, status, recordId: _id, isDeadline: false },
           });
@@ -413,10 +418,10 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
         if (deadlineISO) {
           calendarEvents.push({
             id: `${_id}-deadline`,
-            title: `${clientName}`,
+            title: `${clientName} (D)`,
             start: deadlineISO,
-            backgroundColor: '#ef4444',
-            borderColor: '#ef4444',
+            backgroundColor: status === 'Completed' ? '#475569' : '#ef4444',
+            borderColor: status === 'Completed' ? '#475569' : '#ef4444',
             allDay: true,
             extendedProps: { type, status, recordId: _id, isDeadline: true },
           });
@@ -424,7 +429,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       }
 
       // 2. Recently Completed / Cancelled (last 7 days)
-      if (isCompletedOrCancelled) {
+      if (status === 'Completed' || status === 'Cancelled') {
         const updateDate = new Date(updatedAt);
         if (updateDate >= sevenDaysAgo && updateDate <= todayMax) {
           recentlyCompleted.push({
@@ -462,12 +467,13 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     // ── upcoming week data ───────────────────────────────────────────────
 
     const upcomingShoots = allRecords
-      .filter(r => (r?.shootDateAndTime || r?.eventDateAndTime) && r.status !== 'Completed' && r.status !== 'Cancelled')
+      .filter(r => (r?.shootDateAndTime || r?.eventDateAndTime) && r.status !== 'Cancelled')
       .map(r => {
         const date = new Date(r.shootDateAndTime ?? r.eventDateAndTime);
         if (isNaN(date.getTime())) return null;
         const diffDays = Math.ceil((date.getTime() - today.getTime()) / 86_400_000);
-        if (diffDays >= 0 && diffDays <= 7) {
+        // Show everything from today onwards
+        if (diffDays >= 0) {
           return {
             id: r._id,
             clientName: r.clientName || 'Unknown Client',
@@ -482,12 +488,13 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       .sort((a: any, b: any) => (a.daysRemaining ?? 0) - (b.daysRemaining ?? 0));
 
     const upcomingDeadlines = allRecords
-      .filter(r => r?.deliveryDeadline && r.status !== 'Completed' && r.status !== 'Cancelled')
+      .filter(r => r?.deliveryDeadline && r.status !== 'Cancelled')
       .map(r => {
         const date = new Date(r.deliveryDeadline);
         if (isNaN(date.getTime())) return null;
         const diffDays = Math.ceil((date.getTime() - today.getTime()) / 86_400_000);
-        if (diffDays >= 0 && diffDays <= 7) {
+        // Show all upcoming deadlines
+        if (diffDays >= 0) {
           return {
             id: r._id,
             clientName: r.clientName || 'Unknown Client',

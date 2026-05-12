@@ -491,6 +491,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getMaternities,
   deleteMaternity,
+  updateMaternity,
   type Maternity,
 } from "@/api/maternity";
 import {
@@ -641,6 +642,49 @@ export default function MaternityPage() {
       queryClient.invalidateQueries({ queryKey: ["maternities"] });
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<Maternity> }) => updateMaternity(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["maternities"] });
+      alert("Payment successful and record updated!");
+    },
+    onError: (err: any) => {
+      alert("Failed to update payment: " + err.message);
+    }
+  });
+
+  const handleQuickPay = (record: Maternity) => {
+    // Calculate values exactly as they are in the form to ensure perfection
+    const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    const total = (record.packagePrice || 0) + extrasTotal;
+    const paid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const balance = total - paid;
+
+    if (balance <= 0) return;
+
+    const newPayment = {
+      amount: balance,
+      date: new Date().toISOString(),
+      note: "Full Payment successfully received - Punit Desai."
+    };
+
+    const updatedPayments = [...(record.payments || []), newPayment];
+    const updatedAdvance = paid + balance;
+    const updatedBalance = 0;
+
+    updateMutation.mutate({
+      id: record._id,
+      payload: {
+        ...record, // Preserve all existing data
+        payments: updatedPayments,
+        advance: updatedAdvance,
+        balance: updatedBalance,
+        total: total, // Sync the correct total
+        status: "Completed"
+      }
+    });
+  };
 
   const handleExport = () => {
     if (!results?.data) return;
@@ -824,6 +868,8 @@ export default function MaternityPage() {
                 onEdit={() => navigate(`/dashboard/maternity/${record._id}/edit`)}
                 onDelete={() => { if (confirm("Permanently delete this record?")) deleteMutation.mutate(record._id); }}
                 isDeleting={deleteMutation.isPending}
+                onQuickPay={() => handleQuickPay(record)}
+                isUpdating={updateMutation.isPending && updateMutation.variables?.id === record._id}
               />
             ))}
           </div>
@@ -834,13 +880,25 @@ export default function MaternityPage() {
 }
 
 // ─── Record Card ──────────────────────────────────────────────────────────────
-function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternity; onEdit: () => void; onDelete: () => void; isDeleting: boolean }) {
+function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdating }: {
+  record: Maternity;
+  onEdit: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+  onQuickPay: () => void;
+  isUpdating: boolean;
+}) {
+  const { isMobile } = useIsMobile();
   const [showExtras, setShowExtras] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
 
-  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
+  const extrasTotal = (record.extras || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const calculatedTotal = (record.packagePrice || 0) + extrasTotal;
+  const calculatedPaid = (record.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+  const calculatedBalance = calculatedTotal - calculatedPaid;
+  const calculatedProfit = calculatedTotal - (record.expenses || 0);
 
-  // Check if address has meaningful content
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
   const hasAddress = record.address && (record.address.street || record.address.city);
 
   return (
@@ -848,7 +906,6 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
       style={{ padding: "1.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", transition: "all 0.2s" }}
       className="record-card-hover"
     >
-      {/* Card Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div style={{ background: "var(--color-primary-glow)", padding: "0.5rem", borderRadius: "10px" }}>
@@ -935,6 +992,45 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
               >
                 <WhatsAppIcon size={15} />
               </a>
+
+              {/* Quick Pay Button */}
+              {(record.balance || 0) > 0 && (
+                <button
+                  type="button"
+                  title="Quick Full Payment"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    marginTop: 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(52, 211, 153, 0.25)";
+                    (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.1)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(52, 211, 153, 0.15)";
+                    (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={15} />
+                  )}
+                </button>
+              )}
             </div>
           ) : (
             /* Fallback: no address — show pill button */
@@ -963,6 +1059,36 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
               >
                 <WhatsAppIcon size={13} /> Share on WhatsApp
               </a>
+
+              {/* Quick Pay Button (Pill version) */}
+              {calculatedBalance > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "10px", height: "10px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={10} />
+                  )}
+                  Quick Pay
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -982,28 +1108,40 @@ function RecordCard({ record, onEdit, onDelete, isDeleting }: { record: Maternit
         </div>
 
         {/* Financial Overview Box */}
-        <div style={{ padding: "1rem", background: "var(--bg-surface-3)", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
+        <div style={{ padding: "1rem", background: "var(--bg-surface-3)", borderRadius: "var(--radius-md)", fontSize: "0.85rem", minWidth: isMobile ? "100%" : "240px" }}>
           {record.package && (
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}><Package size={13} /> {record.package}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-secondary)" }}><Package size={13} /> {record.package}</span>
               <span style={{ fontWeight: 600 }}>{formatCurrency(record.packagePrice)}</span>
+            </div>
+          )}
+          {extrasTotal > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Extras:</span>
+              <span style={{ fontWeight: 600, color: "var(--text-secondary)" }}>{formatCurrency(extrasTotal)}</span>
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Total:</span>
-            <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>{formatCurrency(record.total)}</span>
+            <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>{formatCurrency(calculatedTotal)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
             <span style={{ color: "var(--text-muted)" }}>Paid:</span>
-            <span style={{ fontWeight: 600, color: "var(--color-success)" }}>{formatCurrency(record.advance)}</span>
+            <span style={{ fontWeight: 600, color: "var(--color-success)" }}>{formatCurrency(calculatedPaid)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
             <span style={{ fontWeight: 600 }}>Balance:</span>
-            <span style={{ fontWeight: 800, color: (record.balance || 0) > 0 ? "var(--color-danger)" : "var(--color-success)" }}>{formatCurrency(record.balance)}</span>
+            <span style={{ fontWeight: 800, color: calculatedBalance > 0 ? "var(--color-danger)" : "var(--color-success)" }}>{formatCurrency(calculatedBalance)}</span>
           </div>
+          {(record.expenses || 0) > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.25rem" }}>
+              <span style={{ color: "var(--text-muted)" }}>Expenses:</span>
+              <span style={{ color: "var(--color-danger)", fontWeight: 600 }}>{formatCurrency(record.expenses)}</span>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.25rem", paddingTop: "0.25rem", borderTop: "1px dashed var(--border)" }}>
             <span style={{ color: "var(--text-muted)" }}>Profit:</span>
-            <span style={{ fontWeight: 700, color: "#10b981" }}>{formatCurrency(record.profit ?? ((record.total || 0) - (record.expenses || 0)))}</span>
+            <span style={{ fontWeight: 700, color: "#10b981" }}>{formatCurrency(calculatedProfit)}</span>
           </div>
         </div>
       </div>

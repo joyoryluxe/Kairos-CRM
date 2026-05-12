@@ -1,6 +1,7 @@
-import { Package } from "lucide-react";
+import { Package, Save, Plus, Trash2, Edit2, RotateCcw } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   createPackage,
   deletePackage,
@@ -14,10 +15,10 @@ import {
 const CATEGORIES: PackageCategory[] = ["Maternity", "Influencer", "Corporate", "General"];
 
 const CATEGORY_COLORS: Record<PackageCategory, string> = {
-  Maternity: "hsl(330, 70%, 55%)",
-  Influencer: "hsl(260, 70%, 60%)",
-  Corporate: "hsl(210, 70%, 55%)",
-  General: "hsl(160, 60%, 45%)",
+  Maternity: "#ec4899",
+  Influencer: "#8b5cf6",
+  Corporate: "#3b82f6",
+  General: "#10b981",
 };
 
 const EMPTY_FORM: PackageInput = {
@@ -28,14 +29,60 @@ const EMPTY_FORM: PackageInput = {
   isActive: true,
 };
 
+// ─── Premium Section Component ──────────────────────────────────────────
+function Section({ title, icon, children, description }: { title: string; icon: React.ReactNode; children: React.ReactNode; description?: string }) {
+  return (
+    <div style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: "1.25rem",
+      padding: "2rem",
+      marginBottom: "2rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ color: "var(--color-primary)" }}>{icon}</div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{title}</h3>
+          {description && <p style={{ margin: "0.2rem 0 0", fontSize: "0.85rem", color: "#94a3b8" }}>{description}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.8rem",
+  fontWeight: 700,
+  color: "#94a3b8",
+  marginBottom: "0.5rem",
+  display: "block",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em"
+};
+
+const inputCls = {
+  width: "100%",
+  padding: "0.75rem 1rem",
+  // background: "rgba(15, 23, 42, 0.4)",
+  border: "1px solid rgba(255, 255, 255, 0.08)",
+  borderRadius: "0.75rem",
+  color: "#f8fafc",
+  fontSize: "0.95rem",
+  outline: "none",
+  fontWeight: 600,
+  transition: "all 0.2s"
+};
+
 export default function PackagesPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PackageCategory | "All">("All");
   const [form, setForm] = useState<PackageInput>(EMPTY_FORM);
   const [editing, setEditing] = useState<PackageType | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ["packages"],
     queryFn: () => getPackages(),
   });
@@ -62,17 +109,13 @@ export default function PackagesPage() {
     mutationFn: deletePackage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["packages"] });
-      setDeleteConfirm(null);
     },
   });
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (editing) {
-      updateMutation.mutate({ id: editing._id, payload: form });
-    } else {
-      createMutation.mutate(form);
-    }
+    if (editing) updateMutation.mutate({ id: editing._id, payload: form });
+    else createMutation.mutate(form);
   };
 
   const startEdit = (pkg: PackageType) => {
@@ -99,269 +142,150 @@ export default function PackagesPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="animate-fade-up">
-      {/* ─── Header ───────────────────────────────────────────── */}
-      <header style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
-            <Package size={24} />
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "1rem" }}>
+      {/* ── Header ── */}
+      <header style={{ marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+          <div style={{ 
+            width: "56px", height: "56px", background: "linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%)",
+            borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "white",
+            boxShadow: "0 10px 20px rgba(124, 58, 237, 0.3)"
+          }}>
+            <Package size={28} />
           </div>
           <div>
-            <h1 style={{ fontSize: "1.8rem", margin: 0 }}>Packages</h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", margin: "0.25rem 0 0 0" }}>
-              Create and manage service packages for all modules.
+            <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.04em", margin: 0 }}>
+              Service Inventory
+            </h1>
+            <p style={{ color: "#94a3b8", marginTop: "0.25rem", fontSize: "1.05rem", fontWeight: 500 }}>
+              Configure and manage standardized service offerings.
             </p>
           </div>
         </div>
       </header>
 
-      {/* ─── Add/Edit Form ────────────────────────────────────────────── */}
-      <div className="card" style={{ padding: "1.5rem", backgroundColor: "var(--bg-surface-2)", marginBottom: "1.5rem" }}>
-        <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span>{editing ? "✏️ Edit Package" : "➕ New Package"}</span>
-        </div>
+      {/* ── Form Section ── */}
+      <Section title={editing ? "Modify Service" : "Define New Service"} icon={editing ? <Edit2 size={20} /> : <Plus size={20} />}>
         <form onSubmit={handleSubmit}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-            {/* Package Name */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
             <div>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Package Name <span style={{ color: "var(--color-danger)" }}>*</span>
-              </label>
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Gold, Premium, Basic"
-                style={{ width: "100%" }}
-              />
+              <label style={labelStyle}>Package Name</label>
+              <input required style={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Premium Cinematic" />
             </div>
-
-            {/* Category */}
             <div>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Category <span style={{ color: "var(--color-danger)" }}>*</span>
-              </label>
-              <select
-                required
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as PackageCategory }))}
-                style={{ width: "100%" }}
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
+              <label style={labelStyle}>Category</label>
+              <select style={inputCls} value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as PackageCategory }))}>
+                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
-
-            {/* Price */}
             <div>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Price (₹) <span style={{ color: "var(--color-danger)" }}>*</span>
-              </label>
-              <input
-                required
-                type="number"
-                min={0}
-                value={form.price}
-                onChange={(e) => setForm((f) => ({ ...f, price: Number(e.target.value) }))}
-                placeholder="e.g. 5000"
-                style={{ width: "100%" }}
-              />
+              <label style={labelStyle}>Price (₹)</label>
+              <input required type="number" min={0} style={inputCls} value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} />
             </div>
-
-            {/* Active Toggle */}
-            <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: "0.15rem" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
-                <div
-                  onClick={() => setForm((f) => ({ ...f, isActive: !f.isActive }))}
-                  style={{
-                    width: 42, height: 24, borderRadius: 12,
-                    background: form.isActive ? "var(--color-primary)" : "var(--border)",
-                    position: "relative", cursor: "pointer", transition: "background 0.2s",
-                    flexShrink: 0,
-                  }}
-                >
-                  <span style={{
-                    position: "absolute", top: 3, left: form.isActive ? 21 : 3,
-                    width: 18, height: 18, borderRadius: "50%", background: "#fff",
-                    transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                  }} />
-                </div>
-                <span>{form.isActive ? "Active" : "Inactive"}</span>
-              </label>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", paddingTop: "1.5rem" }}>
+              <label style={{ color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>AVAILABLE</label>
+              <div 
+                onClick={() => setForm(f => ({ ...f, isActive: !f.isActive }))}
+                style={{
+                  width: 44, height: 24, borderRadius: 12, background: form.isActive ? "#10b981" : "rgba(255,255,255,0.1)",
+                  position: "relative", cursor: "pointer", transition: "0.2s"
+                }}
+              >
+                <div style={{
+                  position: "absolute", top: 3, left: form.isActive ? 23 : 3,
+                  width: 18, height: 18, borderRadius: "50%", background: "white", transition: "0.2s"
+                }} />
+              </div>
             </div>
           </div>
-
-          {/* Description */}
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 500, marginBottom: "0.25rem" }}>
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Describe what this package includes…"
-              rows={2}
-              style={{ width: "100%", resize: "vertical" }}
-            />
+          <div style={{ marginBottom: "2rem" }}>
+            <label style={labelStyle}>Service Inclusion Details</label>
+            <textarea style={{ ...inputCls, minHeight: "80px" }} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="List items, durations, or special deliverables..." />
           </div>
-
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-            {editing && (
-              <button type="button" className="btn" onClick={resetForm}>Cancel</button>
-            )}
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? "Saving…" : editing ? "Update Package" : "Add Package"}
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+            {editing && <button type="button" onClick={resetForm} style={{ background: "transparent", border: "none", color: "#94a3b8", fontWeight: 700, cursor: "pointer" }}>Cancel</button>}
+            <button type="submit" disabled={isSubmitting} style={{ 
+              background: "var(--color-primary)", color: "white", padding: "0.85rem 2.5rem", 
+              borderRadius: "12px", fontWeight: 800, border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: "0.75rem", boxShadow: "0 8px 16px -4px rgba(99, 102, 241, 0.4)"
+            }}>
+              <Save size={18} />
+              {isSubmitting ? "Syncing..." : editing ? "Update Strategy" : "Initialize Service"}
             </button>
           </div>
         </form>
+      </Section>
 
-        {(createMutation.isError || updateMutation.isError) && (
-          <div style={{ marginTop: "1rem", fontSize: "0.85rem", color: "var(--color-danger)", padding: "0.75rem", background: "rgba(239,68,68,0.1)", borderRadius: "var(--radius-md)" }}>
-            {(createMutation.error as Error | null)?.message || (updateMutation.error as Error | null)?.message || "Failed to save package"}
-          </div>
-        )}
-      </div>
-
-      {/* ─── Package List ───────────────────────────────────────────── */}
-      <div className="card" style={{ padding: "1.25rem", backgroundColor: "var(--bg-surface-2)" }}>
-
-        {/* Category Tabs */}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
-          {(["All", ...CATEGORIES] as (PackageCategory | "All")[]).map((tab) => (
+      {/* ── List Section ── */}
+      <Section title="Active Inventory" icon={<Package size={20} />}>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+          {["All", ...CATEGORIES].map((tab: any) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: "0.35rem 0.9rem",
-                borderRadius: "999px",
-                border: "1px solid",
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                borderColor: activeTab === tab ? (tab === "All" ? "var(--color-primary)" : CATEGORY_COLORS[tab as PackageCategory]) : "var(--border)",
-                color: activeTab === tab ? (tab === "All" ? "var(--color-primary)" : CATEGORY_COLORS[tab as PackageCategory]) : "var(--text-muted)",
-                background: activeTab === tab
-                  ? (tab === "All" ? "var(--color-primary-glow)" : `${CATEGORY_COLORS[tab as PackageCategory]}18`)
-                  : "transparent",
+                padding: "0.5rem 1.25rem", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)",
+                fontSize: "0.85rem", fontWeight: 800, cursor: "pointer", transition: "0.2s",
+                background: activeTab === tab ? "rgba(255,255,255,0.08)" : "transparent",
+                color: activeTab === tab ? "white" : "#64748b"
               }}
             >
-              {tab}
-              {tab !== "All" && (
-                <span style={{ marginLeft: "0.4rem", opacity: 0.75 }}>
-                  ({(data ?? []).filter(p => p.category === tab).length})
-                </span>
-              )}
-              {tab === "All" && (
-                <span style={{ marginLeft: "0.4rem", opacity: 0.75 }}>({data?.length ?? 0})</span>
-              )}
+              {tab.toUpperCase()}
             </button>
           ))}
-
-          <button className="btn" style={{ marginLeft: "auto" }} onClick={() => refetch()} disabled={isLoading || isFetching}>
-            {isFetching ? "Refreshing…" : "Refresh"}
+          <button onClick={() => queryClient.invalidateQueries({ queryKey: ["packages"] })} style={{ marginLeft: "auto", background: "none", border: "none", color: "#64748b", cursor: "pointer" }}>
+            <RotateCcw size={18} className={isFetching ? "animate-spin" : ""} />
           </button>
         </div>
 
-        {isError ? (
-          <div style={{ padding: "1rem", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--bg-surface)" }}>
-            <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>Failed to load packages</div>
-            <div style={{ color: "var(--text-muted)" }}>{(error as Error)?.message ?? "Unknown error"}</div>
-          </div>
-        ) : isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>Loading packages…</div>
-        ) : filteredData.length === 0 ? (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-            <Package size={40} strokeWidth={1.2} style={{ marginBottom: "1rem", opacity: 0.4 }} />
-            <div style={{ fontWeight: 600, marginBottom: "0.25rem" }}>No packages yet</div>
-            <div style={{ fontSize: "0.85rem" }}>Use the form above to create your first package.</div>
-          </div>
+        {isLoading ? (
+          <div style={{ padding: "4rem", textAlign: "center", color: "#64748b", fontWeight: 700 }}>Retreiving Inventory...</div>
         ) : (
-          <div style={{ display: "grid", gap: "0.75rem" }}>
-            {filteredData.map((pkg) => (
-              <div
-                key={pkg._id}
-                style={{
-                  padding: "1rem 1.25rem",
-                  border: `1px solid ${editing?._id === pkg._id ? "var(--color-primary)" : "var(--border)"}`,
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--bg-surface)",
-                  transition: "border-color 0.2s",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
-                  <div style={{ flex: 1, minWidth: "160px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontWeight: 700, fontSize: "1.05rem" }}>{pkg.name}</span>
-                      <span style={{
-                        fontSize: "0.72rem", fontWeight: 700, padding: "0.15rem 0.5rem",
-                        borderRadius: "999px",
-                        background: `${CATEGORY_COLORS[pkg.category]}20`,
-                        color: CATEGORY_COLORS[pkg.category],
-                        border: `1px solid ${CATEGORY_COLORS[pkg.category]}40`,
-                      }}>{pkg.category}</span>
-                      {!pkg.isActive && (
-                        <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "0.1rem 0.4rem", borderRadius: "999px", background: "var(--color-danger-glow)", color: "var(--color-danger)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                          Inactive
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: "1.15rem", color: "var(--color-primary)", marginBottom: "0.2rem" }}>
-                      ₹{pkg.price.toLocaleString("en-IN")}
-                    </div>
-                    {pkg.description && (
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{pkg.description}</div>
-                    )}
-                  </div>
-
-                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                    {/* Active Toggle */}
-                    <button
-                      type="button"
-                      title={pkg.isActive ? "Deactivate" : "Activate"}
-                      onClick={() => updateMutation.mutate({ id: pkg._id, payload: { isActive: !pkg.isActive } })}
-                      style={{
-                        width: 38, height: 22, borderRadius: 11, border: "none",
-                        background: pkg.isActive ? "var(--color-primary)" : "var(--border)",
-                        position: "relative", cursor: "pointer", transition: "background 0.2s",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <span style={{
-                        position: "absolute", top: 2, left: pkg.isActive ? 18 : 2,
-                        width: 18, height: 18, borderRadius: "50%", background: "#fff",
-                        transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                      }} />
-                    </button>
-
-                    <button type="button" className="btn" onClick={() => startEdit(pkg)}>Edit</button>
-
-                    {deleteConfirm === pkg._id ? (
-                      <>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Sure?</span>
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          onClick={() => deleteMutation.mutate(pkg._id)}
-                          disabled={deleteMutation.isPending}
-                        >Yes</button>
-                        <button type="button" className="btn" onClick={() => setDeleteConfirm(null)}>No</button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn-danger"
-                        onClick={() => setDeleteConfirm(pkg._id)}
-                      >Delete</button>
-                    )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.25rem" }}>
+            {filteredData.map(pkg => (
+              <div key={pkg._id} style={{ 
+                padding: "1.5rem", borderRadius: "1.5rem", background: "rgba(255,255,255,0.02)", 
+                border: `1px solid ${editing?._id === pkg._id ? "var(--color-primary)" : "rgba(255,255,255,0.05)"}`,
+                transition: "0.2s"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+                   <span style={{ 
+                     padding: "0.3rem 0.75rem", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 900, 
+                     background: `${CATEGORY_COLORS[pkg.category]}15`, color: CATEGORY_COLORS[pkg.category]
+                   }}>{pkg.category.toUpperCase()}</span>
+                   <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button onClick={() => startEdit(pkg)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer" }}><Edit2 size={16} /></button>
+                      <button onClick={() => { if(confirm("Delete this package?")) deleteMutation.mutate(pkg._id) }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={16} /></button>
+                   </div>
+                </div>
+                <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "1.2rem", fontWeight: 850, color: "#f8fafc" }}>{pkg.name}</h4>
+                <div style={{ fontSize: "1.5rem", fontWeight: 950, color: "var(--color-primary)", marginBottom: "1rem" }}>
+                  ₹{pkg.price.toLocaleString("en-IN")}
+                </div>
+                <p style={{ fontSize: "0.9rem", color: "#94a3b8", lineHeight: 1.5, margin: 0, minHeight: "3em" }}>{pkg.description || "No inclusion details provided."}</p>
+                
+                <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 800, color: pkg.isActive ? "#10b981" : "#ef4444" }}>
+                    {pkg.isActive ? "● ONLINE" : "○ OFFLINE"}
+                  </span>
+                  <div 
+                    onClick={() => updateMutation.mutate({ id: pkg._id, payload: { isActive: !pkg.isActive } })}
+                    style={{
+                      width: 36, height: 20, borderRadius: 10, background: pkg.isActive ? "#10b981" : "rgba(255,255,255,0.1)",
+                      position: "relative", cursor: "pointer", transition: "0.2s"
+                    }}
+                  >
+                    <div style={{
+                      position: "absolute", top: 2, left: pkg.isActive ? 18 : 2,
+                      width: 16, height: 16, borderRadius: "50%", background: "white", transition: "0.2s"
+                    }} />
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </Section>
     </div>
   );
 }

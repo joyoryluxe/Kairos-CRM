@@ -1,697 +1,6 @@
-// import { useState, useEffect, useCallback } from "react";
-// import { createPortal } from "react-dom";
-// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// import { getDashboardOverview } from "@/api/dashboard";
-// import { getGoogleAuthUrl, syncAllRecords } from "@/api/googleAuth";
-// import { getMe } from "@/api/auth";
-// import {
-//   TrendingUp,
-//   CreditCard,
-//   AlertCircle,
-//   Calendar,
-//   BarChart3,
-//   Baby,
-//   Megaphone,
-//   Building2,
-//   CheckCircle2,
-//   RefreshCw,
-//   X,
-//   Clock,
-//   Flag,
-//   Plus,
-//   Trash2,
-//   Pencil,
-// } from "lucide-react";
-// import { useSearchParams } from "react-router-dom";
-// import StatCard from "@/components/StatCard";
-// import {
-//   getStudioExpenses,
-//   createStudioExpense,
-//   updateStudioExpense,
-//   deleteStudioExpense,
-//   type StudioExpense
-// } from "@/api/studioExpenses";
-
-// import FullCalendar from "@fullcalendar/react";
-// import dayGridPlugin from "@fullcalendar/daygrid";
-// import timeGridPlugin from "@fullcalendar/timegrid";
-// import interactionPlugin from "@fullcalendar/interaction";
-
-// // ─── helpers ────────────────────────────────────────────────────────────────
-
-// const formatCurrency = (value: number) =>
-//   new Intl.NumberFormat("en-IN", {
-//     style: "currency",
-//     currency: "INR",
-//     minimumFractionDigits: 0,
-//   }).format(value);
-
-// const formatDate = (iso: string) =>
-//   new Date(iso).toLocaleString("en-IN", {
-//     day: "numeric",
-//     month: "short",
-//     year: "numeric",
-//     hour: "2-digit",
-//     minute: "2-digit",
-//     timeZone: "Asia/Kolkata",
-//   });
-
-// const formatDateOnly = (iso: string) =>
-//   new Date(iso).toLocaleDateString("en-IN", {
-//     day: "numeric",
-//     month: "short",
-//     year: "numeric",
-//     timeZone: "Asia/Kolkata",
-//   });
-
-// function useIsMobile() {
-//   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-//   const [isTablet, setIsTablet] = useState(() => window.innerWidth < 1024);
-//   useEffect(() => {
-//     const handler = () => {
-//       setIsMobile(window.innerWidth < 768);
-//       setIsTablet(window.innerWidth < 1024);
-//     };
-//     window.addEventListener("resize", handler);
-//     return () => window.removeEventListener("resize", handler);
-//   }, []);
-//   return { isMobile, isTablet };
-// }
-
-// // ─── event detail modal ──────────────────────────────────────────────────────
-
-// interface EventDetail {
-//   title: string;
-//   start: string;
-//   type: string;
-//   status: string;
-//   isDeadline: boolean;
-//   backgroundColor: string;
-// }
-
-// function EventModal({
-//   event,
-//   onClose,
-// }: {
-//   event: EventDetail;
-//   onClose: () => void;
-// }) {
-//   return createPortal(
-//     <div
-//       onClick={onClose}
-//       style={{
-//         position: "fixed",
-//         inset: 0,
-//         background: "rgba(0,0,0,0.6)",
-//         zIndex: 2000,
-//         display: "flex",
-//         alignItems: "center",
-//         justifyContent: "center",
-//         padding: "1rem",
-//         backdropFilter: "blur(8px)",
-//         animation: "fadeIn 0.3s ease-out"
-//       }}
-//     >
-//       <div
-//         onClick={(e) => e.stopPropagation()}
-//         style={{
-//           background: "var(--bg-surface)",
-//           borderRadius: "24px",
-//           padding: "2rem",
-//           width: "100%",
-//           maxWidth: "420px",
-//           border: "1px solid var(--border-strong)",
-//           boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
-//           position: "relative",
-//           overflow: "hidden",
-//           animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
-//         }}
-//       >
-//         {/* Color Accent Bar */}
-//         <div style={{ position: "absolute", top: 0, left: 0, width: "6px", height: "100%", background: event.backgroundColor }} />
-
-//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-//           <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", flex: 1, minWidth: 0 }}>
-//             <div style={{ width: 14, height: 14, borderRadius: "50%", background: event.backgroundColor, boxShadow: `0 0 10px ${event.backgroundColor}66`, flexShrink: 0 }} />
-//             <span style={{ fontWeight: 700, fontSize: "1.2rem", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-//               {event.title}
-//             </span>
-//           </div>
-//           <button
-//             onClick={onClose}
-//             className="btn-ghost"
-//             style={{ padding: "0.4rem", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
-//           >
-//             <X size={20} />
-//           </button>
-//         </div>
-
-//         <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-//           <span style={{
-//             display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700,
-//             background: event.isDeadline ? "rgba(239,68,68,0.15)" : "rgba(99,179,237,0.15)",
-//             color: event.isDeadline ? "#ff5f5f" : "#60a5fa",
-//             border: `1px solid ${event.isDeadline ? "rgba(239,68,68,0.2)" : "rgba(99,179,237,0.2)"}`
-//           }}>
-//             {event.isDeadline ? <><Flag size={14} /> Deadline</> : <><Clock size={14} /> Shoot Event</>}
-//           </span>
-//           <span style={{
-//             display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 600,
-//             background: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)"
-//           }}>
-//             {event.type}
-//           </span>
-//         </div>
-
-//         <div style={{
-//           padding: "1.25rem", background: "linear-gradient(135deg, var(--bg-surface-2), var(--bg-surface-3))",
-//           borderRadius: "16px", fontSize: "0.95rem", color: "var(--text-primary)", border: "1px solid var(--border)",
-//           display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem"
-//         }}>
-//           <div style={{ background: "rgba(255,255,255,0.05)", padding: "0.5rem", borderRadius: "10px" }}>
-//             <Calendar size={18} color="var(--color-primary)" />
-//           </div>
-//           <div style={{ display: "flex", flexDirection: "column" }}>
-//             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Scheduled Date</span>
-//             <span style={{ fontWeight: 600 }}>{event.isDeadline ? formatDateOnly(event.start) : formatDate(event.start)}</span>
-//           </div>
-//         </div>
-
-//         {event.status && (
-//           <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "var(--bg-surface-2)", padding: "0.75rem 1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
-//             <span style={{ color: "var(--text-muted)" }}>Current Status:</span> <strong style={{ color: "var(--text-primary)", marginLeft: "0.4rem" }}>{event.status}</strong>
-//           </div>
-//         )}
-//       </div>
-//     </div>,
-//     document.body
-//   );
-// }
-
-// // ─── calendar legend ─────────────────────────────────────────────────────────
-
-// function CalendarLegend() {
-//   const items = [
-//     { label: "Maternity Shoot", color: "#f472b6", gradient: "linear-gradient(135deg, #f472b6, #fb7185)", icon: <Baby size={14} /> },
-//     { label: "Influencer Shoot", color: "#60a5fa", gradient: "linear-gradient(135deg, #60a5fa, #3b82f6)", icon: <Megaphone size={14} /> },
-//     { label: "Corporate Event", color: "#4ade80", gradient: "linear-gradient(135deg, #4ade80, #10b981)", icon: <Building2 size={14} /> },
-//     { label: "Delivery Deadline", color: "#ef4444", icon: <Flag size={14} />, dashed: true },
-//   ];
-//   return (
-//     <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
-//       {items.map((item) => (
-//         <div
-//           key={item.label}
-//           style={{
-//             display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", fontWeight: 600,
-//             cursor: "default"
-//           }}
-//         >
-//           <div style={{
-//             display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%",
-//             background: item.dashed ? "rgba(239, 68, 68, 0.1)" : item.gradient, border: item.dashed ? `2px dashed ${item.color}` : "none", color: item.dashed ? item.color : "#fff",
-//             boxShadow: item.dashed ? "none" : `0 4px 12px ${item.color}44`
-//           }}>
-//             {item.icon}
-//           </div>
-//           <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
-// // ─── main page ───────────────────────────────────────────────────────────────
-
-// export default function DashboardOverviewPage() {
-//   const [searchParams] = useSearchParams();
-//   const googleConnected = searchParams.get("googleConnected");
-//   const { isMobile, isTablet } = useIsMobile();
-//   const queryClient = useQueryClient();
-
-//   const [syncing, setSyncing] = useState(false);
-//   const [syncMessage, setSyncMessage] = useState("");
-//   const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
-//   const [visibleShoots, setVisibleShoots] = useState(3);
-//   const [visibleDeadlines, setVisibleDeadlines] = useState(3);
-//   const [visibleCompleted, setVisibleCompleted] = useState(3);
-//   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
-
-//   // Studio Expense State
-//   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-//   const [editingExpense, setEditingExpense] = useState<StudioExpense | null>(null);
-//   const [expenseForm, setExpenseForm] = useState({
-//     amount: 0,
-//     date: new Date().toISOString().split('T')[0],
-//     category: "Other",
-//     notes: ""
-//   });
-
-//   const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
-//   const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: getDashboardOverview });
-//   const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: getStudioExpenses });
-
-//   const createExpenseMutation = useMutation({
-//     mutationFn: createStudioExpense,
-//     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
-//   });
-
-//   const updateExpenseMutation = useMutation({
-//     mutationFn: ({ id, data }: { id: string; data: any }) => updateStudioExpense(id, data),
-//     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["studio-expenses"] }); setIsExpenseModalOpen(false); resetExpenseForm(); }
-//   });
-
-//   const deleteExpenseMutation = useMutation({
-//     mutationFn: deleteStudioExpense,
-//     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["studio-expenses"] })
-//   });
-
-//   const resetExpenseForm = () => {
-//     setExpenseForm({ amount: 0, date: new Date().toISOString().split('T')[0], category: "Other", notes: "" });
-//     setEditingExpense(null);
-//   };
-
-//   const handleEditExpense = (expense: StudioExpense) => {
-//     setEditingExpense(expense);
-//     setExpenseForm({ amount: expense.amount, date: new Date(expense.date).toISOString().split('T')[0], category: expense.category || "Other", notes: expense.notes || "" });
-//     setIsExpenseModalOpen(true);
-//   };
-
-//   const handleSyncAll = async () => {
-//     setSyncing(true);
-//     setSyncMessage("");
-//     try {
-//       const result = await syncAllRecords();
-//       setSyncMessage(result.message);
-//     } catch (err: any) {
-//       setSyncMessage(err.response?.data?.message || "Sync failed");
-//     } finally {
-//       setSyncing(false);
-//     }
-//   };
-
-//   const handleConnectGoogle = async () => {
-//     try {
-//       const { url } = await getGoogleAuthUrl();
-//       window.location.href = url;
-//     } catch (err) {
-//       console.error("Failed to get Google Auth URL", err);
-//     }
-//   };
-
-//   const handleEventClick = useCallback((info: any) => {
-//     const ep = info.event.extendedProps;
-//     setSelectedEvent({
-//       title: info.event.title,
-//       start: info.event.startStr,
-//       type: ep.type,
-//       status: ep.status,
-//       isDeadline: !!ep.isDeadline,
-//       backgroundColor: info.event.backgroundColor,
-//     });
-//   }, []);
-
-//   const renderEventContent = useCallback((info: any) => {
-//     const { isDeadline, type } = info.event.extendedProps;
-//     const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
-//     const backgroundColor = info.event.backgroundColor;
-
-//     // Use a more vibrant semi-transparent background for the event
-//     const eventBg = isDeadline ? "rgba(239, 68, 68, 0.15)" : `${backgroundColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
-
-//     return (
-//       <div style={{
-//         display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", padding: "2px 6px", borderRadius: "4px",
-//         background: isDeadline ? "rgba(239, 68, 68, 0.15)" : eventBg,
-//         backdropFilter: "blur(2px)", borderLeft: `3px solid ${backgroundColor}`, fontSize: "0.75rem", fontWeight: isDeadline ? 700 : 500,
-//         height: "100%", width: "100%", color: isDeadline ? "#ff5f5f" : "var(--text-primary)"
-//       }}>
-//         <span style={{ fontSize: "10px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
-//         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{info.event.title}</span>
-//       </div>
-//     );
-//   }, []);
-
-//   if (isLoading) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--text-muted)" }}>Loading Dashboard...</div>;
-//   if (isError) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--color-danger)" }}>Error: {(error as Error).message}</div>;
-//   if (!data) return null;
-
-//   const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 } } = data;
-//   const isConnected = userData?.user?.googleCalendarConnected;
-
-//   return (
-//     <div className="dashboard-overview animate-fade-up">
-//       <header style={{ marginBottom: "2.5rem" }}>
-//         <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: "1.5rem" }}>
-//           <div>
-//             <h1 style={{ fontSize: isMobile ? "1.75rem" : "2.5rem", fontWeight: 800, margin: "0 0 0.5rem 0", background: "linear-gradient(to right, var(--color-primary), var(--color-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-//               CRM Overview
-//             </h1>
-//             <p style={{ color: "var(--text-secondary)", fontSize: isMobile ? "0.9rem" : "1rem" }}>Unified metrics across all modules.</p>
-//           </div>
-
-//           <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
-//             {isConnected ? (
-//               <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
-//                 <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px", background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", border: "1px solid rgba(74, 222, 128, 0.2)", fontSize: "0.85rem", fontWeight: 600 }}>
-//                   <CheckCircle2 size={16} /> <span>Connected</span>
-//                 </div>
-//                 <button onClick={handleSyncAll} disabled={syncing} className="btn-ghost" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px" }}>
-//                   <RefreshCw size={16} className={syncing ? "animate-spin" : ""} />
-//                   <span>Sync</span>
-//                 </button>
-//               </div>
-//             ) : (
-//               <button onClick={handleConnectGoogle} className="btn-primary" style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.25rem", borderRadius: "10px" }}>
-//                 <Calendar size={18} /> Connect Google
-//               </button>
-//             )}
-//           </div>
-//         </div>
-
-//         {(googleConnected || searchParams.get("googleError") || syncMessage) && (
-//           <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)", color: searchParams.get("googleError") ? "var(--color-danger)" : "var(--color-success)", fontSize: "0.9rem", border: "1px solid var(--border)" }}>
-//             {searchParams.get("googleError") ? `Error: ${searchParams.get("googleError")}` : syncMessage || "Google Calendar connected!"}
-//           </div>
-//         )}
-//       </header>
-
-//       {/* ── 6-column stats row ── */}
-//       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(6, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
-//         <StatCard title="Total Revenue" value={formatCurrency(globalTotals.totalRevenue)} icon={<TrendingUp size={20} />} color="var(--color-primary)" description="Gross contract value" />
-//         <StatCard title="Total Received" value={formatCurrency(globalTotals.totalAdvance)} icon={<CreditCard size={20} />} color="var(--color-success)" description="Payments collected" />
-//         <StatCard title="Total Due" value={formatCurrency(globalTotals.totalBalance)} icon={<AlertCircle size={20} />} color="var(--color-warning)" description="Pending balances" />
-//         <StatCard title="Total Expenses" value={formatCurrency(globalTotals.totalExpenses)} icon={<CreditCard size={20} />} color="var(--color-danger)" description="Records + Studio" />
-//         <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="var(--color-accent)" description="Revenue - Expenses" />
-//         <StatCard title="Booked Leads" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Converted leads" />
-//       </div>
-
-//       <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(2, 1fr)", gap: "2rem", marginBottom: "2.5rem" }}>
-//         {/* Revenue Breakdown */}
-//         <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
-//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-//             <BarChart3 size={20} color="var(--color-primary)" />
-//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Revenue Breakdown</h2>
-//           </div>
-//           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-//             {categorySplit.map((cat: any) => (
-//               <div key={cat.name}>
-//                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.85rem" }}>
-//                   <span style={{ fontWeight: 600 }}>{cat.name}</span>
-//                   <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-//                     <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(cat.revenue)}</span>
-//                     <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>({globalTotals.totalRevenue > 0 ? Math.round((cat.revenue / globalTotals.totalRevenue) * 100) : 0}%)</span>
-//                   </div>
-//                 </div>
-//                 <div style={{ height: "6px", background: "var(--bg-surface-3)", borderRadius: "3px", overflow: "hidden" }}>
-//                   <div style={{ height: "100%", width: `${globalTotals.totalRevenue > 0 ? (cat.revenue / globalTotals.totalRevenue) * 100 : 0}%`, background: cat.color, borderRadius: "3px", transition: "width 0.6s ease" }} />
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         </section>
-
-//         {/* Reminders: Shoots & Deadlines */}
-//         <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
-//           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-//             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//               <Calendar size={20} color="var(--color-warning)" />
-//               <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Upcoming</h2>
-//             </div>
-//             <div style={{ display: "flex", background: "var(--bg-surface-3)", padding: "3px", borderRadius: "8px" }}>
-//               <button onClick={() => setActiveTab('shoots')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent", color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)" }}>Shoots</button>
-//               <button onClick={() => setActiveTab('deadlines')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent", color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)" }}>Deadlines</button>
-//             </div>
-//           </div>
-//           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Upcoming {activeTab}</div>
-//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).slice(0, visibleShoots).map((item: any) => (
-//               <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px solid var(--border)" }}>
-//                 <div style={{ width: 36, height: 36, borderRadius: "25%", background: activeTab === 'shoots' ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "var(--text-muted)" : "var(--color-danger)" }}>
-//                   {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={18} /> : item.type === 'Influencer' ? <Megaphone size={18} /> : <Building2 size={18} />) : <Flag size={18} />}
-//                 </div>
-//                 <div style={{ flex: 1, minWidth: 0 }}>
-//                   <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.clientName}</div>
-//                   <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
-//                 </div>
-//                 <div style={{ fontSize: "0.75rem", fontWeight: 800, padding: "0.25rem 0.5rem", borderRadius: "6px", background: item.daysRemaining <= 1 ? "var(--color-danger)" : "var(--bg-surface-3)", color: item.daysRemaining <= 1 ? "#fff" : "var(--text-secondary)" }}>
-//                   {item.daysRemaining === 0 ? "Today" : `${item.daysRemaining}d`}
-//                 </div>
-//               </div>
-//             ))}
-//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length === 0 && (
-//               <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-//                 No upcoming {activeTab} for the next 7 days.
-//               </div>
-//             )}
-//             {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length > 3 && (
-//               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", marginTop: "0.5rem" }}>
-//                 <AlertCircle size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
-//                 Criteria: Active (Not Completed/Cancelled) items for the next 7 days.
-//               </div>
-//             )}
-//           </div>
-//         </section>
-//       </div>
-
-//       {/* Recently Completed Section */}
-//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
-//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//             <div style={{ background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", padding: "0.4rem", borderRadius: "50%", display: "flex" }}>
-//               <CheckCircle2 size={20} />
-//             </div>
-//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Recently Completed</h2>
-//           </div>
-//           {recentlyCompleted.length > 3 && (
-//             <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", borderRadius: "8px", color: "var(--color-primary)" }}>
-//               View More (+{recentlyCompleted.length - 3})
-//             </button>
-//           )}
-//         </div>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//           {recentlyCompleted.slice(0, 3).map((item: any) => (
-//             <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "16px", border: "1px solid var(--border)" }}>
-//               <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-success)", border: "1px solid var(--border)" }}>
-//                 <CheckCircle2 size={24} />
-//               </div>
-//               <div style={{ flex: 1, minWidth: 0 }}>
-//                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-//                   <div>
-//                     <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>{item.clientName}</div>
-//                     <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
-//                   </div>
-//                   <div style={{ textAlign: "right" }}>
-//                     <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-primary)" }}>{formatCurrency(item.total)}</div>
-//                     <div style={{ fontSize: "0.7rem", fontWeight: 900, color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-danger)", letterSpacing: "0.05em", marginTop: "2px" }}>
-//                       PAYMENT: {item.paymentStatus}
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           ))}
-//           {recentlyCompleted.length === 0 && (
-//             <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-//               No recently completed items.
-//             </div>
-//           )}
-//         </div>
-//         <div style={{ marginTop: "1.25rem", padding: "0.75rem", borderRadius: "10px", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//           <AlertCircle size={14} color="var(--color-success)" />
-//           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Items completed or cancelled in the last 7 days.</span>
-//         </div>
-//       </section>
-
-//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
-//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//             <Calendar size={20} color="var(--color-primary)" />
-//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Schedule & Deadlines</h2>
-//           </div>
-//         </div>
-//         <CalendarLegend />
-//         <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
-//           <FullCalendar
-//             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-//             timeZone="Asia/Kolkata"
-//             initialView={isMobile ? "dayGridMonth" : isTablet ? "dayGridMonth" : "dayGridMonth"}
-//             headerToolbar={{
-//               left: "prev,next today",
-//               center: "title",
-//               right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay"
-//             }}
-//             events={calendarEvents || []}
-//             eventContent={renderEventContent}
-//             eventClick={handleEventClick}
-//             height="auto"
-//             contentHeight={isMobile ? 400 : 640}
-//             dayMaxEvents={isMobile ? 2 : 3}
-//             nowIndicator={true}
-//           />
-//         </div>
-//       </section>
-
-//       {/* Studio Expenses Section */}
-//       <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
-//         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-//           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-//             <CreditCard size={20} color="var(--color-danger)" />
-//             <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Studio Expenses</h2>
-//           </div>
-//           <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-//             <Plus size={16} /> Add
-//           </button>
-//         </div>
-
-//         {isMobile ? (
-//           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-//             {expensesData?.map((expense: StudioExpense) => (
-//               <div key={expense._id} style={{ background: "var(--bg-surface-2)", padding: "1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
-//                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-//                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</span>
-//                   <span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem", fontWeight: 600 }}>{expense.category}</span>
-//                 </div>
-//                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-//                   <div style={{ fontWeight: 800, color: "var(--color-danger)", fontSize: "1.1rem" }}>{formatCurrency(expense.amount)}</div>
-//                   <div style={{ display: "flex", gap: "0.5rem" }}>
-//                     <button onClick={() => handleEditExpense(expense)} style={{ background: "var(--bg-surface-3)", border: "none", color: "var(--color-primary)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Pencil size={14} /></button>
-//                     <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "var(--color-danger)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Trash2 size={14} /></button>
-//                   </div>
-//                 </div>
-//                 {expense.notes && <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--text-secondary)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>{expense.notes}</div>}
-//               </div>
-//             ))}
-//           </div>
-//         ) : (
-//           <div style={{ overflowX: "auto" }}>
-//             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
-//               <thead>
-//                 <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
-//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Date</th>
-//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Category</th>
-//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Amount</th>
-//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Notes</th>
-//                   <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600, textAlign: "right" }}>Actions</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {expensesData?.map((expense: StudioExpense) => (
-//                   <tr key={expense._id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-//                     <td style={{ padding: "1rem" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
-//                     <td style={{ padding: "1rem" }}><span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem" }}>{expense.category}</span></td>
-//                     <td style={{ padding: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatCurrency(expense.amount)}</td>
-//                     <td style={{ padding: "1rem", color: "var(--text-secondary)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{expense.notes}</td>
-//                     <td style={{ padding: "1rem", textAlign: "right" }}>
-//                       <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-//                         <button onClick={() => handleEditExpense(expense)} style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer" }}><Pencil size={16} /></button>
-//                         <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "none", border: "none", color: "var(--color-danger)", cursor: "pointer" }}><Trash2 size={16} /></button>
-//                       </div>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         )}
-//       </section>
-
-//       {/* Expense Modal */}
-//       {isExpenseModalOpen && (
-//         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-//           <div style={{ background: "var(--bg-surface)", borderRadius: "16px", padding: "2rem", width: "100%", maxWidth: "450px", border: "1px solid var(--border)" }}>
-//             <h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.25rem" }}>{editingExpense ? "Edit Expense" : "Add Studio Expense"}</h3>
-//             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Amount (INR)</label>
-//                 <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
-//               </div>
-//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Date</label>
-//                 <input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
-//               </div>
-//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Category</label>
-//                 <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }}>
-//                   <option value="Rent">Rent</option>
-//                   <option value="Electricity">Electricity</option>
-//                   <option value="Equipment">Equipment</option>
-//                   <option value="Staff">Staff</option>
-//                   <option value="Marketing">Marketing</option>
-//                   <option value="Other">Other</option>
-//                 </select>
-//               </div>
-//               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-//                 <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Notes</label>
-//                 <textarea value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)", minHeight: "80px" }} />
-//               </div>
-//               <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-//                 <button onClick={() => setIsExpenseModalOpen(false)} style={{ flex: 1, padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "none", cursor: "pointer" }}>Cancel</button>
-//                 <button
-//                   onClick={() => editingExpense ? updateExpenseMutation.mutate({ id: editingExpense._id!, data: expenseForm }) : createExpenseMutation.mutate(expenseForm)}
-//                   disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
-//                   className="btn-primary"
-//                   style={{ flex: 1, padding: "0.75rem", borderRadius: "8px" }}
-//                 >
-//                   {editingExpense ? "Update" : "Save"}
-//                 </button>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
-//       {selectedEvent && <EventModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />}
-
-//       <style dangerouslySetInnerHTML={{
-//         __html: `
-//         .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
-//         .fc-col-header-cell { padding: 8px 0 !important; background: var(--bg-surface-2) !important; }
-//         .fc-col-header-cell-cushion { color: var(--text-secondary) !important; text-decoration: none !important; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
-//         .fc-button-primary { background: var(--bg-surface-2) !important; border: 1px solid var(--border) !important; color: var(--text-primary) !important; font-size: 0.75rem !important; font-weight: 600 !important; border-radius: 8px !important; padding: 6px 12px !important; text-transform: capitalize !important; transition: all 0.2s ease !important; }
-//         .fc-button-primary:hover { background: var(--bg-surface-3) !important; border-color: var(--border-strong) !important; transform: translateY(-1px); }
-//         .fc-button-active { background: var(--color-primary) !important; color: #fff !important; border-color: var(--color-primary) !important; box-shadow: 0 4px 12px var(--color-primary-glow) !important; }
-//         .fc-day-today { background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.05) !important; }
-//         .fc-daygrid-day-number { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); padding: 8px !important; text-decoration: none !important; }
-//         .fc-daygrid-day:hover { background: rgba(255,255,255,0.02); }
-//         .fc-event { border: none !important; background: transparent !important; margin: 1px 2px !important; }
-//         .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
-//         .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
-
-//         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-//         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-//         @media (max-width: 768px) {
-//           .fc-header-toolbar { flex-direction: column; gap: 1rem; }
-//           .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; }
-//         }
-//       ` }} />
-//     </div>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDashboardOverview } from "@/api/dashboard";
 import { getGoogleAuthUrl, syncAllRecords } from "@/api/googleAuth";
@@ -708,14 +17,12 @@ import {
   CheckCircle2,
   RefreshCw,
   X,
-  Clock,
   Flag,
   Plus,
   Trash2,
   Pencil,
-  Download,
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+
 import StatCard from "@/components/StatCard";
 import {
   getStudioExpenses,
@@ -724,7 +31,6 @@ import {
   deleteStudioExpense,
   type StudioExpense
 } from "@/api/studioExpenses";
-import { exportToExcel } from "@/utils/exportToExcel";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -772,9 +78,44 @@ function useIsMobile() {
   return { isMobile, isTablet };
 }
 
-// ─── birth date reminders ───────────────────────────────────────────────────
+// ─── Section Card Component ────────────────────────────────────────────────
+function DashboardSection({ title, icon, children, action }: { title: string; icon: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
+  const { isMobile } = useIsMobile();
+  return (
+    <div style={{
+      background: "rgba(30, 41, 59, 0.5)",
+      backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255, 255, 255, 0.05)",
+      borderRadius: isMobile ? "1rem" : "1.5rem",
+      padding: isMobile ? "1.25rem" : "1.75rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      height: "100%",
+      boxSizing: "border-box",
+      width: "100%",
+      maxWidth: isMobile ? "calc(100vw - 2.5rem)" : "100%",
+      minWidth: 0,
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column"
+    }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0, flex: 1 }}>
+          <div style={{ color: "var(--color-primary)", flexShrink: 0 }}>{icon}</div>
+          <h2 style={{ fontSize: isMobile ? "1.05rem" : "1.1rem", fontWeight: 800, margin: 0, color: "#f8fafc", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</h2>
+        </div>
+        {action && <div style={{ display: "flex", flexShrink: 0 }}>{action}</div>}
+      </div>
+      <div style={{ flex: 1, width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Birth Date Reminders ───────────────────────────────────────────────────
 
 function BirthDateReminderCard({ reminder }: { reminder: any }) {
+  const navigate = useNavigate();
   const getDisplayInfo = (days: number) => {
     const messages: Record<number, string> = {
       0: "IT'S THE BIG DAY! 🎉",
@@ -798,50 +139,34 @@ function BirthDateReminderCard({ reminder }: { reminder: any }) {
   const info = getDisplayInfo(reminder.daysRemaining);
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "1rem", padding: "1.25rem",
-      background: info.bg, borderRadius: "20px", border: `2px solid ${info.border}`,
-      boxShadow: reminder.daysRemaining === 0 ? "0 0 25px rgba(239, 68, 68, 0.25)" : "none",
-      animation: info.pulse ? "pulse-red 1.5s infinite" : "none",
-      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-      cursor: "default",
-      width: "100%",
-      flexWrap: "wrap", // Allow wrapping for very small screens
-    }}
-      className="reminder-card-hover"
+    <div 
+      onClick={() => reminder?.id && navigate(`/dashboard/maternity/${reminder.id}/edit`)}
+      style={{
+        background: info.bg,
+        border: `1px solid ${info.border}`,
+        borderRadius: "1rem",
+        padding: "1rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+        animation: info.pulse ? "pulse-red 2s infinite" : "none",
+        transition: "all 0.3s ease",
+        cursor: "pointer"
+      }}
     >
       <div style={{
-        display: "flex", alignItems: "center", gap: "1rem", flex: "1 1 auto", minWidth: "200px"
+        width: "48px", height: "48px", borderRadius: "12px", background: "rgba(255,255,255,0.05)",
+        display: "flex", alignItems: "center", justifyContent: "center", color: info.color
       }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: "16px", background: "var(--bg-surface)",
-          display: "flex", alignItems: "center", justifyContent: "center", color: info.color, border: `1px solid ${info.border}`,
-          boxShadow: "0 4px 10px rgba(0,0,0,0.1)", flexShrink: 0, alignSelf: "flex-start", marginTop: "0.25rem"
-        }}>
-          <Baby size={28} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
-            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Client</span>
-            <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)", lineHeight: "1.2" }}>{reminder.clientName}</span>
-          </div>
-          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
-            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Baby</span>
-            <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{reminder.babyName}</span>
-          </div>
-          <div style={{ fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
-            <span style={{ color: "var(--text-muted)", fontWeight: 700, minWidth: "55px", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
-            <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{new Date(reminder.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
-          </div>
-        </div>
+        <Baby size={24} />
       </div>
-      <div style={{
-        textAlign: "center", padding: "0.6rem 0.8rem", borderRadius: "12px",
-        background: "var(--bg-surface)", border: `1px solid ${info.border}`, fontSize: "0.75rem", fontWeight: 900, color: info.color,
-        minWidth: "120px", lineHeight: "1.2", display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0, marginLeft: "auto"
-      }}>
-        {info.text}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 800, fontSize: "1rem", color: "#f8fafc" }}>{reminder.clientName}</div>
+        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: info.color, textTransform: "uppercase", letterSpacing: "0.02em" }}>{info.text}</div>
+      </div>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 600 }}>Due Date</div>
+        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#f8fafc" }}>{formatDateOnly(reminder.dueDate)}</div>
       </div>
     </div>
   );
@@ -871,84 +196,73 @@ function EventModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.6)",
+        background: "rgba(15, 23, 42, 0.8)",
         zIndex: 2000,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: "1rem",
-        backdropFilter: "blur(8px)",
-        animation: "fadeIn 0.3s ease-out"
+        backdropFilter: "blur(12px)",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--bg-surface)",
-          borderRadius: "24px",
-          padding: "2rem",
+          background: "rgba(30, 41, 59, 0.95)",
+          borderRadius: "2rem",
+          padding: "2.5rem",
           width: "100%",
-          maxWidth: "420px",
-          border: "1px solid var(--border-strong)",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+          maxWidth: "440px",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
           position: "relative",
           overflow: "hidden",
-          animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
         }}
       >
-        {/* Color Accent Bar */}
-        <div style={{ position: "absolute", top: 0, left: 0, width: "6px", height: "100%", background: event.backgroundColor }} />
+        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "4px", background: event.backgroundColor }} />
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", flex: 1, minWidth: 0 }}>
-            <div style={{ width: 14, height: 14, borderRadius: "50%", background: event.backgroundColor, boxShadow: `0 0 10px ${event.backgroundColor}66`, flexShrink: 0 }} />
-            <span style={{ fontWeight: 700, fontSize: "1.2rem", color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-              {event.title}
-            </span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ width: 12, height: 12, borderRadius: "50%", background: event.backgroundColor, boxShadow: `0 0 12px ${event.backgroundColor}` }} />
+            <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.02em" }}>{event.title}</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-ghost"
-            style={{ padding: "0.4rem", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "#94a3b8", padding: "0.5rem", borderRadius: "50%", cursor: "pointer" }}>
             <X size={20} />
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "2rem" }}>
           <span style={{
-            display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700,
-            background: event.isDeadline ? "rgba(239,68,68,0.15)" : "rgba(99,179,237,0.15)",
-            color: event.isDeadline ? "#ff5f5f" : "#60a5fa",
-            border: `1px solid ${event.isDeadline ? "rgba(239,68,68,0.2)" : "rgba(99,179,237,0.2)"}`
+            padding: "0.5rem 1rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 800, textTransform: "uppercase",
+            background: event.isDeadline ? "rgba(239, 68, 68, 0.15)" : "rgba(59, 130, 246, 0.15)",
+            color: event.isDeadline ? "#ef4444" : "#3b82f6",
+            border: `1px solid ${event.isDeadline ? "rgba(239, 68, 68, 0.2)" : "rgba(59, 130, 246, 0.2)"}`
           }}>
-            {event.isDeadline ? <><Flag size={14} /> Deadline</> : <><Clock size={14} /> Shoot Event</>}
+            {event.isDeadline ? "Deadline" : "Shoot Event"}
           </span>
           <span style={{
-            display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.8rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 600,
-            background: "var(--bg-surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)"
+            padding: "0.5rem 1rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700,
+            background: "rgba(255,255,255,0.05)", color: "#f8fafc", border: "1px solid rgba(255,255,255,0.1)"
           }}>
             {event.type}
           </span>
         </div>
 
         <div style={{
-          padding: "1.25rem", background: "linear-gradient(135deg, var(--bg-surface-2), var(--bg-surface-3))",
-          borderRadius: "16px", fontSize: "0.95rem", color: "var(--text-primary)", border: "1px solid var(--border)",
-          display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem"
+          background: "rgba(15, 23, 42, 0.4)", borderRadius: "1.5rem", padding: "1.5rem",
+          border: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem"
         }}>
-          <div style={{ background: "rgba(255,255,255,0.05)", padding: "0.5rem", borderRadius: "10px" }}>
-            <Calendar size={18} color="var(--color-primary)" />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Scheduled Date</span>
-            <span style={{ fontWeight: 600 }}>{event.isDeadline ? formatDateOnly(event.start) : formatDate(event.start)}</span>
+          <Calendar size={24} color="var(--color-primary)" />
+          <div>
+            <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: "0.2rem" }}>Scheduled Date</div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f8fafc" }}>{event.isDeadline ? formatDateOnly(event.start) : formatDate(event.start)}</div>
           </div>
         </div>
 
         {event.status && (
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "var(--bg-surface-2)", padding: "0.75rem 1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
-            <span style={{ color: "var(--text-muted)" }}>Current Status:</span> <strong style={{ color: "var(--text-primary)", marginLeft: "0.4rem" }}>{event.status}</strong>
+          <div style={{ padding: "1rem 1.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.05)", fontSize: "0.9rem" }}>
+            <span style={{ color: "#94a3b8", fontWeight: 600 }}>STATUS:</span>
+            <span style={{ color: "#f8fafc", fontWeight: 800, marginLeft: "0.75rem" }}>{event.status}</span>
           </div>
         )}
       </div>
@@ -957,52 +271,50 @@ function EventModal({
   );
 }
 
-// ─── calendar legend ─────────────────────────────────────────────────────────
-
-function CalendarLegend() {
-  const items = [
-    { label: "Maternity Shoot", color: "#f472b6", gradient: "linear-gradient(135deg, #f472b6, #fb7185)", icon: <Baby size={14} /> },
-    { label: "Influencer Shoot", color: "#60a5fa", gradient: "linear-gradient(135deg, #60a5fa, #3b82f6)", icon: <Megaphone size={14} /> },
-    { label: "Corporate Event", color: "#4ade80", gradient: "linear-gradient(135deg, #4ade80, #10b981)", icon: <Building2 size={14} /> },
-    { label: "Delivery Deadline", color: "#ef4444", icon: <Flag size={14} />, dashed: true },
-  ];
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
-      {items.map((item) => (
-        <div
-          key={item.label}
-          style={{
-            display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", fontWeight: 600,
-            cursor: "default"
-          }}
-        >
-          <div style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%",
-            background: item.dashed ? "rgba(239, 68, 68, 0.1)" : item.gradient, border: item.dashed ? `2px dashed ${item.color}` : "none", color: item.dashed ? item.color : "#fff",
-            boxShadow: item.dashed ? "none" : `0 4px 12px ${item.color}44`
-          }}>
-            {item.icon}
-          </div>
-          <span style={{ color: "var(--text-secondary)" }}>{item.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ─── main page ───────────────────────────────────────────────────────────────
 
 export default function DashboardOverviewPage() {
-  const [searchParams] = useSearchParams();
-  const googleConnected = searchParams.get("googleConnected");
-  const { isMobile, isTablet } = useIsMobile();
+  const { isMobile } = useIsMobile();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const navigateToForm = useCallback((type: string, recordId: string) => {
+    if (!recordId || !type) return;
+    const t = type.toLowerCase();
+    if (t === 'maternity') navigate(`/dashboard/maternity/${recordId}/edit`);
+    else if (t === 'influencer') navigate(`/dashboard/influencer/${recordId}/edit`);
+    else if (t === 'corporate') navigate(`/dashboard/corporate/${recordId}/edit`);
+    else if (t === 'lead' || t === 'leads') navigate(`/dashboard/leads/${recordId}/edit`);
+    else if (t === 'edit' || t === 'edits') navigate(`/dashboard/edits/${recordId}/edit`);
+  }, [navigate]);
 
   const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState("");
+  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string } | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
-  const [visibleShoots] = useState(3);
   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
+
+  // Parse Google Calendar feedback parameters from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("googleConnected");
+    const errorMsg = params.get("googleError");
+
+    if (connected) {
+      setSyncResult({
+        success: true,
+        message: "Google Calendar linked successfully! Background sync is active.",
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => setSyncResult(null), 7000);
+    } else if (errorMsg) {
+      setSyncResult({
+        success: false,
+        message: errorMsg,
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => setSyncResult(null), 8000);
+    }
+  }, []);
 
   // Studio Expense State
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -1010,13 +322,13 @@ export default function DashboardOverviewPage() {
   const [expenseForm, setExpenseForm] = useState({
     amount: 0,
     date: new Date().toISOString().split('T')[0],
-    category: "",
+    category: "Other",
     notes: ""
   });
 
-  const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: () => getMe() });
-  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: () => getDashboardOverview() });
-  const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: () => getStudioExpenses() });
+  const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dashboard-overview"], queryFn: getDashboardOverview });
+  const { data: expensesData } = useQuery({ queryKey: ["studio-expenses"], queryFn: getStudioExpenses });
 
   const createExpenseMutation = useMutation({
     mutationFn: createStudioExpense,
@@ -1034,57 +346,42 @@ export default function DashboardOverviewPage() {
   });
 
   const resetExpenseForm = () => {
-    setExpenseForm({ amount: 0, date: new Date().toISOString().split('T')[0], category: "", notes: "" });
+    setExpenseForm({ amount: 0, date: new Date().toISOString().split('T')[0], category: "Other", notes: "" });
     setEditingExpense(null);
   };
 
   const handleEditExpense = (expense: StudioExpense) => {
     setEditingExpense(expense);
-    setExpenseForm({ amount: expense.amount, date: new Date(expense.date).toISOString().split('T')[0], category: expense.category || "", notes: expense.notes || "" });
+    setExpenseForm({ amount: expense.amount, date: new Date(expense.date).toISOString().split('T')[0], category: expense.category || "Other", notes: expense.notes || "" });
     setIsExpenseModalOpen(true);
-  };
-
-  const handleExportExpenses = () => {
-    if (!expensesData || expensesData.length === 0) return;
-    const exportData = expensesData.map((expense: StudioExpense) => ({
-      "Date": new Date(expense.date).toLocaleDateString("en-IN"),
-      "Category": expense.category,
-      "Amount": expense.amount,
-      "Notes": expense.notes || "-"
-    }));
-
-    const gt: any = data?.globalTotals || {};
-    const summaryData = {
-      "Total Revenue": gt.totalRevenue || 0,
-      "Total Received": gt.totalAdvance || 0,
-      "Total Due": gt.totalBalance || 0,
-      "Total Expenses": gt.totalExpenses || 0,
-      "Total Profit": gt.totalProfit || 0
-    };
-
-    exportToExcel(exportData, "Studio_Expenses", summaryData);
   };
 
   const handleSyncAll = async () => {
     setSyncing(true);
-    setSyncMessage("");
+    setSyncResult(null);
     try {
-      const result = await syncAllRecords();
-      setSyncMessage(result.message);
-    } catch (err: any) {  
-      const responseData = err.response?.data;
-      if (err.response?.status === 401 && responseData?.code === 'INVALID_GRANT') {
-        // Token has been revoked — refresh user data so UI shows "Connect Google" again
-        queryClient.invalidateQueries({ queryKey: ["user-me"] });
-        setSyncMessage("⚠️ Google Calendar connection expired. Please reconnect your Google account.");
-      } else {
-        setSyncMessage(responseData?.message || "Sync failed. Please try again.");
-      }
+      const res = await syncAllRecords();
+      // Invalidate queries so newly synced calendar items load immediately
+      await queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
+      
+      setSyncResult({
+        success: true,
+        message: res?.message || "Successfully synced records with Google Calendar!",
+      });
+
+      setTimeout(() => {
+        setSyncResult((prev) => (prev?.message.includes("Successfully") ? null : prev));
+      }, 6000);
+    } catch (err: any) {
+      console.error("Sync failed", err);
+      setSyncResult({
+        success: false,
+        message: err?.response?.data?.message || err?.message || "Failed to sync records with Google Calendar.",
+      });
     } finally {
       setSyncing(false);
     }
   };
-
 
   const handleConnectGoogle = async () => {
     try {
@@ -1097,215 +394,401 @@ export default function DashboardOverviewPage() {
 
   const handleEventClick = useCallback((info: any) => {
     const ep = info.event.extendedProps;
-    setSelectedEvent({
-      title: info.event.title,
-      start: info.event.startStr,
-      type: ep.type,
-      status: ep.status,
-      isDeadline: !!ep.isDeadline,
-      backgroundColor: info.event.backgroundColor,
-    });
-  }, []);
+    if (ep && ep.recordId && ep.type) {
+      navigateToForm(ep.type, ep.recordId);
+    } else {
+      // Fallback if recordId is missing for any reason
+      setSelectedEvent({
+        title: info.event.title,
+        start: info.event.startStr,
+        type: ep?.type || "Event",
+        status: ep?.status || "",
+        isDeadline: !!ep?.isDeadline,
+        backgroundColor: info.event.backgroundColor,
+      });
+    }
+  }, [navigateToForm]);
 
   const renderEventContent = useCallback((info: any) => {
     const { isDeadline, type } = info.event.extendedProps;
-    const isLead = type === "Lead" || type === "leads";
-    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : isLead ? "🏢" : "🏢";
-    const backgroundColor = info.event.backgroundColor;
-
-    // Fix: If backgroundColor already has alpha (8 chars), don't append more
-    const baseColor = backgroundColor.slice(0, 7);
-    const eventBg = isDeadline 
-      ? "rgba(239, 68, 68, 0.15)" 
-      : isLead 
-        ? "rgba(255, 255, 255, 0.08)" // Distinct look for leads
-        : `${baseColor}${Math.round(0.2 * 255).toString(16).padStart(2, '0')}`;
-
-    const textColor = isDeadline 
-      ? "#ff5f5f" 
-      : isLead 
-        ? "#93c5fd" // Light blue for leads
-        : "var(--text-primary)";
+    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
+    const backgroundColor = info.event.backgroundColor || "#94a3b8";
+    const eventBg = isDeadline ? "rgba(239, 68, 68, 0.25)" : `${backgroundColor}${Math.round(0.25 * 255).toString(16).padStart(2, '0')}`;
 
     return (
       <div style={{
-        display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", padding: "4px 8px", borderRadius: "10px",
-        background: eventBg,
-        backdropFilter: "blur(4px)", 
-        borderLeft: `4px solid ${isDeadline ? "#ef4444" : isLead ? "#3b82f6" : backgroundColor}`, 
-        fontSize: "0.75rem", fontWeight: isDeadline || isLead ? 700 : 500,
-        height: "100%", width: "100%", color: textColor,
-        border: isLead ? "1px solid rgba(59, 130, 246, 0.3)" : "none",
-        transition: "all 0.2s ease"
+        display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", padding: "4px 8px", borderRadius: "6px",
+        background: eventBg, backdropFilter: "blur(4px)", borderLeft: `3px solid ${backgroundColor}`, fontSize: "0.75rem",
+        fontWeight: 800, height: "100%", width: "100%", color: "#f8fafc", boxSizing: "border-box"
       }}>
-        <span style={{ fontSize: "11px", flexShrink: 0, opacity: 0.9 }}>{icon}</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, letterSpacing: "0.01em" }}>{info.event.title}</span>
+        <span style={{ fontSize: "12px", flexShrink: 0 }}>{icon}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{info.event.title}</span>
       </div>
     );
   }, []);
 
-  if (isLoading) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--text-muted)" }}>Loading Dashboard...</div>;
-  if (isError) return <div style={{ padding: "4rem", textAlign: "center", color: "var(--color-danger)" }}>Error: {(error as Error).message}</div>;
+  if (isLoading) return <div style={{ padding: "10rem 2rem", textAlign: "center", color: "#94a3b8", fontSize: "1.2rem", fontWeight: 700 }}>Preparing Dashboard...</div>;
+  if (isError) return <div style={{ padding: "10rem 2rem", textAlign: "center", color: "#ef4444" }}>Error: {(error as Error).message}</div>;
   if (!data) return null;
 
-  const { globalTotals, categorySplit, calendarEvents, upcomingShoots = [], upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 }, birthDateReminders = [] } = data;
+  const {
+    globalTotals, categorySplit, calendarEvents, upcomingShoots = [],
+    upcomingDeadlines = [], recentlyCompleted = [], leadStats = { booked: 0 },
+    birthDateReminders = []
+  } = data;
   const isConnected = userData?.user?.googleCalendarConnected;
 
   return (
-    <div className="dashboard-overview animate-fade-up">
-      <header style={{ marginBottom: "2.5rem" }}>
-        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: "1.5rem" }}>
-          <div>
-            <h1 style={{ fontSize: isMobile ? "1.75rem" : "2.5rem", fontWeight: 800, margin: "0 0 0.5rem 0", background: "linear-gradient(to right, var(--color-primary), var(--color-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              CRM Overview
+    <div style={{ padding: isMobile ? "0.25rem" : "0.5rem", animation: "fade-up 0.5s ease-out", width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
+
+      {/* ── Premium Floating Feedback Banner ── */}
+      {syncResult && (
+        <div style={{
+          position: "fixed",
+          top: "2.5rem",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 2500,
+          background: syncResult.success 
+            ? "linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))"
+            : "linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95))",
+          backdropFilter: "blur(12px)",
+          color: "white",
+          padding: "1rem 1.5rem",
+          borderRadius: "1rem",
+          boxShadow: syncResult.success 
+            ? "0 20px 40px -15px rgba(16, 185, 129, 0.5)"
+            : "0 20px 40px -15px rgba(239, 68, 68, 0.5)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          animation: "slide-down-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          maxWidth: "90vw",
+          width: "max-content",
+        }}>
+          <div style={{
+            background: "rgba(255, 255, 255, 0.2)",
+            borderRadius: "50%",
+            width: "32px",
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            {syncResult.success ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          </div>
+          <div style={{ fontSize: "0.95rem", fontWeight: 700, letterSpacing: "0.01em" }}>
+            {syncResult.message}
+          </div>
+          <button 
+            onClick={() => setSyncResult(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "rgba(255, 255, 255, 0.8)",
+              cursor: "pointer",
+              padding: "0.25rem",
+              marginLeft: "0.5rem",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Header ── */}
+      <header style={{ marginBottom: isMobile ? "2rem" : "3rem", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "1.25rem", textAlign: isMobile ? "center" : "left", width: "100%", boxSizing: "border-box" }}>
+          <div style={{ flex: "1 1 min(100%, 400px)", minWidth: 0 }}>
+            <h1 style={{
+              fontSize: isMobile ? "1.75rem" : "3rem", fontWeight: 950, margin: 0,
+              background: "linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.05em",
+              wordBreak: "break-word"
+            }}>
+              Executive Overview
             </h1>
-            <p style={{ color: "var(--text-secondary)", fontSize: isMobile ? "0.9rem" : "1rem" }}>Unified metrics across all modules.</p>
+            <p style={{ color: "#64748b", fontSize: isMobile ? "0.95rem" : "1.1rem", fontWeight: 500, marginTop: "0.25rem" }}>Unified intelligence across all studio modules.</p>
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: isMobile ? "center" : "flex-end", gap: "0.75rem", flex: "1 1 auto" }}>
             {isConnected ? (
-              <div style={{ display: "flex", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.6rem 1rem", borderRadius: "10px", background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", border: "1px solid rgba(74, 222, 128, 0.2)", fontSize: "0.85rem", fontWeight: 600 }}>
-                  <CheckCircle2 size={16} /> <span>Connected</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
+                <div style={{
+                  flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem",
+                  padding: "0.75rem 1.25rem", borderRadius: "14px", background: "rgba(16, 185, 129, 0.1)",
+                  color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.2)", fontSize: "0.9rem", fontWeight: 800, boxSizing: "border-box", whiteSpace: "nowrap"
+                }}>
+                  <CheckCircle2 size={18} style={{ flexShrink: 0 }} /> <span>G-Calendar Linked</span>
                 </div>
-                <button 
-                  onClick={handleSyncAll} 
-                  disabled={syncing} 
-                  className={syncing ? "btn-syncing" : "btn-ghost"} 
-                  style={{ 
-                    flex: 1, 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center", 
-                    gap: "0.5rem", 
-                    padding: "0.6rem 1rem", 
-                    borderRadius: "10px",
-                    position: "relative",
-                    overflow: "hidden"
-                  }}
-                >
-                  {syncing ? (
-                    <>
-                      <div className="button-loader-ring" />
-                      <RefreshCw size={16} className="animate-spin" />
-                      <span>Syncing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw size={16} />
-                      <span>Sync</span>
-                    </>
-                  )}
+                <button onClick={handleSyncAll} disabled={syncing} style={{
+                  flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem",
+                  padding: "0.75rem 1.25rem", borderRadius: "14px", 
+                  background: syncing ? "var(--color-primary)" : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${syncing ? "var(--color-primary)" : "rgba(255,255,255,0.08)"}`,
+                  color: "#f8fafc", 
+                  cursor: syncing ? "wait" : "pointer", 
+                  fontWeight: 700, 
+                  boxSizing: "border-box", 
+                  whiteSpace: "nowrap",
+                  animation: syncing ? "pulse-glow-sync 1.5s infinite" : "none",
+                  transition: "all 0.3s ease",
+                }}>
+                  <RefreshCw size={18} className={syncing ? "animate-custom-spin" : ""} style={{ flexShrink: 0 }} />
+                  <span>{syncing ? "Syncing..." : "Sync Now"}</span>
                 </button>
               </div>
             ) : (
-              <button onClick={handleConnectGoogle} className="btn-primary" style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1.25rem", borderRadius: "10px" }}>
-                <Calendar size={18} /> Connect Google
+              <button onClick={handleConnectGoogle} style={{
+                flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem", padding: "0.85rem 1.75rem",
+                borderRadius: "14px", background: "var(--color-primary)", color: "white", border: "none",
+                fontWeight: 800, cursor: "pointer", boxShadow: "0 10px 20px -5px rgba(99, 102, 241, 0.4)", width: isMobile ? "100%" : "auto", boxSizing: "border-box", whiteSpace: "nowrap"
+              }}>
+                <Calendar size={20} style={{ flexShrink: 0 }} /> Link Google Calendar
               </button>
             )}
           </div>
         </div>
-
-        {(googleConnected || searchParams.get("googleError") || syncMessage) && (
-          <div style={{
-            marginTop: "1rem", padding: "0.75rem", borderRadius: "8px", background: "var(--bg-surface-2)",
-            color: searchParams.get("googleError") || syncMessage?.startsWith("⚠️") ? "var(--color-danger)" : "var(--color-success)",
-            fontSize: "0.9rem", border: "1px solid var(--border)"
-          }}>
-            {searchParams.get("googleError") ? `Error: ${searchParams.get("googleError")}` : syncMessage || "Google Calendar connected!"}
-          </div>
-        )}
       </header>
 
-      {/* ── 6-column stats row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(6, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
-        <StatCard title="Total Revenue" value={formatCurrency(globalTotals.totalRevenue)} icon={<TrendingUp size={20} />} color="var(--color-primary)" description="Gross contract value" />
-        <StatCard title="Total Received" value={formatCurrency(globalTotals.totalAdvance)} icon={<CreditCard size={20} />} color="var(--color-success)" description="Payments collected" />
-        <StatCard title="Total Due" value={formatCurrency(globalTotals.totalBalance)} icon={<AlertCircle size={20} />} color="var(--color-warning)" description="Pending balances" />
-        <StatCard title="Total Expenses" value={formatCurrency(globalTotals.totalExpenses)} icon={<CreditCard size={20} />} color="var(--color-danger)" description="Records + Studio" />
-        <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="var(--color-accent)" description="Revenue - Expenses" />
-        <StatCard title="Booked Leads" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Converted leads" />
+      {/* ── Stat Cards ── */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)", 
+        gap: isMobile ? "0.75rem" : "1rem", 
+        marginBottom: "3rem",
+        width: "100%",
+        boxSizing: "border-box"
+      }}>
+        <StatCard title="Gross Revenue" value={formatCurrency(globalTotals.totalRevenue)} icon={<TrendingUp size={20} />} color="var(--color-primary)" description="Total contracts" />
+        <StatCard title="Collected" value={formatCurrency(globalTotals.totalAdvance)} icon={<CreditCard size={20} />} color="#10b981" description="Liquid capital" />
+        <StatCard title="Outstanding" value={formatCurrency(globalTotals.totalBalance)} icon={<AlertCircle size={20} />} color="#f59e0b" description="Pending collection" />
+        <StatCard title="Net Expenses" value={formatCurrency(globalTotals.totalExpenses)} icon={<CreditCard size={20} />} color="#ef4444" description="Burn rate" />
+        <StatCard title="Total Profit" value={formatCurrency(globalTotals.totalProfit)} icon={<BarChart3 size={20} />} color="#8b5cf6" description="Net performance" />
+        <StatCard title="Lead Conversion" value={leadStats.booked} icon={<Megaphone size={20} />} color="#3b82f6" description="Booked entities" />
       </div>
 
-      {/* Maternity Birth Date Reminders */}
-      {birthDateReminders.length > 0 && (
-        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem", border: "1px solid rgba(244, 114, 182, 0.2)", background: "linear-gradient(135deg, var(--bg-surface), rgba(244, 114, 182, 0.05))" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-            <div style={{ background: "rgba(244, 114, 182, 0.15)", color: "#f472b6", padding: "0.5rem", borderRadius: "12px" }}>
-              <Baby size={22} className={birthDateReminders.some(r => r.daysRemaining <= 1) ? "animate-bounce" : ""} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: "1.25rem", margin: 0, fontWeight: 800, color: "var(--text-primary)" }}>Maternity Birth Date Reminders</h2>
-              <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>Upcoming delivery celebrations and shoots.</p>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(clamp(280px, 100%, 360px), 1fr))", gap: "1.25rem" }}>
-            {birthDateReminders.map((reminder) => (
-              <BirthDateReminderCard key={reminder.id} reminder={reminder} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Mid Row: Revenue & Reminders ── */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", 
+        gap: "2rem", 
+        marginBottom: "3rem",
+        width: "100%",
+        boxSizing: "border-box"
+      }}>
 
-      {/* ========== Studio Expenses (moved above Revenue Breakdown) ========== */}
-      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <CreditCard size={20} color="var(--color-danger)" />
-            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Studio Expenses</h2>
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button onClick={handleExportExpenses} className="btn-ghost" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem", border: "1px solid var(--border)" }}>
-              <Download size={16} /> Export
-            </button>
-            <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-              <Plus size={16} /> Add
-            </button>
-          </div>
-        </div>
-
-        {isMobile ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {expensesData?.map((expense: StudioExpense) => (
-              <div key={expense._id} style={{ background: "var(--bg-surface-2)", padding: "1rem", borderRadius: "12px", border: "1px solid var(--border)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</span>
-                  <span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem", fontWeight: 600 }}>{expense.category}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontWeight: 800, color: "var(--color-danger)", fontSize: "1.1rem" }}>{formatCurrency(expense.amount)}</div>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button onClick={() => handleEditExpense(expense)} style={{ background: "var(--bg-surface-3)", border: "none", color: "var(--color-primary)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Pencil size={14} /></button>
-                    <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "rgba(239, 68, 68, 0.1)", border: "none", color: "var(--color-danger)", padding: "0.5rem", borderRadius: "8px", cursor: "pointer" }}><Trash2 size={14} /></button>
+        <DashboardSection title="Revenue Distribution" icon={<BarChart3 size={22} />}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", width: "100%", boxSizing: "border-box" }}>
+            {categorySplit.map((cat: any) => (
+              <div key={cat.name} style={{ width: "100%", boxSizing: "border-box" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem", gap: "0.5rem" }}>
+                  <span style={{ fontWeight: 700, color: "#f8fafc", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat.name}</span>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexShrink: 0 }}>
+                    <span style={{ color: "#f8fafc", fontWeight: 800 }}>{formatCurrency(cat.revenue)}</span>
+                    <span style={{ color: "#64748b", fontSize: "0.8rem", fontWeight: 600 }}>({globalTotals.totalRevenue > 0 ? Math.round((cat.revenue / globalTotals.totalRevenue) * 100) : 0}%)</span>
                   </div>
                 </div>
-                {expense.notes && <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--text-secondary)", borderTop: "1px solid var(--border)", paddingTop: "0.5rem" }}>{expense.notes}</div>}
+                <div style={{ height: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "4px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)", width: "100%" }}>
+                  <div style={{
+                    height: "100%", width: `${globalTotals.totalRevenue > 0 ? (cat.revenue / globalTotals.totalRevenue) * 100 : 0}%`,
+                    background: cat.color, borderRadius: "4px", transition: "width 1s cubic-bezier(0.22, 1, 0.36, 1)",
+                    boxShadow: `0 0 10px ${cat.color}44`
+                  }} />
+                </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+        </DashboardSection>
+
+        <DashboardSection
+          title="Upcoming Queue"
+          icon={<Calendar size={22} />}
+          action={
+            <div style={{ display: "flex", background: "rgba(255,255,255,0.03)", padding: "4px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <button onClick={() => setActiveTab('shoots')} style={{
+                padding: "0.4rem 0.8rem", fontSize: "0.75rem", fontWeight: 800, borderRadius: "8px", border: "none", cursor: "pointer",
+                background: activeTab === 'shoots' ? "var(--color-primary)" : "transparent",
+                color: activeTab === 'shoots' ? "white" : "#64748b", transition: "0.2s"
+              }}>SHOOTS</button>
+              <button onClick={() => setActiveTab('deadlines')} style={{
+                padding: "0.4rem 0.8rem", fontSize: "0.75rem", fontWeight: 800, borderRadius: "8px", border: "none", cursor: "pointer",
+                background: activeTab === 'deadlines' ? "#ef4444" : "transparent",
+                color: activeTab === 'deadlines' ? "white" : "#64748b", transition: "0.2s"
+              }}>DEADLINES</button>
+            </div>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxHeight: "400px", overflowY: "auto", paddingRight: "0.5rem", width: "100%", boxSizing: "border-box" }} className="custom-scrollbar">
+            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).slice(0, 10).map((item: any) => (
+              <div key={item.id} onClick={() => navigateToForm(item.type, item.id)} style={{
+                display: "flex", alignItems: "center", gap: "0.75rem", padding: "1rem",
+                background: "rgba(255,255,255,0.02)", borderRadius: "1.25rem", border: "1px solid rgba(255,255,255,0.05)",
+                transition: "transform 0.2s", cursor: "pointer", width: "100%", boxSizing: "border-box", minWidth: 0
+              }} onMouseEnter={e => e.currentTarget.style.transform = "translateX(6px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateX(0)"}>
+                <div style={{
+                  width: "42px", height: "42px", borderRadius: "12px", background: activeTab === 'shoots' ? "rgba(99, 102, 241, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                  display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "#818cf8" : "#f87171", flexShrink: 0
+                }}>
+                  {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={22} /> : item.type === 'Influencer' ? <Megaphone size={22} /> : <Building2 size={22} />) : <Flag size={22} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: "1rem", color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.clientName}</div>
+                  <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
+                </div>
+                <div style={{
+                  fontSize: "0.75rem", fontWeight: 900, padding: "0.4rem 0.6rem", borderRadius: "8px",
+                  background: item.daysRemaining <= 1 ? "rgba(239, 68, 68, 0.2)" : "rgba(255,255,255,0.05)",
+                  color: item.daysRemaining <= 1 ? "#ef4444" : "#94a3b8", border: `1px solid ${item.daysRemaining <= 1 ? "rgba(239, 68, 68, 0.3)" : "rgba(255,255,255,0.1)"}`,
+                  flexShrink: 0
+                }}>
+                  {item.daysRemaining === 0 ? "TODAY" : `${item.daysRemaining}D LEFT`}
+                </div>
+              </div>
+            ))}
+            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length === 0 && (
+              <div style={{ padding: "3rem 1rem", textAlign: "center", background: "rgba(255,255,255,0.01)", borderRadius: "1.25rem", border: "1px dashed rgba(255,255,255,0.05)", color: "#64748b" }}>
+                Queue is empty for the next 30 days.
+              </div>
+            )}
+          </div>
+          <style>{`
+            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+          `}</style>
+        </DashboardSection>
+      </div>
+
+      {/* ── Birth Date Reminders (Maternity Specific) ── */}
+      {birthDateReminders.length > 0 && (
+        <div style={{ width: "100%", boxSizing: "border-box", marginBottom: "3rem" }}>
+          <DashboardSection title="Critical Birth Reminders" icon={<AlertCircle size={22} color="#ef4444" />} >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "1rem", width: "100%", boxSizing: "border-box" }}>
+              {birthDateReminders.map((rem: any) => (
+                <BirthDateReminderCard key={rem.id} reminder={rem} />
+              ))}
+            </div>
+          </DashboardSection>
+        </div>
+      )}
+
+      {/* ── Recently Completed ── */}
+      <div style={{ marginBottom: "3rem", width: "100%", boxSizing: "border-box" }}>
+        <DashboardSection title="Recent Accomplishments" icon={<CheckCircle2 size={22} color="#10b981" />}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "1.25rem", width: "100%", boxSizing: "border-box" }}>
+            {recentlyCompleted.slice(0, 6).map((item: any) => (
+              <div key={item.id} onClick={() => navigateToForm(item.type, item.id)} style={{
+                display: "flex", alignItems: "center", gap: "0.75rem", padding: "1.25rem",
+                background: "rgba(16, 185, 129, 0.03)", borderRadius: "1.5rem", border: "1px solid rgba(16, 185, 129, 0.1)",
+                width: "100%", boxSizing: "border-box", minWidth: 0, cursor: "pointer"
+              }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "50%", background: "rgba(16, 185, 129, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#10b981", flexShrink: 0 }}>
+                  <CheckCircle2 size={24} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: "1rem", color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.clientName}</div>
+                  <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.type} · {formatCurrency(item.total)}</div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 950, color: item.paymentStatus === 'Done' ? "#10b981" : "#ef4444", textTransform: "uppercase" }}>
+                    {item.paymentStatus}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DashboardSection>
+      </div>
+
+      {/* ── Calendar ── */}
+      <div style={{ marginBottom: "3rem", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+        <DashboardSection title="Global Schedule" icon={<Calendar size={22} />}>
+          <div style={{ borderRadius: "1.25rem", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(15, 23, 42, 0.3)", width: "100%", maxWidth: "100%", boxSizing: "border-box", overflowX: "auto" }} className="calendar-container custom-scrollbar">
+            <div style={{ minWidth: "700px", width: "100%", boxSizing: "border-box" }}>
+              <FullCalendar
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                timeZone="Asia/Kolkata"
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay"
+                }}
+                events={calendarEvents || []}
+                eventContent={renderEventContent}
+                eventClick={handleEventClick}
+                height="auto"
+                contentHeight={650}
+                dayMaxEvents={3}
+              />
+            </div>
+          </div>
+          <style>{`
+            .calendar-container .fc { --fc-border-color: rgba(255,255,255,0.05); --fc-today-bg-color: rgba(255,255,255,0.03); width: 100% !important; max-width: 100% !important; }
+            .calendar-container .fc-header-toolbar { padding: 1.25rem; margin-bottom: 0 !important; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 0.5rem; }
+            .calendar-container .fc-toolbar-title { font-size: 1.15rem !important; font-weight: 800; color: #f8fafc; }
+            .calendar-container .fc-button { background: rgba(15, 23, 42, 0.6) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #f8fafc !important; font-weight: 700 !important; text-transform: uppercase !important; font-size: 0.75rem !important; padding: 0.4rem 0.8rem !important; }
+            .calendar-container .fc-button-active { background: var(--color-primary) !important; border-color: var(--color-primary) !important; }
+            .calendar-container .fc-col-header-cell { padding: 0.75rem 0 !important; background: rgba(15, 23, 42, 0.2); }
+            .calendar-container .fc-col-header-cell-cushion { color: #64748b; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+            .calendar-container .fc-daygrid-day-number { color: #94a3b8; font-weight: 700; padding: 8px !important; font-size: 0.8rem; }
+            .calendar-container .fc-day-today .fc-daygrid-day-number { color: var(--color-primary); font-weight: 900; }
+            .calendar-container .fc-scrollgrid, .calendar-container .fc-scrollgrid-sync-table { border: none !important; width: 100% !important; table-layout: fixed !important; }
+            .calendar-container .fc-daygrid-event-harness { max-width: 100% !important; overflow: hidden !important; }
+            .calendar-container .fc-event { max-width: 100% !important; overflow: hidden !important; }
+            .calendar-container .fc-event-main { overflow: hidden !important; width: 100% !important; }
+            .calendar-container .fc-daygrid-day-frame { overflow: hidden !important; }
+          `}</style>
+        </DashboardSection>
+      </div>
+
+      {/* ── Studio Expenses ── */}
+      <div style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
+        <DashboardSection
+          title="Studio Ledger"
+          icon={<CreditCard size={22} color="#ef4444" />}
+          action={
+            <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} style={{
+              display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem",
+              borderRadius: "12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444",
+              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", flexShrink: 0
+            }}>
+              <Plus size={16} /> New Entry
+            </button>
+          }
+        >
+          <div style={{ overflowX: "auto", background: "rgba(15, 23, 42, 0.2)", borderRadius: "1.25rem", border: "1px solid rgba(255,255,255,0.05)", width: "100%", maxWidth: "100%", boxSizing: "border-box" }} className="custom-scrollbar">
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "550px" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left" }}>
-                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Date</th>
-                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Category</th>
-                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Amount</th>
-                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600 }}>Notes</th>
-                  <th style={{ padding: "1rem", color: "var(--text-muted)", fontWeight: 600, textAlign: "right" }}>Actions</th>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", textAlign: "left" }}>
+                  <th style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Date</th>
+                  <th style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Category</th>
+                  <th style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Amount</th>
+                  <th style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase" }}>Notes</th>
+                  <th style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {expensesData?.map((expense: StudioExpense) => (
-                  <tr key={expense._id} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                    <td style={{ padding: "1rem" }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
-                    <td style={{ padding: "1rem" }}><span style={{ padding: "0.2rem 0.5rem", borderRadius: "4px", background: "var(--bg-surface-3)", fontSize: "0.75rem" }}>{expense.category}</span></td>
-                    <td style={{ padding: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatCurrency(expense.amount)}</td>
-                    <td style={{ padding: "1rem", color: "var(--text-secondary)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{expense.notes}</td>
-                    <td style={{ padding: "1rem", textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                        <button onClick={() => handleEditExpense(expense)} style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer" }}><Pencil size={16} /></button>
-                        <button onClick={() => { if (confirm("Delete this expense?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "none", border: "none", color: "var(--color-danger)", cursor: "pointer" }}><Trash2 size={16} /></button>
+                  <tr key={expense._id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                    <td style={{ padding: "1.25rem", color: "#f8fafc", fontWeight: 600 }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
+                    <td style={{ padding: "1.25rem" }}>
+                      <span style={{ padding: "0.4rem 0.8rem", borderRadius: "8px", background: "rgba(255,255,255,0.03)", color: "#94a3b8", fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                        {expense.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: "1.25rem", fontWeight: 800, color: "#ef4444", whiteSpace: "nowrap" }}>{formatCurrency(expense.amount)}</td>
+                    <td style={{ padding: "1.25rem", color: "#64748b", fontSize: "0.9rem" }}>{expense.notes || "—"}</td>
+                    <td style={{ padding: "1.25rem", textAlign: "right" }}>
+                      <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                        <button onClick={() => handleEditExpense(expense)} style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer" }}><Pencil size={18} /></button>
+                        <button onClick={() => { if (confirm("Delete this entry?")) deleteExpenseMutation.mutate(expense._id!); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}><Trash2 size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -1313,220 +796,47 @@ export default function DashboardOverviewPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </section>
-
-      <div style={{ display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "repeat(2, 1fr)", gap: "2rem", marginBottom: "2.5rem" }}>
-        {/* Revenue Breakdown */}
-        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-            <BarChart3 size={20} color="var(--color-primary)" />
-            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Revenue Breakdown</h2>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            {categorySplit.map((cat: any) => (
-              <div key={cat.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", fontSize: "0.85rem" }}>
-                  <span style={{ fontWeight: 600 }}>{cat.name}</span>
-                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-                    <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(cat.revenue)}</span>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>({globalTotals.totalRevenue > 0 ? Math.round((cat.revenue / globalTotals.totalRevenue) * 100) : 0}%)</span>
-                  </div>
-                </div>
-                <div style={{ height: "6px", background: "var(--bg-surface-3)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${globalTotals.totalRevenue > 0 ? (cat.revenue / globalTotals.totalRevenue) * 100 : 0}%`, background: cat.color, borderRadius: "3px", transition: "width 0.6s ease" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Reminders: Shoots & Deadlines */}
-        <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <Calendar size={20} color="var(--color-warning)" />
-              <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Upcoming</h2>
-            </div>
-            <div style={{ display: "flex", background: "var(--bg-surface-3)", padding: "3px", borderRadius: "8px" }}>
-              <button onClick={() => setActiveTab('shoots')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'shoots' ? "var(--bg-surface)" : "transparent", color: activeTab === 'shoots' ? "var(--color-primary)" : "var(--text-muted)" }}>Shoots</button>
-              <button onClick={() => setActiveTab('deadlines')} style={{ padding: "0.3rem 0.6rem", fontSize: "0.7rem", fontWeight: 700, borderRadius: "6px", border: "none", cursor: "pointer", background: activeTab === 'deadlines' ? "var(--bg-surface)" : "transparent", color: activeTab === 'deadlines' ? "var(--color-primary)" : "var(--text-muted)" }}>Deadlines</button>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Upcoming {activeTab}</div>
-            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).slice(0, visibleShoots).map((item: any) => (
-              <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px solid var(--border)" }}>
-                <div style={{ width: 36, height: 36, borderRadius: "25%", background: activeTab === 'shoots' ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "var(--text-muted)" : "var(--color-danger)" }}>
-                  {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={18} /> : item.type === 'Influencer' ? <Megaphone size={18} /> : <Building2 size={18} />) : <Flag size={18} />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.clientName}</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
-                </div>
-                <div style={{ fontSize: "0.75rem", fontWeight: 800, padding: "0.25rem 0.5rem", borderRadius: "6px", background: item.daysRemaining <= 1 ? "var(--color-danger)" : "var(--bg-surface-3)", color: item.daysRemaining <= 1 ? "#fff" : "var(--text-secondary)" }}>
-                  {item.daysRemaining === 0 ? "Today" : `${item.daysRemaining}d`}
-                </div>
-              </div>
-            ))}
-            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length === 0 && (
-              <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                No upcoming {activeTab} for the next 7 days.
-              </div>
-            )}
-            {(activeTab === 'shoots' ? upcomingShoots : upcomingDeadlines).length > 3 && (
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", marginTop: "0.5rem" }}>
-                <AlertCircle size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
-                Criteria: Active (Not Completed/Cancelled) items for the next 7 days.
-              </div>
-            )}
-          </div>
-        </section>
+        </DashboardSection>
       </div>
 
-      {/* Recently Completed Section */}
-      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ background: "rgba(74, 222, 128, 0.1)", color: "var(--color-success)", padding: "0.4rem", borderRadius: "50%", display: "flex" }}>
-              <CheckCircle2 size={20} />
-            </div>
-            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Recently Completed</h2>
-          </div>
-          {recentlyCompleted.length > 3 && (
-            <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", borderRadius: "8px", color: "var(--color-primary)" }}>
-              View More (+{recentlyCompleted.length - 3})
-            </button>
-          )}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {recentlyCompleted.slice(0, 3).map((item: any) => (
-            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem", background: "var(--bg-surface-2)", borderRadius: "16px", border: "1px solid var(--border)" }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-success)", border: "1px solid var(--border)" }}>
-                <CheckCircle2 size={24} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>{item.clientName}</div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{item.type} · {new Date(item.date).toLocaleDateString("en-IN")}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-primary)" }}>{formatCurrency(item.total)}</div>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 900, color: item.paymentStatus === 'Done' ? "var(--color-success)" : "var(--color-danger)", letterSpacing: "0.05em", marginTop: "2px" }}>
-                      PAYMENT: {item.paymentStatus}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-          {recentlyCompleted.length === 0 && (
-            <div style={{ padding: "2rem", textAlign: "center", background: "var(--bg-surface-2)", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-              No recently completed items.
-            </div>
-          )}
-        </div>
-        <div style={{ marginTop: "1.25rem", padding: "0.75rem", borderRadius: "10px", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <AlertCircle size={14} color="var(--color-success)" />
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Items completed or cancelled in the last 7 days.</span>
-        </div>
-      </section>
-
-      <section className="card" style={{ padding: isMobile ? "1.25rem" : "1.5rem", marginBottom: "2.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <Calendar size={20} color="var(--color-primary)" />
-            <h2 style={{ fontSize: "1.1rem", margin: 0, fontWeight: 700 }}>Schedule & Deadlines</h2>
-          </div>
-        </div>
-        <CalendarLegend />
-        <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-surface)" }}>
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            timeZone="Asia/Kolkata"
-            initialView={isMobile ? "dayGridMonth" : isTablet ? "dayGridMonth" : "dayGridMonth"}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay"
-            }}
-            events={calendarEvents || []}
-            eventContent={renderEventContent}
-            eventClick={handleEventClick}
-            height="auto"
-            contentHeight={isMobile ? 400 : 640}
-            dayMaxEvents={isMobile ? 2 : 3}
-            nowIndicator={true}
-          />
-        </div>
-      </section>
 
       {/* Expense Modal */}
       {isExpenseModalOpen && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 1100,
-          display: "flex",
-          alignItems: (isMobile || isTablet) ? "center" : "flex-start",
-          justifyContent: "center",
-          padding: "1rem",
-          paddingTop: (isMobile || isTablet) ? "1rem" : "10vh",
-          backdropFilter: "blur(4px)",
-          animation: "fadeIn 0.3s ease-out"
-        }}>
-          <div style={{
-            background: "var(--bg-surface)",
-            borderRadius: "16px",
-            padding: "2rem",
-            width: "100%",
-            maxWidth: "450px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
-            animation: "slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
-          }}>
-            <h3 style={{ margin: "0 0 1.5rem 0", fontSize: "1.25rem" }}>{editingExpense ? "Edit Expense" : "Add Studio Expense"}</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Amount (INR)</label>
-                <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.8)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backdropFilter: "blur(12px)" }}>
+          <div style={{ background: "rgba(30, 41, 59, 0.95)", borderRadius: "2rem", padding: "2.5rem", width: "100%", maxWidth: "450px", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
+            <h3 style={{ margin: "0 0 2rem 0", fontSize: "1.5rem", fontWeight: 900, color: "#f8fafc" }}>{editingExpense ? "Modify Entry" : "New Ledger Entry"}</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.5rem", textTransform: "uppercase" }}>Amount (INR)</label>
+                <input type="number" value={expenseForm.amount} onChange={e => setExpenseForm({ ...expenseForm, amount: Number(e.target.value) })} style={{ width: "100%", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(15, 23, 42, 0.3)", color: "white", outline: "none" }} />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Date</label>
-                <input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)" }} />
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.5rem", textTransform: "uppercase" }}>Effective Date</label>
+                <input type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} style={{ width: "100%", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(15, 23, 42, 0.3)", color: "white", outline: "none", colorScheme: "dark" }} />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Category</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Rent, Electricity, Equipment..."
-                  value={expenseForm.category}
-                  onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}
-                  style={{
-                    padding: "0.75rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    background: "var(--bg-surface-2)",
-                    color: "var(--text-primary)"
-                  }}
-                />
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.5rem", textTransform: "uppercase" }}>Category</label>
+                <select value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })} style={{ width: "100%", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(15, 23, 42, 0.3)", color: "white", outline: "none" }}>
+                  <option value="Rent">Rent</option>
+                  <option value="Electricity">Electricity</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600 }}>Notes</label>
-                <textarea value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })} style={{ padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-surface-2)", minHeight: "80px" }} />
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.5rem", textTransform: "uppercase" }}>Memo</label>
+                <textarea value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })} style={{ width: "100%", padding: "1rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(15, 23, 42, 0.3)", color: "white", outline: "none", minHeight: "100px" }} />
               </div>
               <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-                <button onClick={() => setIsExpenseModalOpen(false)} style={{ flex: 1, padding: "0.75rem", borderRadius: "8px", border: "1px solid var(--border)", background: "none", cursor: "pointer" }}>Cancel</button>
+                <button onClick={() => setIsExpenseModalOpen(false)} style={{ flex: 1, padding: "1rem", borderRadius: "14px", border: "none", background: "rgba(255,255,255,0.05)", color: "#94a3b8", fontWeight: 800, cursor: "pointer" }}>Cancel</button>
                 <button
                   onClick={() => editingExpense ? updateExpenseMutation.mutate({ id: editingExpense._id!, data: expenseForm }) : createExpenseMutation.mutate(expenseForm)}
                   disabled={createExpenseMutation.isPending || updateExpenseMutation.isPending}
-                  className="btn-primary"
-                  style={{ flex: 1, padding: "0.75rem", borderRadius: "8px" }}
+                  style={{ flex: 1, padding: "1rem", borderRadius: "14px", border: "none", background: "var(--color-primary)", color: "white", fontWeight: 900, cursor: "pointer" }}
                 >
-                  {editingExpense ? "Update" : "Save"}
+                  {editingExpense ? "Update" : "Confirm"}
                 </button>
               </div>
             </div>
@@ -1538,92 +848,138 @@ export default function DashboardOverviewPage() {
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        .fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
-        .fc-col-header-cell { padding: 8px 0 !important; background: var(--bg-surface-2) !important; }
-        .fc-col-header-cell-cushion { color: var(--text-secondary) !important; text-decoration: none !important; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
-        .fc-button-primary { background: var(--bg-surface-2) !important; border: 1px solid var(--border) !important; color: var(--text-primary) !important; font-size: 0.75rem !important; font-weight: 600 !important; border-radius: 8px !important; padding: 6px 12px !important; text-transform: capitalize !important; transition: all 0.2s ease !important; }
-        .fc-button-primary:hover { background: var(--bg-surface-3) !important; border-color: var(--border-strong) !important; transform: translateY(-1px); }
-        .fc-button-active { background: var(--color-primary) !important; color: #fff !important; border-color: var(--color-primary) !important; box-shadow: 0 4px 12px var(--color-primary-glow) !important; }
-        .fc-day-today { background: rgba(var(--color-primary-rgb, 99, 102, 241), 0.05) !important; }
-        .fc-daygrid-day-number { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); padding: 8px !important; text-decoration: none !important; }
-        .fc-daygrid-day:hover { background: rgba(255,255,255,0.02); }
-        .fc-event { border: none !important; background: transparent !important; margin: 1px 2px !important; }
-        .fc-toolbar-title { font-size: 1.1rem !important; fontWeight: 700 !important; font-family: var(--font-display) !important; }
-        .fc-scrollgrid { border-radius: 12px !important; overflow: hidden !important; border: 1px solid var(--border) !important; }
-        
-        /* Popover Styling Fixes */
+        /* Override default FullCalendar event background/border so custom containers render properly */
+        .fc-event, .fc-daygrid-event {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .fc-daygrid-block-event .fc-event-main {
+          padding: 0 !important;
+        }
+        .fc-daygrid-event-harness {
+          margin-bottom: 4px !important;
+        }
+
+        /* Customize FullCalendar Popover for '+X more' events to act as a beautifully centered overlay */
         .fc-popover {
-          background: var(--bg-surface) !important;
-          border: 1px solid var(--border-strong) !important;
-          box-shadow: var(--shadow-lg) !important;
-          border-radius: var(--radius-md) !important;
-          z-index: 1000 !important;
+          position: fixed !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          width: 90% !important;
+          max-width: 320px !important;
+          background: rgba(15, 23, 42, 0.98) !important;
+          backdrop-filter: blur(20px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          border-radius: 1.5rem !important;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+          overflow: hidden !important;
+          z-index: 9999 !important;
         }
         .fc-popover-header {
-          background: var(--bg-surface-2) !important;
-          color: var(--text-primary) !important;
-          padding: 8px 12px !important;
-          border-bottom: 1px solid var(--border) !important;
-          border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
-          font-weight: 700 !important;
-          font-size: 0.85rem !important;
+          background: rgba(255, 255, 255, 0.03) !important;
+          padding: 1rem 1.25rem !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          display: flex !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+        }
+        .fc-popover-title {
+          color: #f8fafc !important;
+          font-weight: 900 !important;
+          font-size: 0.95rem !important;
+          letter-spacing: 0.03em !important;
+          text-transform: uppercase !important;
+        }
+        .fc-popover-close {
+          color: #94a3b8 !important;
+          cursor: pointer !important;
+          opacity: 1 !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-radius: 50% !important;
+          width: 28px !important;
+          height: 28px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 1rem !important;
+          transition: all 0.2s ease !important;
+        }
+        .fc-popover-close:hover {
+          color: #f8fafc !important;
+          background: rgba(255, 255, 255, 0.1) !important;
+          transform: scale(1.05);
         }
         .fc-popover-body {
-          padding: 8px !important;
-          background: var(--bg-surface) !important;
+          padding: 1rem !important;
+          background: transparent !important;
+          max-height: 240px !important;
+          overflow-y: auto !important;
+        }
+        .fc-popover-body .fc-event {
+          margin-bottom: 0.5rem !important;
         }
         .fc-daygrid-more-link {
-          color: var(--color-accent) !important;
-          font-weight: 700 !important;
+          color: var(--color-primary) !important;
+          font-weight: 800 !important;
           font-size: 0.75rem !important;
-          text-decoration: none !important;
-          transition: var(--transition) !important;
+          margin-left: 6px !important;
+          padding: 2px 6px !important;
+          border-radius: 4px !important;
+          background: rgba(99, 102, 241, 0.1) !important;
+          transition: all 0.2s ease !important;
         }
         .fc-daygrid-more-link:hover {
-          color: var(--color-primary) !important;
-          opacity: 0.8;
+          background: rgba(99, 102, 241, 0.2) !important;
         }
+
+        /* Existing Overrides */
+        .fc-theme-standard td, .fc-theme-standard th { border-color: rgba(255,255,255,0.05) !important; }
+        .fc-col-header-cell { padding: 12px 0 !important; background: rgba(255,255,255,0.02) !important; }
+        .fc-col-header-cell-cushion { color: #64748b !important; text-decoration: none !important; font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.1em; }
+        .fc-button-primary { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.08) !important; color: #f8fafc !important; font-size: 0.8rem !important; font-weight: 800 !important; border-radius: 10px !important; padding: 8px 16px !important; transition: all 0.2s ease !important; }
+        .fc-button-primary:hover { background: rgba(255,255,255,0.08) !important; transform: translateY(-1px); }
+        .fc-button-active { background: var(--color-primary) !important; color: #fff !important; border-color: var(--color-primary) !important; }
+        .fc-day-today { background: rgba(99, 102, 241, 0.05) !important; }
+        .fc-daygrid-day-number { font-size: 0.85rem; font-weight: 800; color: #94a3b8; padding: 12px !important; text-decoration: none !important; }
+        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 900 !important; color: #f8fafc !important; letter-spacing: -0.02em !important; }
+        .fc-scrollgrid { border: none !important; }
         
-        .btn-syncing {
-          background: var(--bg-surface-3) !important;
-          color: var(--color-primary) !important;
-          border-color: var(--color-primary) !important;
-          cursor: not-allowed !important;
-          position: relative;
-          overflow: hidden;
-        }
-        .btn-syncing::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          height: 2px;
-          background: var(--color-primary);
-          animation: sync-progress 2s linear infinite;
-        }
-        @keyframes sync-progress {
-          0% { width: 0; left: 0; }
-          50% { width: 70%; left: 15%; }
-          100% { width: 0; left: 100%; }
-        }
-        .button-loader-ring {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.1), transparent);
-          animation: scan 1.5s linear infinite;
-        }
-        @keyframes scan {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        @media (max-width: 768px) {
-          .fc-header-toolbar { flex-direction: column; gap: 1rem; }
-          .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; }
+        @keyframes custom-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
+
+        @keyframes slide-down-fade {
+          from { opacity: 0; transform: translate(-50%, -20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes pulse-glow-sync {
+          0%, 100% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+          50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.7); }
+        }
+
+        .animate-custom-spin {
+          animation: custom-spin 1s linear infinite;
+        }
+
+        @keyframes pulse-red {
+          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
       ` }} />
     </div>
   );

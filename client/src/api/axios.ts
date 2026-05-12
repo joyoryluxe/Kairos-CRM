@@ -1,8 +1,14 @@
 import axios from "axios";
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const defaultBaseUrl = isLocalhost 
-  ? "http://localhost:5000/api" 
+const hostname = window.location.hostname;
+const isLocal = hostname === 'localhost' || 
+  hostname === '127.0.0.1' || 
+  hostname.startsWith('192.168.') || 
+  hostname.startsWith('10.') || 
+  hostname.endsWith('.local');
+
+const defaultBaseUrl = isLocal 
+  ? `http://${hostname}:5000/api` 
   : "https://kairos-djb5.onrender.com/api";
 
 const api = axios.create({

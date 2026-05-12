@@ -15,13 +15,16 @@ import {
   X,
   Hash,
   ArrowRight,
-  Download
+  Download,
+  CheckCircle2
 } from "lucide-react";
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { 
   getEdits, 
   deleteEdit, 
+  updateEdit,
+  type Edit,
   type EditStatus,
   type EditPriority
 } from "../api/edit";
@@ -69,6 +72,22 @@ const EditsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["edits"] });
     },
   });
+  
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<Edit> }) => updateEdit(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["edits"] });
+      alert("Edit marked as Delivered!");
+    },
+    onError: (err: any) => {
+      alert("Failed to update edit: " + err.message);
+    }
+  });
+  
+  const handleQuickDelivered = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    updateMutation.mutate({ id, payload: { status: "Delivered" } });
+  };
 
   const uniqueTypes = useMemo(() => {
     const types = edits.map(e => e.type).filter(Boolean);
@@ -221,6 +240,20 @@ const EditsPage: React.FC = () => {
                   <button className="btn-circle-action danger" onClick={(e) => handleDelete(e, edit._id)}>
                     <Trash2 size={18} />
                   </button>
+                  {edit.status !== "Delivered" && (
+                    <button 
+                      className="btn-circle-action success" 
+                      onClick={(e) => handleQuickDelivered(e, edit._id)}
+                      disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
+                      style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
+                    >
+                      {updateMutation.isPending && updateMutation.variables?.id === edit._id ? (
+                        <div className="animate-spin" style={{ width: "14px", height: "14px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                      ) : (
+                        <CheckCircle2 size={18} />
+                      )}
+                    </button>
+                  )}
                   <button className="btn-circle-action">
                     <ArrowRight size={18} />
                   </button>
@@ -296,6 +329,21 @@ const EditsPage: React.FC = () => {
                     <button className="btn-action-premium danger" onClick={(e) => handleDelete(e, edit._id)}>
                       <Trash2 size={18} />
                     </button>
+                    {edit.status !== "Delivered" && (
+                      <button 
+                        className="btn-action-premium success" 
+                        onClick={(e) => handleQuickDelivered(e, edit._id)}
+                        disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
+                        style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
+                        title="Mark as Delivered"
+                      >
+                        {updateMutation.isPending && updateMutation.variables?.id === edit._id ? (
+                          <div className="animate-spin" style={{ width: "14px", height: "14px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                        ) : (
+                          <CheckCircle2 size={18} />
+                        )}
+                      </button>
+                    )}
                     <button className="btn-action-premium" onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/edits/${edit._id}/edit`); }}>
                       <ArrowRight size={18} />
                     </button>

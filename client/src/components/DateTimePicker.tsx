@@ -26,7 +26,7 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, requir
         if (h > 12) h -= 12;
         
         setHour(h.toString().padStart(2, '0'));
-        setMinute(m.slice(0, 2)); // Ensure it's just mm
+        setMinute(m.slice(0, 2));
         setAmpm(isPm ? 'PM' : 'AM');
       }
     } else {
@@ -52,9 +52,9 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, requir
   };
 
   return (
-    <div className="datetime-picker-wrapper">
-      <div className="date-input-container">
-        <Calendar size={16} className="icon" />
+    <div className="dt-picker-root">
+      <div className="dt-date-container">
+        <Calendar size={15} className="dt-icon" />
         <input 
           type="date" 
           required={required}
@@ -63,208 +63,237 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ value, onChange, requir
             setDateStr(e.target.value);
             triggerChange(e.target.value, hour, minute, ampm);
           }}
-          className="premium-input date-input"
+          className="dt-date-input"
         />
       </div>
       
-      <div className="time-select-container">
-        <Clock size={16} className="icon" style={{ marginRight: '4px' }} />
-        
-        <div className="select-wrapper">
+      <div className="dt-time-container">
+        <div className="dt-time-grid">
+          <Clock size={15} className="dt-icon-fixed" />
+          
           <select 
             value={hour} 
             onChange={e => {
               setHour(e.target.value);
               triggerChange(dateStr, e.target.value, minute, ampm);
             }}
-            className="premium-select"
+            className="dt-select"
           >
             {Array.from({length: 12}, (_, i) => {
               const val = (i + 1).toString().padStart(2, '0');
               return <option key={val} value={val}>{val}</option>
             })}
           </select>
-        </div>
-        
-        <span className="colon">:</span>
-        
-        <div className="select-wrapper">
+          
+          <span className="dt-sep">:</span>
+          
           <select 
             value={minute} 
             onChange={e => {
               setMinute(e.target.value);
               triggerChange(dateStr, hour, e.target.value, ampm);
             }}
-            className="premium-select"
+            className="dt-select"
           >
             {['00', '15', '30', '45'].map((val) => (
               <option key={val} value={val}>{val}</option>
             ))}
-            <option disabled>---</option>
+            <option disabled>──</option>
             {Array.from({length: 60}, (_, i) => {
               const val = i.toString().padStart(2, '0');
               if (['00', '15', '30', '45'].includes(val)) return null;
               return <option key={val} value={val}>{val}</option>
             })}
           </select>
-        </div>
-        
-        <div className="divider" />
-        
-        <div className="select-wrapper ampm-wrapper">
-          <select 
-            value={ampm} 
-            onChange={e => {
-              setAmpm(e.target.value);
-              triggerChange(dateStr, hour, minute, e.target.value);
-            }}
-            className="premium-select ampm-select"
-          >
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
+
+          <div className="dt-ampm-toggle">
+            <button 
+              type="button" 
+              className={ampm === 'AM' ? 'active' : ''} 
+              onClick={() => { setAmpm('AM'); triggerChange(dateStr, hour, minute, 'AM'); }}
+            >AM</button>
+            <button 
+              type="button" 
+              className={ampm === 'PM' ? 'active' : ''} 
+              onClick={() => { setAmpm('PM'); triggerChange(dateStr, hour, minute, 'PM'); }}
+            >PM</button>
+          </div>
         </div>
       </div>
 
       <style>{`
-        .datetime-picker-wrapper {
+        .dt-picker-root {
           display: flex;
-          gap: 0.75rem;
+          gap: 1rem;
           width: 100%;
-          flex-wrap: wrap;
+          align-items: stretch;
+          box-sizing: border-box;
         }
 
-        .date-input-container {
+        .dt-date-container {
           position: relative;
-          flex: 1 1 180px;
+          flex: 1;
+          min-width: 160px;
+          box-sizing: border-box;
         }
 
-        .time-select-container {
-          display: flex;
-          align-items: center;
-          background: var(--bg-surface-3);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 0.6rem 0.8rem;
-          flex: 1 1 200px;
-          transition: all 0.3s ease;
-        }
-
-        .time-select-container:focus-within {
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px var(--color-primary-glow);
-        }
-
-        .icon {
-          color: var(--text-muted);
-          flex-shrink: 0;
-        }
-
-        .date-input-container .icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          pointer-events: none;
-        }
-
-        .premium-input.date-input {
+        .dt-date-input {
           width: 100%;
-          padding: 0.8rem 0.8rem 0.8rem 40px;
-          border-radius: 12px;
-          border: 1px solid var(--border);
-          background: var(--bg-surface-3);
-          color: var(--text-primary);
+          height: 100%;
+          padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+          border-radius: 0.85rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(15, 23, 42, 0.4);
+          color: #f8fafc;
           font-size: 0.95rem;
+          font-weight: 600;
           outline: none;
           transition: all 0.3s ease;
           color-scheme: dark;
+          cursor: pointer;
+          box-sizing: border-box;
         }
 
-        .premium-input.date-input:focus {
+        /* Make entire input clickable for calendar and hide default icon */
+        .dt-date-input::-webkit-calendar-picker-indicator {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+          cursor: pointer;
+          opacity: 0;
+        }
+
+        .dt-date-input:focus {
           border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px var(--color-primary-glow);
+          background: rgba(15, 23, 42, 0.6);
+          box-shadow: 0 0 0 4px var(--color-primary-glow);
         }
 
-        .select-wrapper {
-          position: relative;
+        .dt-icon {
+          position: absolute;
+          left: 1.25rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--color-primary);
+          pointer-events: none;
+          z-index: 10;
+          opacity: 0.8;
+        }
+
+        .dt-time-container {
+          flex: 1.3;
+          min-width: 240px;
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.85rem;
+          padding: 0 0.75rem 0 1.25rem;
           display: flex;
           align-items: center;
-          background: var(--bg-surface-2);
-          border-radius: 8px;
-          border: 1px solid transparent;
-          transition: all 0.2s ease;
-        }
-
-        .select-wrapper:hover {
-          background: var(--bg-surface);
-          border-color: var(--border);
-        }
-
-        .select-wrapper:focus-within {
-          border-color: var(--color-primary);
-        }
-
-        .premium-select {
-          background: transparent;
-          border: none;
-          outline: none;
-          color: var(--text-primary);
-          cursor: pointer;
-          padding: 0.4rem 0.6rem;
-          font-size: 0.95rem;
-          font-weight: 600;
-          appearance: none;
-          -webkit-appearance: none;
-          -moz-appearance: none;
-          text-align: center;
-        }
-
-        .premium-select option {
-          background: var(--bg-surface-2);
-          color: var(--text-primary);
-        }
-
-        .colon {
-          color: var(--text-muted);
-          font-weight: 800;
-          margin: 0 4px;
-        }
-
-        .divider {
-          width: 1px;
-          height: 24px;
-          background: var(--border);
-          margin: 0 0.6rem;
-        }
-
-        .ampm-wrapper {
-          background: rgba(124, 58, 237, 0.1);
-          border: 1px solid rgba(124, 58, 237, 0.2);
+          transition: all 0.3s ease;
+          box-sizing: border-box;
+          max-width: 100%;
         }
         
-        .ampm-wrapper:hover {
-          background: rgba(124, 58, 237, 0.2);
-          border-color: rgba(124, 58, 237, 0.4);
+        .dt-time-container:focus-within {
+          border-color: var(--color-primary);
+          background: rgba(15, 23, 42, 0.6);
+          box-shadow: 0 0 0 4px var(--color-primary-glow);
         }
 
-        .ampm-select {
+        .dt-time-grid {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .dt-icon-fixed {
           color: var(--color-primary);
-          font-weight: 800;
+          margin-right: 0.75rem;
+          flex-shrink: 0;
+          opacity: 0.8;
         }
 
-        @media (max-width: 500px) {
-          .datetime-picker-wrapper {
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-          .time-select-container {
-            justify-content: center;
-            gap: 0.25rem;
-          }
-          .premium-select {
-            padding: 0.5rem 0.6rem;
-          }
+        .dt-select {
+          background: transparent;
+          border: none;
+          color: #f8fafc;
+          font-size: 1.15rem;
+          font-weight: 800;
+          padding: 0.75rem 0;
+          outline: none;
+          cursor: pointer;
+          appearance: none;
+          text-align: center;
+          width: 2.2rem;
+          transition: all 0.2s;
+          font-family: inherit;
+        }
+        
+        .dt-select:hover {
+          color: var(--color-primary);
+          transform: scale(1.1);
+        }
+
+        .dt-select option {
+          background: #0f172a;
+          color: white;
+          padding: 12px;
+          font-size: 1rem;
+        }
+
+        .dt-sep {
+          color: #475569;
+          font-weight: 900;
+          font-size: 1.15rem;
+          margin: 0 0.15rem;
+          opacity: 0.5;
+        }
+
+        .dt-ampm-toggle {
+          display: flex;
+          background: rgba(15, 23, 42, 0.8);
+          padding: 4px;
+          border-radius: 10px;
+          margin-left: auto;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          flex-shrink: 0;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+          box-sizing: border-box;
+        }
+
+        .dt-ampm-toggle button {
+          border: none;
+          background: transparent;
+          color: #64748b;
+          font-size: 0.7rem;
+          font-weight: 900;
+          padding: 0.45rem 0.85rem;
+          border-radius: 7px;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .dt-ampm-toggle button.active {
+          background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        @media (max-width: 640px) {
+          .dt-picker-root { flex-direction: column; gap: 0.75rem; width: 100%; }
+          .dt-time-container { min-width: 0; width: 100%; max-width: 100%; margin-left: 0; padding: 0 0.5rem 0 0.75rem; box-sizing: border-box; }
+          .dt-ampm-toggle { margin-left: auto; flex-shrink: 0; }
+          .dt-time-grid { justify-content: flex-start; width: 100%; max-width: 100%; }
+          .dt-select { font-size: 1rem; width: 1.8rem; }
+          .dt-ampm-toggle button { padding: 0.35rem 0.65rem; font-size: 0.65rem; }
+          .dt-icon-fixed { margin-right: 0.4rem; }
         }
       `}</style>
     </div>
