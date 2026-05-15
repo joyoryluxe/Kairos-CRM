@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { 
-  User, 
-  Calendar, 
-  MapPin, 
-  IndianRupee, 
-  Tag, 
+import {
+  User,
+  Calendar,
+  MapPin,
+  IndianRupee,
+  Tag,
   ArrowLeft,
   Save,
   ChevronRight,
@@ -26,6 +26,48 @@ const toLocalDateString = (date?: string | Date) => {
   if (isNaN(d.getTime())) return "";
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+const FORM_STYLES = `
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .form-grid-2-1 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .form-submit-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  @media (max-width: 768px) {
+    .form-grid-2, .form-grid-3, .form-grid-2-1 {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    .form-grid-2-1 {
+      margin-top: 1rem;
+    }
+    .form-submit-row {
+      flex-direction: column-reverse;
+      gap: 0.75rem;
+    }
+    .form-submit-row button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+`;
 
 interface FormState {
   clientName: string;
@@ -68,10 +110,10 @@ function Section({ title, icon, children, description }: { title: string; icon: 
       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ 
-          background: "var(--color-primary-glow)", 
-          color: "var(--color-primary)", 
-          padding: "0.6rem", 
+        <div style={{
+          background: "var(--color-primary-glow)",
+          color: "var(--color-primary)",
+          padding: "0.6rem",
           borderRadius: "12px",
           display: "flex",
           alignItems: "center",
@@ -182,12 +224,14 @@ export default function LeadFormPage() {
   if (isEdit && isFetching) return <Loader fullPage message="Retrieving lead details..." />;
 
   return (
+    <>
+    <style>{FORM_STYLES}</style>
     <div className="animate-fade-up" style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 3rem" }}>
       {/* ── Header ── */}
       <div style={{ marginBottom: "2rem" }}>
-        <button onClick={() => navigate("/dashboard/leads")} style={{ 
-          display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer", 
-          color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem" 
+        <button onClick={() => navigate("/dashboard/leads")} style={{
+          display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer",
+          color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem"
         }}>
           <ArrowLeft size={16} /> Back to Leads
         </button>
@@ -199,26 +243,26 @@ export default function LeadFormPage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-           <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
-             <Tag size={26} />
-           </div>
-           <div>
-             <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
-               {isEdit ? "Refine Lead Profile" : "Capture New Lead"}
-             </h1>
-             <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-               Inquiry Management & Tracking
-             </p>
-           </div>
+          <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
+            <Tag size={26} />
+          </div>
+          <div>
+            <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
+              {isEdit ? "Refine Lead Profile" : "Capture New Lead"}
+            </h1>
+            <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+              Inquiry Management & Tracking
+            </p>
+          </div>
         </div>
       </div>
 
       {!isEdit && !!getFormHistory("lead") && (
-        <button onClick={handleLoadHistory} style={{ 
-          marginBottom: "2.5rem", width: "100%", padding: "1.25rem", borderRadius: "1.25rem", 
-          background: "rgba(16, 185, 129, 0.08)", border: "1px dashed rgba(16, 185, 129, 0.3)", 
-          color: "#10b981", fontWeight: 800, cursor: "pointer", display: "flex", 
-          alignItems: "center", justifyContent: "center", gap: "1rem", fontSize: "1.05rem" 
+        <button onClick={handleLoadHistory} style={{
+          marginBottom: "2.5rem", width: "100%", padding: "1.25rem", borderRadius: "1.25rem",
+          background: "rgba(16, 185, 129, 0.08)", border: "1px dashed rgba(16, 185, 129, 0.3)",
+          color: "#10b981", fontWeight: 800, cursor: "pointer", display: "flex",
+          alignItems: "center", justifyContent: "center", gap: "1rem"
         }}>
           <HistoryIcon size={20} />
           Restore Configuration from Last Session
@@ -228,33 +272,33 @@ export default function LeadFormPage() {
       <form onSubmit={handleSubmit}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <Section title="Discovery Source" icon={<User size={22} />} description="Who is the prospect and how did they find us?">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <div className="form-grid-2">
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Prospect Name</label>
-                <AutocompleteInput 
-                  model="lead" field="clientName" required 
-                  value={form.clientName} 
-                  onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))} 
+                <AutocompleteInput
+                  model="lead" field="clientName" required
+                  value={form.clientName}
+                  onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
                   onSelectFullRecord={handleSelectFullRecord}
-                  placeholder="Full name" 
+                  placeholder="Full name"
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Contact Info</label>
-                <AutocompleteInput 
-                  model="lead" field="phoneNumber" required 
-                  value={form.phoneNumber} 
-                  onChange={(v: string) => setForm(f => ({ ...f, phoneNumber: v }))} 
-                  placeholder="+91 Phone number" 
+                <AutocompleteInput
+                  model="lead" field="phoneNumber" required
+                  value={form.phoneNumber}
+                  onChange={(v: string) => setForm(f => ({ ...f, phoneNumber: v }))}
+                  placeholder="+91 Phone number"
                 />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Email Address</label>
-                <input style={inputCls} type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="email@example.com" />
+                <input style={inputCls} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Origin Source</label>
-                <select style={inputCls} value={form.source} onChange={e => setForm({...form, source: e.target.value as LeadSource})}>
+                <select style={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value as LeadSource })}>
                   <option value="Instagram">Instagram</option>
                   <option value="Google">Google Search</option>
                   <option value="WhatsApp">WhatsApp</option>
@@ -266,10 +310,10 @@ export default function LeadFormPage() {
           </Section>
 
           <Section title="Event Potential" icon={<Calendar size={22} />} description="What are they looking for?">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
+            <div className="form-grid-3">
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Event Category</label>
-                <select style={inputCls} value={form.eventType} onChange={e => setForm({...form, eventType: e.target.value as LeadEventType})}>
+                <select style={inputCls} value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })}>
                   <option value="Maternity">Maternity</option>
                   <option value="Influencer">Influencer</option>
                   <option value="Corporate">Corporate</option>
@@ -278,26 +322,26 @@ export default function LeadFormPage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Target Date</label>
-                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.eventDate} onChange={e => setForm({...form, eventDate: e.target.value})} />
+                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Inquiry Date</label>
-                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.inquiryDate} onChange={e => setForm({...form, inquiryDate: e.target.value})} />
+                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.inquiryDate} onChange={e => setForm({ ...form, inquiryDate: e.target.value })} />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+            <div className="form-grid-2-1">
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Expected Venue / Location</label>
                 <div style={{ position: "relative" }}>
                   <MapPin size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
-                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} value={form.eventLocation} onChange={e => setForm({...form, eventLocation: e.target.value})} placeholder="City or Studio name" />
+                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} value={form.eventLocation} onChange={e => setForm({ ...form, eventLocation: e.target.value })} placeholder="City or Studio name" />
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={labelStyle}>Est. Budget (₹)</label>
                 <div style={{ position: "relative" }}>
                   <IndianRupee size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
-                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} type="number" value={form.budget} onChange={e => setForm({...form, budget: parseInt(e.target.value) || 0})} placeholder="0" />
+                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} type="number" value={form.budget} onChange={e => setForm({ ...form, budget: parseInt(e.target.value) || 0 })} placeholder="0" />
                 </div>
               </div>
             </div>
@@ -306,7 +350,7 @@ export default function LeadFormPage() {
           <Section title="Pipeline Status" icon={<Clock size={22} />} description="Current state of the discussion">
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <label style={labelStyle}>Current Stage</label>
-              <select style={inputCls} value={form.status} onChange={e => setForm({...form, status: e.target.value as LeadStatus})}>
+              <select style={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as LeadStatus })}>
                 <option value="New">🆕 New Inquiry</option>
                 <option value="Contacted">📞 Initial Contact Made</option>
                 <option value="In Discussion">💬 Active Discussion</option>
@@ -318,21 +362,21 @@ export default function LeadFormPage() {
         </div>
 
         <Section title="Discovery Notes" icon={<MessageSquare size={22} />} description="Specific requirements or conversation history">
-          <textarea 
-            style={{ ...inputCls, minHeight: "150px", resize: "vertical" }} 
+          <textarea
+            style={{ ...inputCls, minHeight: "150px", resize: "vertical" }}
             value={form.notes}
-            onChange={e => setForm({...form, notes: e.target.value})}
+            onChange={e => setForm({ ...form, notes: e.target.value })}
             placeholder="Elaborate on requirements, package discussed, or next steps..."
           />
         </Section>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "2rem" }}>
+        <div className="form-submit-row">
           <button type="button" className="btn" onClick={() => navigate("/dashboard/leads")} style={{ padding: "0.75rem 2rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.05)", color: "#94a3b8", fontWeight: 700, border: "none", cursor: "pointer" }}>Discard</button>
-          <button type="submit" disabled={isPending} style={{ 
-            background: "linear-gradient(135deg, var(--color-primary) 0%, #0d9488 100%)", color: "white", 
-            padding: "0.75rem 3rem", borderRadius: "0.75rem", fontWeight: 800, border: "none", 
-            display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer", 
-            boxShadow: "0 10px 15px -3px rgba(13, 148, 136, 0.3)" 
+          <button type="submit" disabled={isPending} style={{
+            background: "linear-gradient(135deg, var(--color-primary) 0%, #0d9488 100%)", color: "white",
+            padding: "0.75rem 3rem", borderRadius: "0.75rem", fontWeight: 800, border: "none",
+            display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer",
+            boxShadow: "0 10px 15px -3px rgba(13, 148, 136, 0.3)"
           }}>
             <Save size={18} />
             {isPending ? "Syncing..." : isEdit ? "Update Potential" : "Register Lead"}
@@ -340,5 +384,6 @@ export default function LeadFormPage() {
         </div>
       </form>
     </div>
+    </>
   );
 }

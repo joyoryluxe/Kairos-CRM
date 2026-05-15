@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7f9;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .header {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: #ffffff;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+    .header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 25px;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e293b;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    .item-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 15px;
+      margin-bottom: 10px;
+    }
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .client-name {
+      font-weight: 600;
+      color: #4f46e5;
+      font-size: 15px;
+    }
+    .item-type {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .item-title {
+      font-size: 14px;
+      color: #334155;
+    }
+    .item-meta {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: #94a3b8;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+    }
+    .empty-state {
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+      padding: 10px;
+    }
+    .tag-shoot { background: #dcfce7; color: #166534; }
+    .tag-deadline { background: #fee2e2; color: #991b1b; }
+    .tag-inquiry { background: #e0e7ff; color: #3730a3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>KAIROS Daily Digest</h1>
+      <p>{{date}}</p>
+    </div>
+    
+    <div class="content">
+      <!-- Shoots Section -->
+      <div class="section">
+        <div class="section-title">
+          📸 Today's Shoots
+        </div>
+        {{#if hasShoots}}
+          {{#each shoots}}
+            <div class="item-card">
+              <div class="item-header">
+                <span class="client-name">{{client}}</span>
+                <span class="item-type tag-shoot">{{type}}</span>
+              </div>
+              <div class="item-title">{{title}}</div>
+              <div class="item-meta">⏰ Time: {{time}}</div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state">No shoots scheduled for today.</div>
+        {{/if}}
+      </div>
+
+      <!-- Deadlines Section -->
+      <div class="section">
+        <div class="section-title">
+          ⏳ Today's Deadlines
+        </div>
+        {{#if hasDeadlines}}
+          {{#each deadlines}}
+            <div class="item-card">
+              <div class="item-header">
+                <span class="client-name">{{client}}</span>
+                <span class="item-type tag-deadline">{{type}}</span>
+              </div>
+              <div class="item-title">{{title}}</div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state">No delivery deadlines today.</div>
+        {{/if}}
+      </div>
+
+      <!-- Inquiries Section -->
+      <div class="section">
+        <div class="section-title">
+          📧 Today's Inquiries
+        </div>
+        {{#if hasInquiries}}
+          {{#each inquiries}}
+            <div class="item-card">
+              <div class="item-header">
+                <span class="client-name">{{client}}</span>
+                <span class="item-type tag-inquiry">{{type}}</span>
+              </div>
+              <div class="item-meta">Source: {{source}}</div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state">No new inquiries today.</div>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="footer">
+      Generated automatically by KAIROS CRM Cron Service<br>
+      © 2026 KAIROS Studio
+    </div>
+  </div>
+</body>
+</html>

@@ -1007,14 +1007,21 @@ const STYLES = `
     .view-toggle button { padding: 7px 10px; }
     .leads-stats { gap: 0.5rem; overflow-x: auto; padding-bottom: 5px; width: 100%; }
     .stat-chip { padding: 6px 10px; font-size: 0.75rem; flex-shrink: 0; }
+    .leads-filter-bar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .search-wrap, .filter-select-wrap {
+      width: 100%;
+    }
+    .leads-header { flex-direction: column; align-items: stretch; }
+    .leads-header-actions { flex-wrap: wrap; justify-content: space-between; margin-top: 0.5rem; }
   }
 
   @media (max-width: 480px) {
     .leads-root { padding: 0.75rem; }
-    .btn-add-lead span { display: none; }
-    .btn-add-lead { padding: 8px 12px; }
-    .leads-header { flex-direction: column; align-items: stretch; }
-    .leads-header-actions { justify-content: space-between; }
+    .btn-add-lead span, .btn-export span { display: none; }
+    .btn-add-lead, .btn-export { padding: 8px 12px; }
   }
 `;
 
@@ -1109,8 +1116,8 @@ const LeadsPage: React.FC = () => {
             <p>Manage potential clients &amp; track conversions</p>
           </div>
           <div className="leads-header-actions">
-            <button className="btn" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "8px 18px", borderRadius: "10px", background: "var(--bg-surface-2)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
-              <Download size={16} /> Export
+            <button className="btn btn-export" onClick={handleExport} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "8px 18px", borderRadius: "10px", background: "var(--bg-surface-2)", border: "1px solid var(--border)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
+              <Download size={16} /> <span>Export</span>
             </button>
             <div className="view-toggle">
               <button

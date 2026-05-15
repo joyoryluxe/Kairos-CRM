@@ -351,6 +351,36 @@ select:focus {
   box-sizing: border-box;
 }
 
+/* ─── Components ─────────────────────────────────────────────────────────────── */
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 350px;
+  max-height: 450px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  z-index: 110;
+}
+
+@media (max-width: 768px) {
+  .notification-dropdown {
+    position: fixed;
+    top: calc(var(--header-height) + 0.5rem);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: calc(100vw - 2rem);
+    max-width: 340px;
+    margin-top: 0;
+  }
+}
+
 /* ─── Responsive Adjustments ─────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   :root {

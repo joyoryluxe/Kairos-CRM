@@ -14,13 +14,19 @@ class CronService {
      * Initialize all cron jobs
      */
     init() {
-        // Run every minute
+        // Run every minute 
         cron.schedule('* * * * *', async () => {
             console.log('Running per-minute email reminder jobs...');
             await this.checkShootReminders();
             await this.checkDeadlineReminders();
             await this.checkBirthdayReminders();
             await this.checkLeadAndEditReminders();
+        });
+
+        // Run daily digest at 8:30 AM
+        cron.schedule('30 8 * * *', async () => {
+            console.log('Running daily digest email job...');
+            await this.sendDailyDigest();
         });
 
         console.log('Cron Service initialized successfully');
@@ -333,6 +339,72 @@ class CronService {
                     await this.logSent(edit._id, 'Edit', type, { dateKey });
                 }
             }
+        }
+    }
+
+    /**
+     * Send a daily digest email with today's shoots, deadlines, inquiries, and edits
+     */
+    private async sendDailyDigest() {
+        try {
+            const today = new Date();
+            const startOfDay = new Date(new Date(today).setHours(0, 0, 0, 0));
+            const endOfDay = new Date(new Date(today).setHours(23, 59, 59, 999));
+
+            // 1. Today's Shoots
+            const maternityShoots = await Maternity.find({ shootDateAndTime: { $gte: startOfDay, $lte: endOfDay } });
+            const corporateShoots = await CorporateEvent.find({ eventDateAndTime: { $gte: startOfDay, $lte: endOfDay } });
+            const influencerShoots = await Influencer.find({ shootDateAndTime: { $gte: startOfDay, $lte: endOfDay } });
+
+            // 2. Today's Deadlines
+            const maternityDeadlines = await Maternity.find({ deliveryDeadline: { $gte: startOfDay, $lte: endOfDay } });
+            const corporateDeadlines = await CorporateEvent.find({ deliveryDeadline: { $gte: startOfDay, $lte: endOfDay } });
+            const influencerDeadlines = await Influencer.find({ deliveryDeadline: { $gte: startOfDay, $lte: endOfDay } });
+
+            // 3. Today's Inquiries (Leads inquiryDate)
+            const inquiries = await Lead.find({ inquiryDate: { $gte: startOfDay, $lte: endOfDay } });
+
+            // 4. Today's Edit Deadlines
+            const edits = await Edit.find({ deadline: { $gte: startOfDay, $lte: endOfDay } });
+
+            // Format Data for Template
+            const shoots = [
+                ...maternityShoots.map(s => ({ client: s.clientName, type: 'Maternity', title: s.babyName || 'Newborn Shoot', time: s.shootDateAndTime ? new Date(s.shootDateAndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A' })),
+                ...corporateShoots.map(s => ({ client: s.clientName, type: 'Corporate', title: s.eventName, time: s.eventDateAndTime ? new Date(s.eventDateAndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A' })),
+                ...influencerShoots.map(s => ({ client: s.clientName, type: 'Influencer', title: s.shootName, time: s.shootDateAndTime ? new Date(s.shootDateAndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A' }))
+            ];
+
+            const deadlines = [
+                ...maternityDeadlines.map(s => ({ client: s.clientName, type: 'Maternity', title: s.babyName || 'Delivery' })),
+                ...corporateDeadlines.map(s => ({ client: s.clientName, type: 'Corporate', title: s.eventName })),
+                ...influencerDeadlines.map(s => ({ client: s.clientName, type: 'Influencer', title: s.shootName })),
+                ...edits.map(s => ({ client: s.clientName, type: 'Edit', title: s.title }))
+            ];
+
+            const inquiriesList = inquiries.map(s => ({ client: s.clientName, type: s.eventType, source: s.source }));
+
+            // Only send if there's something to report
+            if (shoots.length > 0 || deadlines.length > 0 || inquiriesList.length > 0) {
+                await emailService.sendEmail({
+                    to: ADMIN_EMAIL,
+                    subject: `☀️ KAIROS Daily Digest - ${today.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                    template: 'daily-digest',
+                    context: {
+                        date: today.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+                        shoots,
+                        deadlines,
+                        inquiries: inquiriesList,
+                        hasShoots: shoots.length > 0,
+                        hasDeadlines: deadlines.length > 0,
+                        hasInquiries: inquiriesList.length > 0
+                    }
+                });
+                console.log('Daily digest email sent successfully');
+            } else {
+                console.log('Daily digest: No activity for today, email skipped.');
+            }
+        } catch (error) {
+            console.error('Error in daily digest cron job:', error);
         }
     }
 }

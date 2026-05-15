@@ -568,7 +568,7 @@ export default function MaternityFormPage() {
                       setForm((f) => ({ ...f, package: val, packagePrice: pkg?.price ?? 0 }));
                     }
                   }}
-                  style={{ ...inputCls, borderRadius: "0.75rem", background: "rgba(15, 23, 42, 0.4)", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}
+                  style={{ ...inputCls, borderRadius: "0.75rem", border: "1px solid rgba(255, 255, 255, 0.08)", color: "#f8fafc" }}
                 >
                   <option value="">— No package —</option>
                   {packages.map((p) => (

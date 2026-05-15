@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Trash2,
   AlertCircle,
   Clock,
   LayoutGrid,
@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { 
-  getEdits, 
-  deleteEdit, 
+import {
+  getEdits,
+  deleteEdit,
   updateEdit,
   type Edit,
   type EditStatus,
@@ -44,13 +44,13 @@ const EditsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  
+
   // Basic Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
-  
+
   // Advanced Filters
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [typeFilter, setTypeFilter] = useState("All");
@@ -72,7 +72,7 @@ const EditsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["edits"] });
     },
   });
-  
+
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<Edit> }) => updateEdit(id, payload),
     onSuccess: () => {
@@ -83,7 +83,7 @@ const EditsPage: React.FC = () => {
       alert("Failed to update edit: " + err.message);
     }
   });
-  
+
   const handleQuickDelivered = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     updateMutation.mutate({ id, payload: { status: "Delivered" } });
@@ -97,15 +97,15 @@ const EditsPage: React.FC = () => {
   const filteredEdits = useMemo(() => {
     return edits.filter(edit => {
       const search = searchTerm.toLowerCase();
-      const matchesSearch = 
-        edit.title.toLowerCase().includes(search) || 
+      const matchesSearch =
+        edit.title.toLowerCase().includes(search) ||
         edit.clientName.toLowerCase().includes(search) ||
         (edit.notes && edit.notes.toLowerCase().includes(search));
-      
+
       const matchesStatus = statusFilter === "All" || edit.status === statusFilter;
       const matchesPriority = priorityFilter === "All" || edit.priority === priorityFilter;
       const matchesType = typeFilter === "All" || edit.type === typeFilter;
-      
+
       let matchesReceived = true;
       if (receivedDateStart || receivedDateEnd) {
         const date = parseISO(edit.receivedDate);
@@ -113,7 +113,7 @@ const EditsPage: React.FC = () => {
         const end = receivedDateEnd ? endOfDay(parseISO(receivedDateEnd)) : new Date(8640000000000000);
         matchesReceived = isWithinInterval(date, { start, end });
       }
-      
+
       let matchesDeadline = true;
       if (deadlineStart || deadlineEnd) {
         const date = parseISO(edit.deadline);
@@ -121,12 +121,12 @@ const EditsPage: React.FC = () => {
         const end = deadlineEnd ? endOfDay(parseISO(deadlineEnd)) : new Date(8640000000000000);
         matchesDeadline = isWithinInterval(date, { start, end });
       }
-      
+
       const matchesMinItems = minItems === "" || edit.photoClipCount >= minItems;
       const matchesMaxItems = maxItems === "" || edit.photoClipCount <= maxItems;
-      
-      return matchesSearch && matchesStatus && matchesPriority && matchesType && 
-             matchesReceived && matchesDeadline && matchesMinItems && matchesMaxItems;
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesType &&
+        matchesReceived && matchesDeadline && matchesMinItems && matchesMaxItems;
     });
   }, [edits, searchTerm, statusFilter, priorityFilter, typeFilter, receivedDateStart, receivedDateEnd, deadlineStart, deadlineEnd, minItems, maxItems]);
 
@@ -205,10 +205,10 @@ const EditsPage: React.FC = () => {
       return (
         <div className="premium-grid">
           {filteredEdits.map((edit, idx) => (
-            <div key={edit._id} 
-              className="premium-card" 
+            <div key={edit._id}
+              className="premium-card"
               onClick={() => navigate(`/dashboard/edits/${edit._id}/edit`)}
-              style={{ 
+              style={{
                 animationDelay: `${idx * 0.05}s`,
                 borderTop: `6px solid ${getPriorityInfo(edit.priority).color}`
               }}
@@ -217,10 +217,10 @@ const EditsPage: React.FC = () => {
                 <span className="category-tag">{edit.type}</span>
                 <span className="status-dot" style={{ background: statusColors[edit.status].text, boxShadow: `0 0 10px ${statusColors[edit.status].text}80` }} />
               </div>
-              
+
               <h3 className="card-title">{edit.title}</h3>
               <p className="card-client">{edit.clientName}</p>
-              
+
               <div className="card-stats">
                 <div className="stat">
                   <Hash size={16} /> {edit.photoClipCount} Items
@@ -241,8 +241,8 @@ const EditsPage: React.FC = () => {
                     <Trash2 size={18} />
                   </button>
                   {edit.status !== "Delivered" && (
-                    <button 
-                      className="btn-circle-action success" 
+                    <button
+                      className="btn-circle-action success"
                       onClick={(e) => handleQuickDelivered(e, edit._id)}
                       disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
                       style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
@@ -282,9 +282,9 @@ const EditsPage: React.FC = () => {
           </thead>
           <tbody>
             {filteredEdits.map((edit, idx) => (
-              <tr 
-                key={edit._id} 
-                onClick={() => navigate(`/dashboard/edits/${edit._id}/edit`)} 
+              <tr
+                key={edit._id}
+                onClick={() => navigate(`/dashboard/edits/${edit._id}/edit`)}
                 className="premium-row"
                 style={{ animationDelay: `${idx * 0.05}s` }}
               >
@@ -303,8 +303,8 @@ const EditsPage: React.FC = () => {
                   </div>
                 </td>
                 <td>
-                  <span className="status-badge-premium" style={{ 
-                    background: statusColors[edit.status].bg, 
+                  <span className="status-badge-premium" style={{
+                    background: statusColors[edit.status].bg,
                     color: statusColors[edit.status].text,
                     border: `1px solid ${statusColors[edit.status].border}`,
                     boxShadow: `0 4px 12px ${statusColors[edit.status].glow}`
@@ -330,8 +330,8 @@ const EditsPage: React.FC = () => {
                       <Trash2 size={18} />
                     </button>
                     {edit.status !== "Delivered" && (
-                      <button 
-                        className="btn-action-premium success" 
+                      <button
+                        className="btn-action-premium success"
                         onClick={(e) => handleQuickDelivered(e, edit._id)}
                         disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
                         style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
@@ -375,10 +375,10 @@ const EditsPage: React.FC = () => {
   return (
     <div style={{ padding: "1.5rem 2rem", animation: "pageFadeIn 0.5s ease-out" }}>
       {/* Header Section */}
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "flex-end", 
+      <div className="edits-page-header" style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
         marginBottom: "2.5rem",
         flexWrap: "wrap",
         gap: "1.5rem"
@@ -392,15 +392,15 @@ const EditsPage: React.FC = () => {
           </p>
         </div>
         <div style={{ display: "flex", gap: "1rem" }}>
-          <button 
-            className="btn-premium" 
+          <button
+            className="btn-premium"
             onClick={handleExport}
             style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "none", color: "var(--text-primary)", border: "1px solid var(--border)", boxShadow: "none" }}
           >
             <Download size={20} /> Export
           </button>
-          <button 
-            className="btn-premium" 
+          <button
+            className="btn-premium"
             onClick={() => navigate("/dashboard/edits/new")}
             style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
           >
@@ -410,8 +410,8 @@ const EditsPage: React.FC = () => {
       </div>
 
       {/* Advanced Filter Bar */}
-      <div style={{ 
-        background: "var(--bg-surface-2)", 
+      <div style={{
+        background: "var(--bg-surface-2)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         borderRadius: "24px",
@@ -422,72 +422,75 @@ const EditsPage: React.FC = () => {
         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
       }}>
         {/* Main Filters Row */}
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ position: "relative", flex: 3, minWidth: "280px" }}>
+        <div className="filter-main-row">
+          <div className="filter-search-wrap" style={{ position: "relative" }}>
             <Search size={20} style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-            <input 
-              type="text" 
-              placeholder="Quick search: Title, client, or specific notes..." 
+            <input
+              type="text"
+              placeholder="Quick search: Title, client, or notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-premium"
-              style={{ paddingLeft: "48px", height: "48px" }}
+              style={{ paddingLeft: "48px", height: "48px", width: "100%", boxSizing: "border-box" }}
             />
           </div>
-          
-          <div style={{ display: "flex", gap: "0.75rem", flex: 2, minWidth: "320px" }}>
-            <div className="select-container">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="All">All Statuses</option>
-                {Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="select-container">
-              <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-                <option value="All">All Priority</option>
-                <option value="High">Urgent</option>
-                <option value="Medium">Standard</option>
-                <option value="Low">Normal</option>
-              </select>
-            </div>
-          </div>
 
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button 
-              className={`btn-filter ${showAdvanced ? 'active' : ''}`}
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              style={{ height: "48px", padding: "0 1.25rem" }}
-            >
-              <Filter size={18} />
-              <span className="hide-on-mobile">{showAdvanced ? "Hide Advanced" : "Advanced"}</span>
-              {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-            <button 
-              className="btn-icon-premium" 
-              onClick={resetFilters}
-              style={{ height: "48px", width: "48px" }}
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <div className="filter-controls-group">
+            <div className="filter-selects-wrap">
+              <div className="select-container">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: "100%" }}>
+                  <option value="All">All Statuses</option>
+                  {Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="select-container">
+                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ width: "100%" }}>
+                  <option value="All">All Priority</option>
+                  <option value="High">Urgent</option>
+                  <option value="Medium">Standard</option>
+                  <option value="Low">Normal</option>
+                </select>
+              </div>
+            </div>
 
-          <div className="view-toggle-premium">
-            <button className={viewMode === "list" ? "active" : ""} onClick={() => setViewMode("list")}><ListIcon size={18} /></button>
-            <button className={viewMode === "card" ? "active" : ""} onClick={() => setViewMode("card")}><LayoutGrid size={18} /></button>
+            <div className="filter-actions-group-mobile">
+              <div className="filter-actions-wrap">
+                <button
+                  className={`btn-filter ${showAdvanced ? 'active' : ''}`}
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  style={{ height: "48px", padding: "0 1.25rem", flex: 1, justifyContent: "center" }}
+                >
+                  <Filter size={18} />
+                  <span className="hide-on-mobile">{showAdvanced ? "Hide Advanced" : "Advanced"}</span>
+                  {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                <button
+                  className="btn-icon-premium"
+                  onClick={resetFilters}
+                  style={{ height: "48px", width: "48px", flexShrink: 0, border: "1px solid var(--border)", borderRadius: "14px", background: "var(--bg-surface-1)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="view-toggle-premium">
+                <button className={viewMode === "list" ? "active" : ""} onClick={() => setViewMode("list")}><ListIcon size={18} /></button>
+                <button className={viewMode === "card" ? "active" : ""} onClick={() => setViewMode("card")}><LayoutGrid size={18} /></button>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Expandable Advanced Section */}
-        <div style={{ 
-          maxHeight: showAdvanced ? "400px" : "0", 
-          overflow: "hidden", 
+        <div style={{
+          maxHeight: showAdvanced ? "600px" : "0",
+          overflow: "hidden",
           transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           opacity: showAdvanced ? 1 : 0,
           marginTop: showAdvanced ? "1.5rem" : 0
         }}>
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", 
+          <div className="advanced-filter-grid" style={{
+            display: "grid",
             gap: "2rem",
             paddingTop: "1.5rem",
             borderTop: "1px solid var(--border)"
@@ -504,7 +507,7 @@ const EditsPage: React.FC = () => {
               <label>Timeline (Rec. Date)</label>
               <div className="date-range-ui">
                 <input type="date" value={receivedDateStart} onChange={e => setReceivedDateStart(e.target.value)} />
-                <span>to</span>
+                <span className="date-separator">to</span>
                 <input type="date" value={receivedDateEnd} onChange={e => setReceivedDateEnd(e.target.value)} />
               </div>
             </div>
@@ -513,7 +516,7 @@ const EditsPage: React.FC = () => {
               <label>Deadline Range</label>
               <div className="date-range-ui">
                 <input type="date" value={deadlineStart} onChange={e => setDeadlineStart(e.target.value)} />
-                <span>to</span>
+                <span className="date-separator">to</span>
                 <input type="date" value={deadlineEnd} onChange={e => setDeadlineEnd(e.target.value)} />
               </div>
             </div>
@@ -523,7 +526,7 @@ const EditsPage: React.FC = () => {
               <div className="range-ui">
                 <Hash size={14} className="icon" />
                 <input type="number" placeholder="Min" value={minItems} onChange={e => setMinItems(e.target.value === "" ? "" : parseInt(e.target.value))} />
-                <span>-</span>
+                <span className="date-separator">-</span>
                 <input type="number" placeholder="Max" value={maxItems} onChange={e => setMaxItems(e.target.value === "" ? "" : parseInt(e.target.value))} />
               </div>
             </div>
@@ -851,6 +854,43 @@ const EditsPage: React.FC = () => {
           margin: 0 auto 2rem;
           color: var(--text-muted);
         }
+        .advanced-filter-grid {
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .filter-main-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .filter-search-wrap {
+          flex: 1;
+          min-width: 280px;
+        }
+        .filter-controls-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          align-items: center;
+        }
+        .filter-selects-wrap {
+          display: flex;
+          gap: 0.75rem;
+        }
+        .filter-actions-group-mobile {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+        }
+        .filter-actions-wrap {
+          display: flex;
+          gap: 0.75rem;
+        }
+        .select-container {
+          flex: 1;
+        }
 
         @media (max-width: 768px) {
           .hide-on-mobile { display: none; }
@@ -858,6 +898,28 @@ const EditsPage: React.FC = () => {
           .premium-table-container { display: none; }
           .form-content { padding: 1.5rem 1rem; }
           .form-header h1 { font-size: 1.75rem; }
+          .edits-page-header { flex-direction: column; align-items: stretch !important; gap: 1rem !important; }
+          .edits-page-header > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem !important; }
+          .edits-page-header > div:last-child button { justify-content: center; padding: 0.6rem; font-size: 0.85rem; }
+          
+          .filter-main-row { flex-direction: column; align-items: stretch; gap: 1rem; }
+          .filter-search-wrap { min-width: 0; width: 100%; }
+          .filter-controls-group { flex-direction: column; align-items: stretch; gap: 1rem; }
+          .filter-selects-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; width: 100%; }
+          .filter-actions-group-mobile { display: flex; justify-content: space-between; width: 100%; gap: 0.75rem; }
+          .filter-actions-wrap { flex: 1; }
+          
+          .view-toggle-premium { justify-content: center; flex-shrink: 0; }
+          .advanced-filter-grid { grid-template-columns: 1fr; gap: 1rem !important; }
+          
+          .date-range-ui, .range-ui { 
+            display: grid !important; 
+            grid-template-columns: 1fr auto 1fr; 
+            gap: 0.5rem; 
+            align-items: center; 
+            padding: 8px !important;
+          }
+          .date-separator { text-align: center; color: var(--text-muted); font-size: 0.85rem; }
         }
       `}</style>
     </div>

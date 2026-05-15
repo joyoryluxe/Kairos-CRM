@@ -188,14 +188,7 @@ export default function DashboardLayout() {
               </button>
 
               {isNotifOpen && (
-                <div style={{
-                  position: "absolute", top: "100%", right: 0, marginTop: "0.5rem",
-                  width: window.innerWidth < 400 ? "calc(100vw - 2rem)" : "350px",
-                  maxHeight: "450px", overflowY: "auto",
-                  background: "var(--bg-surface)", borderRadius: "var(--radius-lg)",
-                  boxShadow: "var(--shadow-xl)", border: "1px solid var(--border)",
-                  padding: "1rem", zIndex: 110
-                }}>
+                <div className="notification-dropdown">
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--border)" }}>
                     <h4 style={{ margin: 0 }}>Notifications</h4>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{notifications.length} alerts</span>

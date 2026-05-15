@@ -72,13 +72,30 @@ function injectStyles() {
   const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-100%); }
-      to   { opacity: 1; transform: translateY(0); }
+    .kairos-reminder-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      padding: 0;
+      transition: all 0.3s ease;
     }
-    @keyframes slideUp {
-      from { opacity: 1; transform: translateY(0); }
-      to   { opacity: 0; transform: translateY(-100%); }
+    .kairos-banner-wrapper {
+      pointer-events: all;
+      width: 100%;
+      max-width: 100%;
+      transition: all 0.3s ease;
+    }
+    .kairos-banner-card {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.3s;
+      width: 100%;
     }
     .progress-bar {
       position: absolute;
@@ -93,24 +110,36 @@ function injectStyles() {
       display: flex;
       align-items: center;
       padding: 0 1rem;
-      min-height: 56px;
+      min-height: 60px;
       gap: 0.75rem;
       position: relative;
       z-index: 1;
     }
     .kairos-banner-client {
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .kairos-reminder-container {
+        padding: 12px;
+        top: 0px;
+      }
+      .kairos-banner-wrapper {
+        max-width: 460px;
+      }
+      .kairos-banner-card {
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
       .kairos-banner-content {
-        padding: 0.5rem 0.75rem;
-        gap: 0.5rem;
-        height: auto;
+        padding: 0.75rem 1rem;
+        gap: 0.6rem;
+        min-height: 70px;
       }
       .kairos-banner-tier {
         display: none !important;
@@ -119,19 +148,30 @@ function injectStyles() {
         display: none !important;
       }
       .kairos-banner-client {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         white-space: normal;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
       }
       .kairos-banner-badge {
         font-size: 0.6rem !important;
-        padding: 0.15rem 0.4rem !important;
+        padding: 0.15rem 0.5rem !important;
       }
       .kairos-banner-controls {
         margin-left: auto;
         justify-content: flex-end;
+      }
+    }
+    @media (max-width: 480px) {
+      .kairos-banner-wrapper {
+        max-width: 100%;
+      }
+      .kairos-banner-content {
+        padding: 0.6rem 0.8rem;
+      }
+      .kairos-banner-badge {
+        display: none !important;
       }
     }
   `;
@@ -240,17 +280,12 @@ function Banner({ n, index, total, exiting, dismissing, onDismissAll, onNext, on
 
   return (
     <div
+      className="kairos-banner-card"
       style={{
         background: cfg.bg,
         borderLeft: `4px solid ${cfg.border}`,
-        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
-        position: "relative",
-        overflow: "hidden",
-        cursor: "pointer",
         animation,
-        transition: "background 0.2s, box-shadow 0.2s",
         backgroundColor: hov ? "rgba(255, 255, 255, 0.03)" : "transparent",
-        backdropFilter: "blur(0px)", // subtle if needed
       }}
       onClick={onNavigate}
       onMouseEnter={() => {
@@ -456,8 +491,8 @@ export default function GlobalReminderModal({ notifications }: { notifications: 
   const current = sorted[index];
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999, pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "all" }}>
+    <div className="kairos-reminder-container">
+      <div className="kairos-banner-wrapper">
         <Banner
           key={`${current.id}-${index}`}
           n={current}

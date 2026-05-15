@@ -31,7 +31,7 @@ export default function AutocompleteInput({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [debouncedValue, setDebouncedValue] = useState(value);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(value);
@@ -59,7 +59,7 @@ export default function AutocompleteInput({
   const handleSelect = async (suggestion: string) => {
     onChange(suggestion);
     setIsOpen(false);
-    
+
     if (onSelectFullRecord) {
       try {
         const record = await getRecordByField(model, field, suggestion);
