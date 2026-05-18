@@ -112,7 +112,7 @@ export const createMaternity = async (req: AuthRequest, res: Response): Promise<
       ['package', 'status'],
       ['extras', 'payments']
     );
-    
+
     const maternity = new Maternity(req.body);
     await maternity.save(); // triggers pre-save calculations
 
@@ -126,7 +126,7 @@ export const createMaternity = async (req: AuthRequest, res: Response): Promise<
           start: maternity.shootDateAndTime,
           end: new Date(maternity.shootDateAndTime.getTime() + 2 * 60 * 60 * 1000),
         }, user.googleRefreshToken);
-        
+
         if (eventId) {
           maternity.googleCalendarEventId = eventId;
           await maternity.save();
@@ -388,18 +388,18 @@ export const getFinancialSummary = async (req: AuthRequest, res: Response): Prom
     }
 
     const summary = {
-      client:       maternity.clientName,
-      package:      maternity.package ?? 'No package selected',
+      client: maternity.clientName,
+      package: maternity.package ?? 'No package selected',
       packagePrice: maternity.packagePrice,
-      extras:       maternity.extras,           // itemized list
-      extrasTotal:  maternity.extrasTotal,
-      expenses:     maternity.expenses,         // your internal cost
-      total:        maternity.total,            // what client owes
-      payments:     maternity.payments,         // itemized payment history
-      advance:      maternity.advance,          // total received
-      balance:      maternity.balance,          // still pending (positive = due, negative = overpaid)
-      status:       maternity.status,
-      isPaid:       maternity.balance <= 0,
+      extras: maternity.extras,           // itemized list
+      extrasTotal: maternity.extrasTotal,
+      expenses: maternity.expenses,         // your internal cost
+      total: maternity.total,            // what client owes
+      payments: maternity.payments,         // itemized payment history
+      advance: maternity.advance,          // total received
+      balance: maternity.balance,          // still pending (positive = due, negative = overpaid)
+      status: maternity.status,
+      isPaid: maternity.balance <= 0,
     };
 
     res.status(200).json({ success: true, data: summary });

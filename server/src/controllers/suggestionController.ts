@@ -28,7 +28,7 @@ export const getFieldSuggestions = async (req: AuthRequest, res: Response): Prom
     // We want to find unique values for the field that match the query 'q'
     // Mongoose 'distinct' doesn't support regex directly in the same way 'find' does.
     // So we'll find matching records and then get distinct values, or use an aggregation.
-    
+
     // Aggregation pipeline is more efficient for this
     const suggestions = await Model.aggregate([
       {

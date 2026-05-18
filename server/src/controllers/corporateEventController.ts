@@ -28,7 +28,7 @@ export const createCorporateEvent = async (req: AuthRequest, res: Response): Pro
           start: corporateEvent.eventDateAndTime,
           end: new Date(corporateEvent.eventDateAndTime.getTime() + 4 * 60 * 60 * 1000),
         }, user.googleRefreshToken);
-        
+
         if (eventId) {
           corporateEvent.googleCalendarEventId = eventId;
           await corporateEvent.save();

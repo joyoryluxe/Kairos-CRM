@@ -439,9 +439,10 @@ import {
   SlidersHorizontal,
   Download,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { getLeads, updateLead, type Lead, type LeadStatus } from "../api/lead";
+import { getLeads, updateLead, deleteLead, type Lead, type LeadStatus } from "../api/lead";
 import { format } from "date-fns";
 import { exportToExcel } from "@/utils/exportToExcel";
 
@@ -868,14 +869,17 @@ const STYLES = `
     align-items: center;
     padding-top: 10px;
     border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .lead-card-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .icon-btn {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     border-radius: 7px;
     display: flex;
     align-items: center;
@@ -900,11 +904,11 @@ const STYLES = `
     border: 1px solid var(--border);
     color: var(--text-secondary);
     cursor: pointer;
+    flex-shrink: 0;
     transition: background 0.15s, color 0.15s;
   }
   .details-btn:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 
-  /* ── Status quick-change overlay ── */
   .status-overlay-btn {
     position: relative;
     width: 28px;
@@ -918,6 +922,11 @@ const STYLES = `
     color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .status-overlay-btn:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
   }
   .status-overlay-btn select {
     position: absolute;
@@ -1088,8 +1097,25 @@ const LeadsPage: React.FC = () => {
     }
   });
 
+  const deleteLeadMutation = useMutation({
+    mutationFn: (id: string) => deleteLead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      alert("Lead deleted successfully!");
+    },
+    onError: (err: any) => {
+      alert("Failed to delete lead: " + err.message);
+    }
+  });
+
   const handleQuickBooked = (id: string) => {
     updateLeadMutation.mutate({ id, payload: { status: "Booked" } });
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this lead?")) {
+      deleteLeadMutation.mutate(id);
+    }
   };
 
   const getLeadsByStatus = (status: LeadStatus) =>
@@ -1209,6 +1235,7 @@ const LeadsPage: React.FC = () => {
                             updateStatusMutation.mutate({ id: lead._id, status: ns })
                           }
                           onQuickBooked={() => handleQuickBooked(lead._id)}
+                          onDelete={() => handleDelete(lead._id)}
                           isUpdating={updateLeadMutation.isPending && updateLeadMutation.variables?.id === lead._id}
                         />
                       ))
@@ -1320,6 +1347,16 @@ const LeadsPage: React.FC = () => {
                               )}
                             </button>
                           )}
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            title="Delete Lead"
+                            onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
+                            disabled={deleteLeadMutation.isPending && deleteLeadMutation.variables === lead._id}
+                            style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.3)", background: "rgba(239, 68, 68, 0.1)" }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1339,8 +1376,9 @@ const LeadCard: React.FC<{
   lead: Lead;
   onStatusChange: (status: LeadStatus) => void;
   onQuickBooked: () => void;
+  onDelete: () => void;
   isUpdating: boolean;
-}> = ({ lead, onStatusChange, onQuickBooked, isUpdating }) => {
+}> = ({ lead, onStatusChange, onQuickBooked, onDelete, isUpdating }) => {
   const navigate = useNavigate();
   const color = getStatusColor(lead.status);
 
@@ -1365,7 +1403,7 @@ const LeadCard: React.FC<{
       {/* Top row */}
       <div className="lead-card-top" style={{ paddingLeft: "4px" }}>
         <div style={{ flex: 1, minWidth: 0, paddingRight: "8px" }}>
-          <div className="lead-card-name">{lead.clientName}</div>
+          <div className="lead-card-name" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lead.clientName}</div>
           <span className="lead-card-source">{lead.source}</span>
         </div>
         <div
@@ -1424,30 +1462,38 @@ const LeadCard: React.FC<{
           {lead.status !== "Booked" && (
             <button
               type="button"
+              className="icon-btn"
               title="Mark as Booked"
               onClick={(e) => { e.stopPropagation(); onQuickBooked(); }}
               disabled={isUpdating}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                backgroundColor: "rgba(52, 211, 153, 0.15)",
                 color: "#10b981",
-                border: "1px solid rgba(52, 211, 153, 0.3)",
-                cursor: "pointer",
-                transition: "all 0.15s",
+                backgroundColor: "rgba(16, 185, 129, 0.1)",
+                borderColor: "rgba(16, 185, 129, 0.3)",
               }}
             >
               {isUpdating ? (
-                <div className="animate-spin" style={{ width: "10px", height: "10px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
               ) : (
                 <CheckCircle2 size={14} />
               )}
             </button>
           )}
+
+          {/* Delete Button */}
+          <button
+            type="button"
+            className="icon-btn"
+            title="Delete Lead"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            style={{
+              color: "#ef4444",
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              borderColor: "rgba(239, 68, 68, 0.3)",
+            }}
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
         <button
           className="details-btn"
