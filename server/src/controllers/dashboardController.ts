@@ -244,11 +244,11 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const studioExpensesTotal = studioExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const globalTotals = {
-      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue + leadStats.totalRevenue,
+      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue,
       totalAdvance: maternityStats.totalAdvance + influencerStats.totalAdvance + corporateStats.totalAdvance,
-      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance + leadStats.totalRevenue,
+      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance,
       totalExpenses: maternityStats.totalExpenses + influencerStats.totalExpenses + corporateStats.totalExpenses + studioExpensesTotal,
-      totalProfit: (maternityStats.totalProfit + influencerStats.totalProfit + corporateStats.totalProfit + leadStats.totalProfit) - studioExpensesTotal,
+      totalProfit: (maternityStats.totalProfit + influencerStats.totalProfit + corporateStats.totalProfit) - studioExpensesTotal,
       studioExpensesTotal,
     };
 

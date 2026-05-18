@@ -139,7 +139,7 @@ function BirthDateReminderCard({ reminder }: { reminder: any }) {
   const info = getDisplayInfo(reminder.daysRemaining);
 
   return (
-    <div 
+    <div
       onClick={() => reminder?.id && navigate(`/dashboard/maternity/${reminder.id}/edit`)}
       style={{
         background: info.bg,
@@ -363,7 +363,7 @@ export default function DashboardOverviewPage() {
       const res = await syncAllRecords();
       // Invalidate queries so newly synced calendar items load immediately
       await queryClient.invalidateQueries({ queryKey: ["dashboard-overview"] });
-      
+
       setSyncResult({
         success: true,
         message: res?.message || "Successfully synced records with Google Calendar!",
@@ -449,14 +449,14 @@ export default function DashboardOverviewPage() {
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 2500,
-          background: syncResult.success 
+          background: syncResult.success
             ? "linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))"
             : "linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95))",
           backdropFilter: "blur(12px)",
           color: "white",
           padding: "1rem 1.5rem",
           borderRadius: "1rem",
-          boxShadow: syncResult.success 
+          boxShadow: syncResult.success
             ? "0 20px 40px -15px rgba(16, 185, 129, 0.5)"
             : "0 20px 40px -15px rgba(239, 68, 68, 0.5)",
           border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -482,7 +482,7 @@ export default function DashboardOverviewPage() {
           <div style={{ fontSize: "0.95rem", fontWeight: 700, letterSpacing: "0.01em" }}>
             {syncResult.message}
           </div>
-          <button 
+          <button
             onClick={() => setSyncResult(null)}
             style={{
               background: "transparent",
@@ -528,13 +528,13 @@ export default function DashboardOverviewPage() {
                 </div>
                 <button onClick={handleSyncAll} disabled={syncing} style={{
                   flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem",
-                  padding: "0.75rem 1.25rem", borderRadius: "14px", 
+                  padding: "0.75rem 1.25rem", borderRadius: "14px",
                   background: syncing ? "var(--color-primary)" : "rgba(255,255,255,0.03)",
                   border: `1px solid ${syncing ? "var(--color-primary)" : "rgba(255,255,255,0.08)"}`,
-                  color: "#f8fafc", 
-                  cursor: syncing ? "wait" : "pointer", 
-                  fontWeight: 700, 
-                  boxSizing: "border-box", 
+                  color: "#f8fafc",
+                  cursor: syncing ? "wait" : "pointer",
+                  fontWeight: 700,
+                  boxSizing: "border-box",
                   whiteSpace: "nowrap",
                   animation: syncing ? "pulse-glow-sync 1.5s infinite" : "none",
                   transition: "all 0.3s ease",
@@ -557,10 +557,10 @@ export default function DashboardOverviewPage() {
       </header>
 
       {/* ── Stat Cards ── */}
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)", 
-        gap: isMobile ? "0.75rem" : "1rem", 
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(6, 1fr)",
+        gap: isMobile ? "0.75rem" : "1rem",
         marginBottom: "3rem",
         width: "100%",
         boxSizing: "border-box"
@@ -574,10 +574,10 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* ── Mid Row: Revenue & Reminders ── */}
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))", 
-        gap: "2rem", 
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 350px), 1fr))",
+        gap: "2rem",
         marginBottom: "3rem",
         width: "100%",
         boxSizing: "border-box"

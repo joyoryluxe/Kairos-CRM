@@ -225,165 +225,165 @@ export default function LeadFormPage() {
 
   return (
     <>
-    <style>{FORM_STYLES}</style>
-    <div className="animate-fade-up" style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 3rem" }}>
-      {/* ── Header ── */}
-      <div style={{ marginBottom: "2rem" }}>
-        <button onClick={() => navigate("/dashboard/leads")} style={{
-          display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer",
-          color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem"
-        }}>
-          <ArrowLeft size={16} /> Back to Leads
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.75rem", fontWeight: 600 }}>
-          <span>Pipeline</span>
-          <ChevronRight size={14} />
-          <span style={{ color: "var(--text-primary)" }}>{isEdit ? "Update Potential" : "New Discovery"}</span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
-            <Tag size={26} />
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
-              {isEdit ? "Refine Lead Profile" : "Capture New Lead"}
-            </h1>
-            <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-              Inquiry Management & Tracking
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {!isEdit && !!getFormHistory("lead") && (
-        <button onClick={handleLoadHistory} style={{
-          marginBottom: "2.5rem", width: "100%", padding: "1.25rem", borderRadius: "1.25rem",
-          background: "rgba(16, 185, 129, 0.08)", border: "1px dashed rgba(16, 185, 129, 0.3)",
-          color: "#10b981", fontWeight: 800, cursor: "pointer", display: "flex",
-          alignItems: "center", justifyContent: "center", gap: "1rem"
-        }}>
-          <HistoryIcon size={20} />
-          Restore Configuration from Last Session
-        </button>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <Section title="Discovery Source" icon={<User size={22} />} description="Who is the prospect and how did they find us?">
-            <div className="form-grid-2">
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Prospect Name</label>
-                <AutocompleteInput
-                  model="lead" field="clientName" required
-                  value={form.clientName}
-                  onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
-                  onSelectFullRecord={handleSelectFullRecord}
-                  placeholder="Full name"
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Contact Info</label>
-                <AutocompleteInput
-                  model="lead" field="phoneNumber" required
-                  value={form.phoneNumber}
-                  onChange={(v: string) => setForm(f => ({ ...f, phoneNumber: v }))}
-                  placeholder="+91 Phone number"
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Email Address</label>
-                <input style={inputCls} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Origin Source</label>
-                <select style={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value as LeadSource })}>
-                  <option value="Instagram">Instagram</option>
-                  <option value="Google">Google Search</option>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Referral">Direct Referral</option>
-                  <option value="Other">Other Channel</option>
-                </select>
-              </div>
-            </div>
-          </Section>
-
-          <Section title="Event Potential" icon={<Calendar size={22} />} description="What are they looking for?">
-            <div className="form-grid-3">
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Event Category</label>
-                <select style={inputCls} value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })}>
-                  <option value="Maternity">Maternity</option>
-                  <option value="Influencer">Influencer</option>
-                  <option value="Corporate">Corporate</option>
-                  <option value="Other">Custom/Other</option>
-                </select>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Target Date</label>
-                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })} />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Inquiry Date</label>
-                <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.inquiryDate} onChange={e => setForm({ ...form, inquiryDate: e.target.value })} />
-              </div>
-            </div>
-            <div className="form-grid-2-1">
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Expected Venue / Location</label>
-                <div style={{ position: "relative" }}>
-                  <MapPin size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
-                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} value={form.eventLocation} onChange={e => setForm({ ...form, eventLocation: e.target.value })} placeholder="City or Studio name" />
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={labelStyle}>Est. Budget (₹)</label>
-                <div style={{ position: "relative" }}>
-                  <IndianRupee size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
-                  <input style={{ ...inputCls, paddingLeft: "2.5rem" }} type="number" value={form.budget} onChange={e => setForm({ ...form, budget: parseInt(e.target.value) || 0 })} placeholder="0" />
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          <Section title="Pipeline Status" icon={<Clock size={22} />} description="Current state of the discussion">
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label style={labelStyle}>Current Stage</label>
-              <select style={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as LeadStatus })}>
-                <option value="New">🆕 New Inquiry</option>
-                <option value="Contacted">📞 Initial Contact Made</option>
-                <option value="In Discussion">💬 Active Discussion</option>
-                <option value="Converted">✅ Converted to Client</option>
-                <option value="Lost">❌ Opportunity Lost</option>
-              </select>
-            </div>
-          </Section>
-        </div>
-
-        <Section title="Discovery Notes" icon={<MessageSquare size={22} />} description="Specific requirements or conversation history">
-          <textarea
-            style={{ ...inputCls, minHeight: "150px", resize: "vertical" }}
-            value={form.notes}
-            onChange={e => setForm({ ...form, notes: e.target.value })}
-            placeholder="Elaborate on requirements, package discussed, or next steps..."
-          />
-        </Section>
-
-        <div className="form-submit-row">
-          <button type="button" className="btn" onClick={() => navigate("/dashboard/leads")} style={{ padding: "0.75rem 2rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.05)", color: "#94a3b8", fontWeight: 700, border: "none", cursor: "pointer" }}>Discard</button>
-          <button type="submit" disabled={isPending} style={{
-            background: "linear-gradient(135deg, var(--color-primary) 0%, #0d9488 100%)", color: "white",
-            padding: "0.75rem 3rem", borderRadius: "0.75rem", fontWeight: 800, border: "none",
-            display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer",
-            boxShadow: "0 10px 15px -3px rgba(13, 148, 136, 0.3)"
+      <style>{FORM_STYLES}</style>
+      <div className="animate-fade-up" style={{ maxWidth: "900px", margin: "0 auto", padding: "0 1rem 3rem" }}>
+        {/* ── Header ── */}
+        <div style={{ marginBottom: "2rem" }}>
+          <button onClick={() => navigate("/dashboard/leads")} style={{
+            display: "inline-flex", alignItems: "center", gap: "0.4rem", background: "none", border: "none", cursor: "pointer",
+            color: "var(--text-muted)", fontSize: "0.85rem", padding: 0, marginBottom: "1rem"
           }}>
-            <Save size={18} />
-            {isPending ? "Syncing..." : isEdit ? "Update Potential" : "Register Lead"}
+            <ArrowLeft size={16} /> Back to Leads
           </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.75rem", fontWeight: 600 }}>
+            <span>Pipeline</span>
+            <ChevronRight size={14} />
+            <span style={{ color: "var(--text-primary)" }}>{isEdit ? "Update Potential" : "New Discovery"}</span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div style={{ padding: "0.6rem", backgroundColor: "var(--color-primary-glow)", color: "var(--color-primary)", borderRadius: "var(--radius-md)" }}>
+              <Tag size={26} />
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
+                {isEdit ? "Refine Lead Profile" : "Capture New Lead"}
+              </h1>
+              <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                Inquiry Management & Tracking
+              </p>
+            </div>
+          </div>
         </div>
-      </form>
-    </div>
+
+        {!isEdit && !!getFormHistory("lead") && (
+          <button onClick={handleLoadHistory} style={{
+            marginBottom: "2.5rem", width: "100%", padding: "1.25rem", borderRadius: "1.25rem",
+            background: "rgba(16, 185, 129, 0.08)", border: "1px dashed rgba(16, 185, 129, 0.3)",
+            color: "#10b981", fontWeight: 800, cursor: "pointer", display: "flex",
+            alignItems: "center", justifyContent: "center", gap: "1rem"
+          }}>
+            <HistoryIcon size={20} />
+            Restore Configuration from Last Session
+          </button>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <Section title="Discovery Source" icon={<User size={22} />} description="Who is the prospect and how did they find us?">
+              <div className="form-grid-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Prospect Name</label>
+                  <AutocompleteInput
+                    model="lead" field="clientName" required
+                    value={form.clientName}
+                    onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
+                    onSelectFullRecord={handleSelectFullRecord}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Contact Info</label>
+                  <AutocompleteInput
+                    model="lead" field="phoneNumber" required
+                    value={form.phoneNumber}
+                    onChange={(v: string) => setForm(f => ({ ...f, phoneNumber: v }))}
+                    placeholder="+91 Phone number"
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Email Address</label>
+                  <input style={inputCls} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Origin Source</label>
+                  <select style={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value as LeadSource })}>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Google">Google Search</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Referral">Direct Referral</option>
+                    <option value="Other">Other Channel</option>
+                  </select>
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Event Potential" icon={<Calendar size={22} />} description="What are they looking for?">
+              <div className="form-grid-3">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Event Category</label>
+                  <select style={inputCls} value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })}>
+                    <option value="Maternity">Maternity</option>
+                    <option value="Influencer">Influencer</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Other">Custom/Other</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Target Date</label>
+                  <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.eventDate} onChange={e => setForm({ ...form, eventDate: e.target.value })} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Inquiry Date</label>
+                  <input style={{ ...inputCls, colorScheme: "dark" }} type="date" value={form.inquiryDate} onChange={e => setForm({ ...form, inquiryDate: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-grid-2-1">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Expected Venue / Location</label>
+                  <div style={{ position: "relative" }}>
+                    <MapPin size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                    <input style={{ ...inputCls, paddingLeft: "2.5rem" }} value={form.eventLocation} onChange={e => setForm({ ...form, eventLocation: e.target.value })} placeholder="City or Studio name" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={labelStyle}>Est. Budget (₹)</label>
+                  <div style={{ position: "relative" }}>
+                    <IndianRupee size={16} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                    <input style={{ ...inputCls, paddingLeft: "2.5rem" }} type="number" value={form.budget} onChange={e => setForm({ ...form, budget: parseInt(e.target.value) || 0 })} placeholder="0" />
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Pipeline Status" icon={<Clock size={22} />} description="Current state of the discussion">
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <label style={labelStyle}>Current Stage</label>
+                <select style={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as LeadStatus })}>
+                  <option value="New">🆕 New Inquiry</option>
+                  <option value="Contacted">📞 Initial Contact Made</option>
+                  <option value="In Discussion">💬 Active Discussion</option>
+                  <option value="Converted">✅ Converted to Client</option>
+                  <option value="Lost">❌ Opportunity Lost</option>
+                </select>
+              </div>
+            </Section>
+          </div>
+
+          <Section title="Discovery Notes" icon={<MessageSquare size={22} />} description="Specific requirements or conversation history">
+            <textarea
+              style={{ ...inputCls, minHeight: "150px", resize: "vertical" }}
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+              placeholder="Elaborate on requirements, package discussed, or next steps..."
+            />
+          </Section>
+
+          <div className="form-submit-row">
+            <button type="button" className="btn" onClick={() => navigate("/dashboard/leads")} style={{ padding: "0.75rem 2rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.05)", color: "#94a3b8", fontWeight: 700, border: "none", cursor: "pointer" }}>Discard</button>
+            <button type="submit" disabled={isPending} style={{
+              background: "linear-gradient(135deg, var(--color-primary) 0%, #0d9488 100%)", color: "white",
+              padding: "0.75rem 3rem", borderRadius: "0.75rem", fontWeight: 800, border: "none",
+              display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer",
+              boxShadow: "0 10px 15px -3px rgba(13, 148, 136, 0.3)"
+            }}>
+              <Save size={18} />
+              {isPending ? "Syncing..." : isEdit ? "Update Potential" : "Register Lead"}
+            </button>
+          </div>
+        </form>
+      </div>
     </>
   );
 }
