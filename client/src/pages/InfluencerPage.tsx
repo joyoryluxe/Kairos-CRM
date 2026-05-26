@@ -806,6 +806,8 @@ export default function InfluencerPage() {
       deliveryDeadlineTo: "",
       paymentStatus: "",
       referredBy: "",
+      dateFrom: "",
+      dateTo: "",
     });
   };
 

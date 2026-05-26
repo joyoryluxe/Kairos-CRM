@@ -900,6 +900,8 @@ export default function CorporatePage() {
       status: "",
       package: "",
       paymentStatus: "",
+      dateFrom: "",
+      dateTo: "",
     });
   };
 

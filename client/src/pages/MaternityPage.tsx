@@ -803,6 +803,8 @@ export default function MaternityPage() {
       deliveryDeadlineFrom: "",
       deliveryDeadlineTo: "",
       notes: "",
+      dateFrom: "",
+      dateTo: "",
     });
   };
 
