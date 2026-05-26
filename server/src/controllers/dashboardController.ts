@@ -110,12 +110,12 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     
     const studioExpenses = allStudioExpenses.filter(e => {
       if (!isFiltered) return true;
-      return isInRange(e.date) || isInRange(e['createdAt']);
+      return isInRange(e.date) || isInRange((e as any).createdAt);
     });
     
     const leads = allLeads.filter(l => {
       if (!isFiltered) return true;
-      return isInRange(l['createdAt']) || isInRange(l.inquiryDate);
+      return isInRange((l as any).createdAt) || isInRange(l.inquiryDate);
     });
 
     // ── financial totals ──────────────────────────────────────────────────
