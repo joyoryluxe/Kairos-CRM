@@ -1,5 +1,6 @@
 import api from "./axios";
 import type { ApiResponse } from "./types";
+import type { StudioExpense } from "./studioExpenses";
 
 export interface DashboardStats {
   globalTotals: {
@@ -63,10 +64,14 @@ export interface DashboardStats {
     daysRemaining: number;
     priority: "Moderate" | "High" | "Critical" | "Expired";
   }>;
+  studioExpenses?: StudioExpense[];
 }
 
-export async function getDashboardOverview(): Promise<DashboardStats> {
-  const res = await api.get<ApiResponse<DashboardStats>>("/dashboard/overview");
+export async function getDashboardOverview(startDate?: string, endDate?: string): Promise<DashboardStats> {
+  const params: Record<string, string> = {};
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
+  const res = await api.get<ApiResponse<DashboardStats>>("/dashboard/overview", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load dashboard data");
   return res.data.data;
 }

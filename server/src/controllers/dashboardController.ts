@@ -1,165 +1,3 @@
-// import { Request, Response } from 'express';
-// import Maternity from '../models/Maternity';
-// import Influencer from '../models/Influencer';
-// import CorporateEvent from '../models/CorporateEvent';
-
-// export const getDashboardOverview = async (req: Request, res: Response) => {
-//   try {
-//     const [maternities, influencers, corporateEvents] = await Promise.all([
-//       Maternity.find({}),
-//       Influencer.find({}),
-//       CorporateEvent.find({}),
-//     ]);
-
-//     // Financial calculations
-//     const calcStats = (records: any[] = []) => {
-//       return records.reduce((acc, curr) => {
-//         try {
-//           const total = Number(curr.total) || 0;
-//           const advance = Number(curr.advance) || 0;
-//           const balance = Number(curr.balance) || (total - advance) || 0;
-//           acc.totalRevenue += total;
-//           acc.totalAdvance += advance;
-//           acc.totalBalance += balance;
-//         } catch (e) {
-//           console.error('Error calculating record stats:', e);
-//         }
-//         return acc;
-//       }, { totalRevenue: 0, totalAdvance: 0, totalBalance: 0 });
-//     };
-
-//     const maternityStats = calcStats(maternities);
-//     const influencerStats = calcStats(influencers);
-//     const corporateStats = calcStats(corporateEvents);
-
-//     const globalTotals = {
-//       totalRevenue: (maternityStats.totalRevenue || 0) + (influencerStats.totalRevenue || 0) + (corporateStats.totalRevenue || 0),
-//       totalAdvance: (maternityStats.totalAdvance || 0) + (influencerStats.totalAdvance || 0) + (corporateStats.totalAdvance || 0),
-//       totalBalance: (maternityStats.totalBalance || 0) + (influencerStats.totalBalance || 0) + (corporateStats.totalBalance || 0),
-//     };
-
-//     const categorySplit = [
-//       { name: 'Maternity', revenue: maternityStats.totalRevenue, color: '#f472b6' },
-//       { name: 'Influencer', revenue: influencerStats.totalRevenue, color: '#60a5fa' },
-//       { name: 'Corporate', revenue: corporateStats.totalRevenue, color: '#4ade80' },
-//     ];
-
-//     // Notification Reminders based on deliveryDeadline
-//     const today = new Date();
-//     today.setHours(0, 0, 0, 0);
-
-//     const safeToObject = (doc: any, type: string) => {
-//       try {
-//         const obj = doc.toObject ? doc.toObject() : doc;
-//         return { ...obj, type };
-//       } catch (e) {
-//         console.error(`Error converting ${type} to object:`, e);
-//         return { ...doc, type };
-//       }
-//     };
-
-//     const allRecords: any[] = [
-//       ...maternities.map(m => safeToObject(m, 'Maternity')),
-//       ...influencers.map(i => safeToObject(i, 'Influencer')),
-//       ...corporateEvents.map(c => safeToObject(c, 'Corporate')),
-//     ];
-
-//     const notifications = allRecords
-//       .filter((r: any) => r && r.deliveryDeadline && r.status !== 'Completed' && r.status !== 'Cancelled')
-//       .map((r: any) => {
-//         try {
-//           const deadline = new Date(r.deliveryDeadline);
-//           if (isNaN(deadline.getTime())) return null;
-
-//           deadline.setHours(0, 0, 0, 0);
-//           const diffTime = deadline.getTime() - today.getTime();
-//           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-//           let priority: 'Moderate' | 'High' | 'Critical' | 'Expired' = 'Moderate';
-
-//           if (diffDays < 0) priority = 'Expired';
-//           else if (diffDays <= 1) priority = 'Critical';
-//           else if (diffDays <= 3) priority = 'High';
-//           else if (diffDays <= 7) priority = 'Moderate';
-//           else return null;
-
-//           return {
-//             id: r._id,
-//             clientName: r.clientName || 'Unknown Client',
-//             type: r.type,
-//             deadline: r.deliveryDeadline,
-//             daysRemaining: diffDays,
-//             priority,
-//           };
-//         } catch (e) {
-//           console.error('Error processing notification:', e);
-//           return null;
-//         }
-//       })
-//       .filter(Boolean)
-//       .sort((a: any, b: any) => (a.daysRemaining || 0) - (b.daysRemaining || 0));
-
-//     const calendarEvents: any[] = [];
-//     allRecords.forEach((r: any) => {
-//       if (!r || r.status === 'Cancelled') return;
-
-//       const type = r.type; // 'Maternity', 'Influencer', 'Corporate'
-//       const clientName = r.clientName || 'Unknown Client';
-//       const shootDate = r.shootDateAndTime || r.eventDateAndTime;
-//       const deadline = r.deliveryDeadline;
-
-//       let color = '#94a3b8'; // default slate
-//       if (type === 'Maternity') color = '#f472b6'; // pink
-//       else if (type === 'Influencer') color = '#60a5fa'; // blue
-//       else if (type === 'Corporate') color = '#4ade80'; // green
-
-//       if (shootDate) {
-//         calendarEvents.push({
-//           id: `${r._id}-shoot`,
-//           title: `${type} Shoot: ${clientName}`,
-//           start: shootDate,
-//           backgroundColor: color,
-//           borderColor: color,
-//           allDay: false,
-//           extendedProps: { type, status: r.status, recordId: r._id },
-//         });
-//       }
-
-//       if (deadline) {
-//         calendarEvents.push({
-//           id: `${r._id}-deadline`,
-//           title: `${type} Deadline: ${clientName}`,
-//           start: deadline,
-//           backgroundColor: '#ef4444', // Red for deadlines
-//           borderColor: '#ef4444',
-//           allDay: true,
-//           extendedProps: { type, status: r.status, recordId: r._id, isDeadline: true },
-//         });
-//       }
-//     });
-
-//     res.json({
-//       success: true,
-//       data: {
-//         globalTotals,
-//         categorySplit,
-//         notifications,
-//         calendarEvents,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error('DASHBOARD ERROR:', error);
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
-
-
-
-
-
-
-
 
 
 
@@ -191,6 +29,7 @@ const calcStats = (records: any[] = []) =>
         const advance = Number(curr.advance) || 0;
         const balance = Number(curr.balance) || total - advance || 0;
         const expenses = Number(curr.expenses) || 0;
+        
         acc.totalRevenue += total;
         acc.totalAdvance += advance;
         acc.totalBalance += balance;
@@ -216,15 +55,68 @@ const safeToObject = (doc: any, type: string) => {
 
 export const getDashboardOverview = async (req: Request, res: Response) => {
   try {
+    const { startDate, endDate } = req.query;
+    const start = startDate ? new Date(startDate as string) : null;
+    const end = endDate ? new Date(endDate as string) : null;
+    const isFiltered = !!(start || end);
+
+    const isInRange = (dateVal: any) => {
+      if (!dateVal) return false;
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    };
+
     const query = {};
 
-    const [maternities, influencers, corporateEvents, studioExpenses, leads] = await Promise.all([
+    const [allMaternities, allInfluencers, allCorporateEvents, allStudioExpenses, allLeads] = await Promise.all([
       Maternity.find(query),
       Influencer.find(query),
       CorporateEvent.find(query),
       StudioExpense.find(query),
       Lead.find(query),
     ]);
+
+    // Filter by date range — timestamps (createdAt/updatedAt) exist at runtime via
+    // Mongoose { timestamps: true } but aren't in the TS interface. We use bracket
+    // notation to access them safely without `as any` casts (which trip up esbuild).
+    const getDate = (doc: any, ...fields: string[]) => {
+      for (const f of fields) {
+        if (doc[f]) return doc[f];
+      }
+      return null;
+    };
+
+    // const maternities = isFiltered
+    //   ? allMaternities.filter(m => isInRange(getDate(m, 'shootDateAndTime', 'updatedAt', 'createdAt')))
+    //   : allMaternities;
+    // const influencers = isFiltered
+    //   ? allInfluencers.filter(i => isInRange(getDate(i, 'shootDateAndTime', 'updatedAt', 'createdAt')))
+    //   : allInfluencers;
+    // const corporateEvents = isFiltered
+    const matchesFilter = (doc: any, shootField: string) => {
+      if (!isFiltered) return true;
+      if (isInRange(doc.createdAt)) return true;
+      if (isInRange(doc[shootField])) return true;
+      if (Array.isArray(doc.payments) && doc.payments.some((p: any) => isInRange(p.date))) return true;
+      return false;
+    };
+
+    const maternities = allMaternities.filter(m => matchesFilter(m, 'shootDateAndTime'));
+    const influencers = allInfluencers.filter(i => matchesFilter(i, 'shootDateAndTime'));
+    const corporateEvents = allCorporateEvents.filter(c => matchesFilter(c, 'eventDateAndTime'));
+    
+    const studioExpenses = allStudioExpenses.filter(e => {
+      if (!isFiltered) return true;
+      return isInRange(e.date) || isInRange(e.createdAt);
+    });
+    
+    const leads = allLeads.filter(l => {
+      if (!isFiltered) return true;
+      return isInRange(l.createdAt) || isInRange(l.inquiryDate);
+    });
 
     // ── financial totals ──────────────────────────────────────────────────
 
@@ -527,7 +419,8 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
           booked: bookedLeads.length,
           lost: leads.filter(l => l.status === 'Lost').length
         },
-        birthDateReminders
+        birthDateReminders,
+        studioExpenses: studioExpenses
       },
     });
   } catch (error: any) {

@@ -17,6 +17,8 @@ import LeadsPage from "./pages/LeadsPage";
 import LeadFormPage from "./pages/LeadFormPage";
 import EditsPage from "./pages/EditsPage";
 import EditFormPage from "./pages/EditFormPage";
+import InvoicesPage from "./pages/InvoicesPage";
+import InvoiceFormPage from "./pages/InvoiceFormPage";
 
 function App() {
   return (
@@ -50,6 +52,10 @@ function App() {
         <Route path="edits" element={<EditsPage />} />
         <Route path="edits/new" element={<EditFormPage />} />
         <Route path="edits/:id/edit" element={<EditFormPage />} />
+        {/* Invoices */}
+        <Route path="invoices" element={<InvoicesPage />} />
+        <Route path="invoices/new" element={<InvoiceFormPage />} />
+        <Route path="invoices/:id/edit" element={<InvoiceFormPage />} />
         {/* Profile */}
         <Route path="profile" element={<ProfilePage />} />
       </Route>

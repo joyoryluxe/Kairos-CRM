@@ -440,6 +440,7 @@ import {
   Download,
   CheckCircle2,
   Trash2,
+  X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { getLeads, updateLead, deleteLead, type Lead, type LeadStatus } from "../api/lead";
@@ -1034,11 +1035,67 @@ const STYLES = `
   }
 `;
 
+const formatDateOnly = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+
+const getDateRange = (type: string, startStr?: string, endStr?: string) => {
+  const now = new Date();
+  let start: Date | null = null;
+  let end: Date | null = new Date();
+  end.setHours(23, 59, 59, 999);
+
+  if (type === "day") {
+    start = new Date();
+    start.setDate(start.getDate() - 1);
+    start.setHours(0, 0, 0, 0);
+  } else if (type === "week") {
+    start = new Date();
+    start.setDate(now.getDate() - 7);
+    start.setHours(0, 0, 0, 0);
+  } else if (type === "month") {
+    start = new Date();
+    start.setDate(now.getDate() - 30);
+    start.setHours(0, 0, 0, 0);
+  } else if (type === "quarter") {
+    start = new Date();
+    start.setDate(now.getDate() - 120);
+    start.setHours(0, 0, 0, 0);
+  } else if (type === "year") {
+    start = new Date();
+    start.setDate(now.getDate() - 365);
+    start.setHours(0, 0, 0, 0);
+  } else if (type === "custom" && startStr && endStr) {
+    start = new Date(startStr);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(endStr);
+    end.setHours(23, 59, 59, 999);
+  } else {
+    return { startDate: "", endDate: "" };
+  }
+
+  return {
+    startDate: start ? start.toISOString() : "",
+    endDate: end ? end.toISOString() : "",
+  };
+};
+
 /* ─── Main component ─────────────────────────────────────────────────── */
 const LeadsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+
+  // Date filter state
+  const [filterType, setFilterType] = useState<string>("all");
+  const [customRange, setCustomRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
+  const [tempRange, setTempRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const { isMobile } = { isMobile: window.innerWidth < 768 };
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -1056,14 +1113,33 @@ const LeadsPage: React.FC = () => {
     },
   });
 
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      lead.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (lead.phoneNumber && lead.phoneNumber.includes(searchTerm));
-    const matchesStatus =
-      statusFilter === "All" || lead.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredLeads = React.useMemo(() => {
+    const { startDate, endDate } = getDateRange(filterType, customRange.start, customRange.end);
+    return leads.filter((lead) => {
+      const matchesSearch =
+        lead.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lead.phoneNumber && lead.phoneNumber.includes(searchTerm));
+      const matchesStatus =
+        statusFilter === "All" || lead.status === statusFilter;
+
+      let matchesDate = true;
+      if (startDate || endDate) {
+        const dateStr = lead.updatedAt || lead.createdAt || lead.inquiryDate;
+        if (dateStr) {
+          const itemDate = new Date(dateStr).getTime();
+          const sDate = startDate ? new Date(startDate).getTime() : 0;
+          const eDate = endDate ? new Date(endDate).getTime() : Infinity;
+          if (itemDate < sDate || itemDate > eDate) {
+            matchesDate = false;
+          }
+        } else {
+          matchesDate = false;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [leads, searchTerm, statusFilter, filterType, customRange]);
 
   const handleExport = () => {
     if (!filteredLeads || filteredLeads.length === 0) return;
@@ -1180,6 +1256,223 @@ const LeadsPage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Premium Responsive Date Range Filter Bar ── */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "1rem",
+          overflow: "visible",
+          position: "relative",
+          zIndex: 20,
+          background: "rgba(30, 41, 59, 0.4)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.05)",
+          borderRadius: "1.25rem",
+          padding: "0.75rem 1.25rem",
+          marginBottom: "2.5rem",
+          width: "100%",
+          boxSizing: "border-box"
+        }}>
+          {/* Presets */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {["all", "day", "week", "month", "quarter"].map((preset) => {
+              const labelMap: Record<string, string> = {
+                all: "All Time",
+                day: "Last Day",
+                week: "Last Week",
+                month: "Last Month",
+                quarter: "Last Quarter",
+              };
+              const isActive = filterType === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => {
+                    setFilterType(preset);
+                    setIsCustomOpen(false);
+                  }}
+                  style={{
+                    padding: "0.5rem 1.25rem",
+                    fontSize: "0.85rem",
+                    fontWeight: 800,
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    background: isActive ? "var(--color-primary)" : "rgba(255, 255, 255, 0.03)",
+                    color: isActive ? "#ffffff" : "#94a3b8",
+                    border: isActive ? "1px solid var(--color-primary)" : "1px solid rgba(255, 255, 255, 0.05)",
+                    boxShadow: isActive ? "0 4px 12px var(--color-primary-glow)" : "none",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  {labelMap[preset]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Calendar Filter Option */}
+          <div
+            style={{
+              position: "relative",
+              width: isMobile ? "100%" : "auto",
+              overflow: "visible",
+              zIndex: 9999,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setIsCustomOpen(!isCustomOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.5rem 1.25rem",
+                fontSize: "0.85rem",
+                fontWeight: 800,
+                borderRadius: "10px",
+                cursor: "pointer",
+                background: filterType === "custom" ? "var(--color-primary)" : "rgba(255, 255, 255, 0.03)",
+                color: filterType === "custom" ? "#ffffff" : "#94a3b8",
+                border: filterType === "custom" ? "1px solid var(--color-primary)" : "1px solid rgba(255, 255, 255, 0.05)",
+                boxShadow: filterType === "custom" ? "0 4px 12px var(--color-primary-glow)" : "none",
+                transition: "all 0.2s ease",
+                width: isMobile ? "100%" : "auto"
+              }}
+            >
+              <Calendar size={16} />
+              <span>
+                {filterType === "custom" && customRange.start && customRange.end 
+                  ? `${formatDateOnly(customRange.start)} - ${formatDateOnly(customRange.end)}` 
+                  : "Custom Range"}
+              </span>
+            </button>
+
+            {isCustomOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: isMobile ? "calc(100% + 0.75rem)" : "calc(100% + 0.85rem)",
+                  right: isMobile ? "auto" : 0,
+                  left: isMobile ? 0 : "auto",
+                  zIndex: 99999,
+                  width: isMobile ? "100%" : "340px",
+                  minWidth: isMobile ? "100%" : "340px",
+                  maxWidth: "calc(100vw - 2rem)",
+                  background: "rgba(15, 23, 42, 0.98)",
+                  backdropFilter: "blur(24px)",
+                  WebkitBackdropFilter: "blur(24px)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "1.5rem",
+                  padding: "1.25rem",
+                  boxShadow: "0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                  overflow: "visible",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#f8fafc", textTransform: "uppercase" }}>Select Date Range</span>
+                  <button type="button" onClick={() => setIsCustomOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.3rem", textTransform: "uppercase" }}>Start Date</label>
+                    <input
+                      type="date"
+                      value={tempRange.start}
+                      onChange={(e) => setTempRange({ ...tempRange, start: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "0.6rem 0.8rem",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        background: "rgba(15, 23, 42, 0.4)",
+                        color: "white",
+                        fontSize: "0.85rem",
+                        colorScheme: "dark"
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 800, color: "#94a3b8", marginBottom: "0.3rem", textTransform: "uppercase" }}>End Date</label>
+                    <input
+                      type="date"
+                      value={tempRange.end}
+                      onChange={(e) => setTempRange({ ...tempRange, end: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "0.6rem 0.8rem",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        background: "rgba(15, 23, 42, 0.4)",
+                        color: "white",
+                        fontSize: "0.85rem",
+                        colorScheme: "dark"
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempRange({ start: "", end: "" });
+                      setCustomRange({ start: "", end: "" });
+                      setFilterType("all");
+                      setIsCustomOpen(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "0.6rem",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255, 255, 255, 0.05)",
+                      background: "rgba(255, 255, 255, 0.03)",
+                      color: "#94a3b8",
+                      fontSize: "0.8rem",
+                      fontWeight: 800,
+                      cursor: "pointer"
+                    }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (tempRange.start && tempRange.end) {
+                        setCustomRange({ start: tempRange.start, end: tempRange.end });
+                        setFilterType("custom");
+                        setIsCustomOpen(false);
+                      }
+                    }}
+                    disabled={!tempRange.start || !tempRange.end}
+                    style={{
+                      flex: 2,
+                      padding: "0.6rem",
+                      borderRadius: "8px",
+                      border: "none",
+                      background: tempRange.start && tempRange.end ? "var(--color-primary)" : "rgba(255, 255, 255, 0.02)",
+                      color: tempRange.start && tempRange.end ? "white" : "rgba(255,255,255,0.2)",
+                      fontSize: "0.8rem",
+                      fontWeight: 900,
+                      cursor: tempRange.start && tempRange.end ? "pointer" : "not-allowed"
+                    }}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Filter bar ── */}

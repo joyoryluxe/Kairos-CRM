@@ -160,7 +160,9 @@ export const getMaternities = async (req: AuthRequest, res: Response): Promise<v
       deliveryDeadlineTo,
       status,
       package: packageName,
-      paymentStatus
+      paymentStatus,
+      dateFrom,
+      dateTo
     } = req.query;
 
     const filter: Record<string, any> = {};
@@ -200,16 +202,27 @@ export const getMaternities = async (req: AuthRequest, res: Response): Promise<v
       filter.balance = { $lte: 0 };
     }
 
+    if (dateFrom || dateTo) {
+      const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
+      const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
+
+      filter.$or = [
+        { createdAt: { $gte: start, $lte: end } },
+        { shootDateAndTime: { $gte: start, $lte: end } },
+        { "payments.date": { $gte: start, $lte: end } }
+      ];
+    }
+
     const maternities = await Maternity.find(filter).sort({ createdAt: -1 });
 
     // Summary calculation based on FILTERED data
     const summary = {
       total: maternities.length,
-      totalRevenue: maternities.reduce((sum, m) => sum + (m.total || 0), 0),
-      totalReceived: maternities.reduce((sum, m) => sum + (m.advance || 0), 0),
-      totalDue: maternities.reduce((sum, m) => sum + Math.max(m.balance || 0, 0), 0),
-      totalExpenses: maternities.reduce((sum, m) => sum + (m.expenses || 0), 0),
-      totalProfit: maternities.reduce((sum, m) => sum + (m.profit || 0), 0),
+      totalRevenue: maternities.reduce((sum, e) => sum + (e.total || 0), 0),
+      totalReceived: maternities.reduce((sum, e) => sum + (e.advance || 0), 0),
+      totalDue: maternities.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+      totalExpenses: maternities.reduce((sum, e) => sum + (e.expenses || 0), 0),
+      totalProfit: maternities.reduce((sum, e) => sum + (e.profit || 0), 0),
     };
 
     res.status(200).json({ success: true, summary, data: maternities });

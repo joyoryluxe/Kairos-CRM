@@ -233,6 +233,8 @@ export const getInfluencers = async (req: AuthRequest, res: Response): Promise<v
       deliveryDeadlineFrom,
       deliveryDeadlineTo,
       paymentStatus,
+      dateFrom,
+      dateTo,
     } = req.query;
 
     const filter: any = {};
@@ -270,16 +272,27 @@ export const getInfluencers = async (req: AuthRequest, res: Response): Promise<v
       filter.balance = { $lte: 0 };
     }
 
+    if (dateFrom || dateTo) {
+      const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
+      const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
+
+      filter.$or = [
+        { createdAt: { $gte: start, $lte: end } },
+        { shootDateAndTime: { $gte: start, $lte: end } },
+        { "payments.date": { $gte: start, $lte: end } }
+      ];
+    }
+
     const influencers = await Influencer.find(filter).sort({ createdAt: -1 });
 
     // Summary calculation based on FILTERED data
     const summary = {
       total: influencers.length,
-      totalRevenue: influencers.reduce((sum, i) => sum + (i.total || 0), 0),
-      totalReceived: influencers.reduce((sum, i) => sum + (i.advance || 0), 0),
-      totalDue: influencers.reduce((sum, i) => sum + Math.max(i.balance || 0, 0), 0),
-      totalExpenses: influencers.reduce((sum, i) => sum + (i.expenses || 0), 0),
-      totalProfit: influencers.reduce((sum, i) => sum + (i.profit || 0), 0),
+      totalRevenue: influencers.reduce((sum, e) => sum + (e.total || 0), 0),
+      totalReceived: influencers.reduce((sum, e) => sum + (e.advance || 0), 0),
+      totalDue: influencers.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+      totalExpenses: influencers.reduce((sum, e) => sum + (e.expenses || 0), 0),
+      totalProfit: influencers.reduce((sum, e) => sum + (e.profit || 0), 0),
     };
 
     res.status(200).json({ success: true, summary, data: influencers });

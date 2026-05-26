@@ -56,7 +56,9 @@ export const getCorporateEvents = async (req: AuthRequest, res: Response): Promi
       deliveryDeadlineTo,
       status,
       package: packageName,
-      paymentStatus
+      paymentStatus,
+      dateFrom,
+      dateTo
     } = req.query;
 
     const filter: Record<string, any> = {};
@@ -92,6 +94,17 @@ export const getCorporateEvents = async (req: AuthRequest, res: Response): Promi
       filter.balance = { $gt: 0 };
     } else if (paymentStatus === 'paid') {
       filter.balance = { $lte: 0 };
+    }
+
+    if (dateFrom || dateTo) {
+      const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
+      const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
+
+      filter.$or = [
+        { createdAt: { $gte: start, $lte: end } },
+        { eventDateAndTime: { $gte: start, $lte: end } },
+        { "payments.date": { $gte: start, $lte: end } }
+      ];
     }
 
     const corporateEvents = await CorporateEvent.find(filter).sort({ createdAt: -1 });

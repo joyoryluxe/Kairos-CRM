@@ -269,7 +269,13 @@ export default function LeadFormPage() {
           </button>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {/* Form Start */}
+        {(() => {
+          const isCustomSource = !["Instagram", "Google", "WhatsApp", "Referral"].includes(form.source);
+          const isCustomEventType = !["Maternity", "Influencer", "Corporate"].includes(form.eventType);
+
+          return (
+            <form onSubmit={handleSubmit}>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             <Section title="Discovery Source" icon={<User size={22} />} description="Who is the prospect and how did they find us?">
               <div className="form-grid-2">
@@ -298,13 +304,33 @@ export default function LeadFormPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <label style={labelStyle}>Origin Source</label>
-                  <select style={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value as LeadSource })}>
-                    <option value="Instagram">Instagram</option>
-                    <option value="Google">Google Search</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Referral">Direct Referral</option>
-                    <option value="Other">Other Channel</option>
-                  </select>
+                  {isCustomSource ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <input 
+                        style={{ ...inputCls, flex: 1 }} 
+                        value={form.source === "Other" ? "" : form.source} 
+                        onChange={e => setForm({ ...form, source: e.target.value as LeadSource })} 
+                        placeholder="Type custom source..." 
+                        autoFocus
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setForm({ ...form, source: "Instagram" })}
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", width: "40px", height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Cancel Custom Input"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <select style={inputCls} value={form.source} onChange={e => setForm({ ...form, source: e.target.value as LeadSource })}>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Google">Google Search</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Referral">Direct Referral</option>
+                      <option value="Other">Other Channel</option>
+                    </select>
+                  )}
                 </div>
               </div>
             </Section>
@@ -313,12 +339,32 @@ export default function LeadFormPage() {
               <div className="form-grid-3">
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <label style={labelStyle}>Event Category</label>
-                  <select style={inputCls} value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })}>
-                    <option value="Maternity">Maternity</option>
-                    <option value="Influencer">Influencer</option>
-                    <option value="Corporate">Corporate</option>
-                    <option value="Other">Custom/Other</option>
-                  </select>
+                  {isCustomEventType ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <input 
+                        style={{ ...inputCls, flex: 1 }} 
+                        value={form.eventType === "Other" ? "" : form.eventType} 
+                        onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })} 
+                        placeholder="Type custom category..." 
+                        autoFocus
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setForm({ ...form, eventType: "Maternity" })}
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "white", width: "40px", height: "40px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Cancel Custom Input"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <select style={inputCls} value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as LeadEventType })}>
+                      <option value="Maternity">Maternity</option>
+                      <option value="Influencer">Influencer</option>
+                      <option value="Corporate">Corporate</option>
+                      <option value="Other">Custom/Other</option>
+                    </select>
+                  )}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <label style={labelStyle}>Target Date</label>
@@ -353,8 +399,8 @@ export default function LeadFormPage() {
                 <select style={inputCls} value={form.status} onChange={e => setForm({ ...form, status: e.target.value as LeadStatus })}>
                   <option value="New">🆕 New Inquiry</option>
                   <option value="Contacted">📞 Initial Contact Made</option>
-                  <option value="In Discussion">💬 Active Discussion</option>
-                  <option value="Converted">✅ Converted to Client</option>
+                  <option value="Interested">💬 Active Discussion</option>
+                  <option value="Booked">✅ Converted to Client</option>
                   <option value="Lost">❌ Opportunity Lost</option>
                 </select>
               </div>
@@ -383,6 +429,8 @@ export default function LeadFormPage() {
             </button>
           </div>
         </form>
+        );
+        })()}
       </div>
     </>
   );
