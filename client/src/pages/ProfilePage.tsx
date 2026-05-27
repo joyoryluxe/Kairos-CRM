@@ -79,10 +79,10 @@ export default function ProfilePage() {
           <p style={{ margin: "0.2rem 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Manage your account settings</p>
         </div>
         {!isEditing && (
-          <button 
+          <button
             onClick={handleEditClick}
-            type="button" 
-            className="btn" 
+            type="button"
+            className="btn"
             style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.4rem" }}
           >
             Edit Profile
@@ -133,7 +133,7 @@ export default function ProfilePage() {
             <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
               To securely update your password, we'll send a reset link to your email address: <strong>{user?.email}</strong>
             </p>
-            
+
             {resetError && (
               <div style={{ padding: "0.75rem", borderRadius: "var(--radius-sm)", backgroundColor: "hsla(0,78%,62%,0.15)", color: "var(--color-danger)", fontSize: "0.9rem", border: "1px solid rgba(255, 100, 100, 0.2)", marginBottom: "1rem" }}>
                 {resetError}
@@ -150,10 +150,10 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <button 
-              type="button" 
-              className="btn" 
-              onClick={handlePasswordReset} 
+            <button
+              type="button"
+              className="btn"
+              onClick={handlePasswordReset}
               disabled={resetLoading || !user?.email}
             >
               {resetLoading ? "Sending..." : "Send Password Reset Link"}
@@ -166,7 +166,7 @@ export default function ProfilePage() {
             {(updateMutation.error as any)?.response?.data?.message || updateMutation.error.message || "Failed to update profile"}
           </div>
         )}
-        
+
         {updateMutation.isSuccess && (
           <div style={{ marginTop: "1.25rem", padding: "0.75rem 1rem", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--color-success)", borderRadius: "var(--radius-md)", fontSize: "0.9rem" }}>
             Profile updated successfully!

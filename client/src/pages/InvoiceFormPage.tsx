@@ -9,6 +9,7 @@ import {
   type InvoiceInput,
   type InvoiceItem
 } from "@/api/invoice";
+import { getMe } from "@/api/auth";
 import logoImage from "../Kairos Logo.png";
 import {
   ArrowLeft,
@@ -194,10 +195,31 @@ const PAPER_STYLES = `
   }
 
   @media print {
-    body {
+    @page {
+      margin: 0;
+    }
+    html,
+    body,
+    #root,
+    .layout-wrapper,
+    .main-content,
+    .content-area {
       background: white !important;
       color: #0f172a !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+      box-sizing: border-box !important;
+      display: block !important;
+      float: none !important;
+      position: relative !important;
+      top: 0 !important;
+      left: 0 !important;
     }
+    
     .sidebar,
     .header,
     .mobile-only,
@@ -208,37 +230,28 @@ const PAPER_STYLES = `
     header {
       display: none !important;
     }
-    
-    .layout-wrapper {
-      display: block !important;
-      background: white !important;
-    }
-    .main-content {
-      margin-left: 0 !important;
-      padding: 0 !important;
-      background: white !important;
-      width: 100% !important;
-    }
-    .content-area {
-      padding: 0 !important;
-      margin: 0 !important;
-      background: white !important;
-    }
 
     .invoice-paper-container {
       background: white !important;
-      padding: 0 !important;
+      padding: 1.6cm !important;
       min-height: auto !important;
       color: #0f172a !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      display: block !important;
     }
 
     .invoice-paper {
       box-shadow: none !important;
       padding: 0 !important;
-      margin: 0 auto !important;
+      margin: 0 !important;
+      width: 100% !important;
       max-width: 100% !important;
       border: none !important;
       background: white !important;
+      box-sizing: border-box !important;
+      display: block !important;
     }
 
     .invoice-paper h1, .invoice-paper h2, .invoice-paper h3, .invoice-paper h4 {
@@ -332,6 +345,13 @@ export default function InvoiceFormPage() {
     queryFn: () => getInvoices(),
     enabled: !isEdit,
   });
+
+  useQuery({
+    queryKey: ["auth-me"],
+    queryFn: getMe,
+  });
+  const studioPhone = "+91 87809 83966";
+  const studioEmail = "hello@kairosstudio.in";
 
   useEffect(() => {
     if (isEdit && invoice) {
@@ -591,9 +611,9 @@ export default function InvoiceFormPage() {
             <div>
               <img src={logoImage} alt="Kairos CRM Logo" style={{ maxHeight: "60px", width: "auto", marginBottom: "1rem" }} />
               <div style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
-                <strong>KAIROS CRM Studio</strong><br />
-                creative@kairosstudio.com<br />
-                +91 99887 76655
+                {/* <strong>KAIROS CRM Studio</strong><br /> */}
+                {studioEmail}<br /><br/>
+                {studioPhone}
               </div>
             </div>
             <div style={{ textAlign: "center" }}>
@@ -624,17 +644,17 @@ export default function InvoiceFormPage() {
           {/* Client Details Section */}
           <div style={{ borderTop: "2px solid #f1f5f9", paddingTop: "2rem", marginBottom: "3.5rem" }}>
             <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem", color: "#334155" }}>
-              <FileText size={18} color="#6366f1" /> Invoice To (Client Info)
+              <FileText size={18} color="#6366f1" /> Recipient Information
             </h4>
             <div className="invoice-client-info-grid">
               <div>
-                <label>Client Name</label>
+                <label> CLIENT NAME</label>
                 {isPreview ? (
                   <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a", minHeight: "38px" }}>
                     {clientName || "—"}
                   </div>
                 ) : (
-                  <input required placeholder="Manually write name..." value={clientName} onChange={e => setClientName(e.target.value)} />
+                  <input required placeholder="Manually write ..." value={clientName} onChange={e => setClientName(e.target.value)} />
                 )}
               </div>
               <div>
@@ -648,7 +668,7 @@ export default function InvoiceFormPage() {
                 )}
               </div>
               <div>
-                <label>Email Address</label>
+                <label>EMAIL ADDRESS</label>
                 {isPreview ? (
                   <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
                     {clientEmail || "—"}
@@ -669,12 +689,12 @@ export default function InvoiceFormPage() {
           {/* Interactive Items Section */}
           <div style={{ marginBottom: "3rem" }}>
             <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem", color: "#334155" }}>
-              <ScrollText size={18} color="#6366f1" /> Line Items
+              <ScrollText size={18} color="#6366f1" /> Services & Charges
             </h4>
 
             {/* Table Headers */}
             <div className="invoice-table-header">
-              <span>Item Description</span>
+              <span>Service Details</span>
               <span style={{ textAlign: "right" }}>Quantity</span>
               <span style={{ textAlign: "right" }}>Price (₹)</span>
               <span style={{ textAlign: "right" }}>Total (₹)</span>
@@ -684,7 +704,7 @@ export default function InvoiceFormPage() {
             {items.map((item, index) => (
               <div key={index} className="invoice-table-row">
                 <div>
-                  <span className="mobile-label">Item Description</span>
+                  <span className="mobile-label">Service Details</span>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     {!isPreview && (
                       <button type="button" onClick={() => handleRemoveItem(index)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0.2rem" }} title="Remove Item">
@@ -750,7 +770,7 @@ export default function InvoiceFormPage() {
           {/* Payment Details Section */}
           <div className="payment-section">
             <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem", color: "#334155" }}>
-              <Landmark size={18} color="#6366f1" /> Payment details (Customizable)
+              <Landmark size={18} color="#6366f1" /> Payment Information
             </h4>
             {isPreview ? (
               <div className="invoice-grid-2" style={{ marginBottom: "1.5rem" }}>
@@ -804,7 +824,7 @@ export default function InvoiceFormPage() {
             <div className="qr-scanner-card">
               <QrCode size={36} color="#6366f1" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155", display: "block" }}>Payment QR Code Scanner</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155", display: "block" }}>Scan to Pay</span>
                 {/* <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Loaded from static asset: <strong>{scannerImage}</strong></span> */}
               </div>
               <img src="/scanner.jpeg" alt="Payment QR Scanner" className="qr-image" />
@@ -814,7 +834,7 @@ export default function InvoiceFormPage() {
           {/* Terms and Conditions Section (Dynamic List) */}
           <div style={{ marginTop: "2.5rem", borderTop: "1px solid #f1f5f9", paddingTop: "2rem" }}>
             <h4 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem", color: "#334155" }}>
-              Terms & Conditions (Customizable)
+              Terms & Conditions
             </h4>
             {isPreview ? (
               <ol style={{ margin: 0, paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>

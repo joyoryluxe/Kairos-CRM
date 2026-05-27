@@ -12,13 +12,14 @@ import {
   type PackageInput,
 } from "@/api/packages";
 
-const CATEGORIES: PackageCategory[] = ["Maternity", "Influencer", "Corporate", "General"];
+const CATEGORIES: PackageCategory[] = ["Maternity", "Influencer", "Corporate", "General", "Edits"];
 
 const CATEGORY_COLORS: Record<PackageCategory, string> = {
   Maternity: "#ec4899",
   Influencer: "#8b5cf6",
   Corporate: "#3b82f6",
   General: "#10b981",
+  Edits: "#f59e0b",
 };
 
 const EMPTY_FORM: PackageInput = {

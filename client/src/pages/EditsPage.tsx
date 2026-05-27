@@ -16,7 +16,10 @@ import {
   Hash,
   ArrowRight,
   Download,
-  CheckCircle2
+  CheckCircle2,
+  TrendingUp,
+  Package,
+  CreditCard
 } from "lucide-react";
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +32,17 @@ import {
   type EditPriority
 } from "../api/edit";
 import { exportToExcel } from "@/utils/exportToExcel";
+import StatCard from "@/components/StatCard";
+
+// Shared currency formatter
+const formatCurrency = (value?: number) => {
+  if (value === undefined || value === null) return "—";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+  }).format(value);
+};
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -125,10 +139,22 @@ const EditsPage: React.FC = () => {
     setUpdatedEnd(endDate);
   }, [filterType, customRange]);
 
-  const { data: edits = [], isLoading, isError } = useQuery({
+  const { data: response, isLoading, isError } = useQuery({
     queryKey: ["edits"],
     queryFn: () => getEdits(),
   });
+
+  const edits = response?.data || [];
+  const apiSummary = response?.summary || {};
+
+  const summary = {
+    totalRecords: apiSummary.totalRecords || 0,
+    totalRevenue: apiSummary.totalRevenue || 0,
+    totalReceived: apiSummary.totalReceived || 0,
+    totalDue: apiSummary.totalDue || 0,
+    totalExpenses: apiSummary.totalExpenses || 0,
+    totalProfit: apiSummary.totalProfit || 0
+  };
 
   const deleteMutation = useMutation({
     mutationFn: deleteEdit,
@@ -141,16 +167,40 @@ const EditsPage: React.FC = () => {
     mutationFn: ({ id, payload }: { id: string; payload: Partial<Edit> }) => updateEdit(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["edits"] });
-      alert("Edit marked as Delivered!");
+      alert("Payment successful and task completed!");
     },
     onError: (err: any) => {
       alert("Failed to update edit: " + err.message);
     }
   });
 
-  const handleQuickDelivered = (e: React.MouseEvent, id: string) => {
+  const handleQuickComplete = (e: React.MouseEvent, edit: Edit) => {
     e.stopPropagation();
-    updateMutation.mutate({ id, payload: { status: "Delivered" } });
+
+    // Calculate values exactly as they are in the form to ensure perfection
+    const extrasTotal = (edit.extras || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+    const total = (edit.packagePrice || 0) + extrasTotal;
+    const paid = (edit.payments || []).reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const balance = total - paid;
+
+    const payload: Partial<Edit> = {
+      ...edit, // Preserve all existing data
+      status: "Done", // Done represents Completed
+    };
+
+    if (balance > 0) {
+      const newPayment = {
+        amount: balance,
+        date: new Date().toISOString(),
+        note: "Full Payment successfully received - Punit Desai."
+      };
+      payload.payments = [...(edit.payments || []), newPayment];
+      payload.advance = paid + balance;
+      payload.balance = 0;
+      payload.total = total;
+    }
+
+    updateMutation.mutate({ id: edit._id, payload });
   };
 
   const uniqueTypes = useMemo(() => {
@@ -319,10 +369,10 @@ const EditsPage: React.FC = () => {
                   <button className="btn-circle-action danger" onClick={(e) => handleDelete(e, edit._id)}>
                     <Trash2 size={18} />
                   </button>
-                  {edit.status !== "Delivered" && (
+                  {edit.status !== "Done" && edit.status !== "Delivered" && (
                     <button
                       className="btn-circle-action success"
-                      onClick={(e) => handleQuickDelivered(e, edit._id)}
+                      onClick={(e) => handleQuickComplete(e, edit)}
                       disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
                       style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
                     >
@@ -408,13 +458,13 @@ const EditsPage: React.FC = () => {
                     <button className="btn-action-premium danger" onClick={(e) => handleDelete(e, edit._id)}>
                       <Trash2 size={18} />
                     </button>
-                    {edit.status !== "Delivered" && (
+                    {edit.status !== 'Done' && edit.status !== 'Delivered' && (
                       <button
                         className="btn-action-premium success"
-                        onClick={(e) => handleQuickDelivered(e, edit._id)}
+                        onClick={(e) => handleQuickComplete(e, edit)}
                         disabled={updateMutation.isPending && updateMutation.variables?.id === edit._id}
                         style={{ color: "#10b981", borderColor: "rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.05)" }}
-                        title="Mark as Delivered"
+                        title="Mark as Completed"
                       >
                         {updateMutation.isPending && updateMutation.variables?.id === edit._id ? (
                           <div className="animate-spin" style={{ width: "14px", height: "14px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
@@ -486,6 +536,59 @@ const EditsPage: React.FC = () => {
             <Plus size={20} /> Add New Task
           </button>
         </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid-responsive stat-cards-row" style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(6, minmax(220px, 1fr))",
+        gap: "1.5rem",
+        marginBottom: "2.5rem",
+        overflowX: "auto",
+        paddingBottom: "0.5rem"
+      }}>
+        <StatCard
+          title="Total Records"
+          value={summary.totalRecords}
+          icon={<Package size={24} />}
+          color="var(--color-primary)"
+          description="Total tasks"
+        />
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(summary.totalRevenue)}
+          icon={<TrendingUp size={24} />}
+          color="#f472b6"
+          description="Gross value"
+        />
+        <StatCard
+          title="Received"
+          value={formatCurrency(summary.totalReceived)}
+          icon={<CheckCircle2 size={24} />}
+          color="#34d399"
+          description="Collected"
+        />
+        <StatCard
+          title="Total Due"
+          value={formatCurrency(summary.totalDue)}
+          icon={<AlertCircle size={24} />}
+          color="#f87171"
+          description="Pending"
+        />
+        <StatCard
+          title="Total Expenses"
+          value={formatCurrency(summary.totalExpenses)}
+          icon={<CreditCard size={24} />}
+          color="#fbbf24"
+          description="Costs"
+        />
+        <StatCard
+          title="Estimated Profit"
+          value={formatCurrency(summary.totalProfit)}
+          icon={<TrendingUp size={24} />}
+          color="#60a5fa"
+          description="Net profit"
+        />
       </div>
 
       {/* ── Premium Responsive Date Range Filter Bar ── */}

@@ -7,6 +7,7 @@ import Influencer from '../models/Influencer';
 import CorporateEvent from '../models/CorporateEvent';
 import StudioExpense from '../models/StudioExpense';
 import Lead from '../models/Lead';
+import Edit from '../models/Edit';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -71,12 +72,13 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
 
     const query = {};
 
-    const [allMaternities, allInfluencers, allCorporateEvents, allStudioExpenses, allLeads] = await Promise.all([
+    const [allMaternities, allInfluencers, allCorporateEvents, allStudioExpenses, allLeads, allEdits] = await Promise.all([
       Maternity.find(query),
       Influencer.find(query),
       CorporateEvent.find(query),
       StudioExpense.find(query),
       Lead.find(query),
+      Edit.find(query),
     ]);
 
     // Filter by date range — timestamps (createdAt/updatedAt) exist at runtime via
@@ -99,6 +101,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const matchesFilter = (doc: any, shootField: string) => {
       if (!isFiltered) return true;
       if (isInRange(doc.createdAt)) return true;
+      if (isInRange(doc.updatedAt)) return true;
       if (isInRange(doc[shootField])) return true;
       if (Array.isArray(doc.payments) && doc.payments.some((p: any) => isInRange(p.date))) return true;
       return false;
@@ -107,6 +110,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const maternities = allMaternities.filter(m => matchesFilter(m, 'shootDateAndTime'));
     const influencers = allInfluencers.filter(i => matchesFilter(i, 'shootDateAndTime'));
     const corporateEvents = allCorporateEvents.filter(c => matchesFilter(c, 'eventDateAndTime'));
+    const edits = allEdits.filter(e => matchesFilter(e, 'receivedDate'));
     
     const studioExpenses = allStudioExpenses.filter(e => {
       if (!isFiltered) return true;
@@ -123,6 +127,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const maternityStats = calcStats(maternities);
     const influencerStats = calcStats(influencers);
     const corporateStats = calcStats(corporateEvents);
+    const editStats = calcStats(edits);
 
     // Only count revenue/profit for Booked leads
     const bookedLeads = leads.filter(l => l.status === 'Booked');
@@ -136,11 +141,11 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const studioExpensesTotal = studioExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const globalTotals = {
-      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue,
-      totalAdvance: maternityStats.totalAdvance + influencerStats.totalAdvance + corporateStats.totalAdvance,
-      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance,
-      totalExpenses: maternityStats.totalExpenses + influencerStats.totalExpenses + corporateStats.totalExpenses + studioExpensesTotal,
-      totalProfit: (maternityStats.totalProfit + influencerStats.totalProfit + corporateStats.totalProfit) - studioExpensesTotal,
+      totalRevenue: maternityStats.totalRevenue + influencerStats.totalRevenue + corporateStats.totalRevenue + editStats.totalRevenue,
+      totalAdvance: maternityStats.totalAdvance + influencerStats.totalAdvance + corporateStats.totalAdvance + editStats.totalAdvance,
+      totalBalance: maternityStats.totalBalance + influencerStats.totalBalance + corporateStats.totalBalance + editStats.totalBalance,
+      totalExpenses: maternityStats.totalExpenses + influencerStats.totalExpenses + corporateStats.totalExpenses + editStats.totalExpenses + studioExpensesTotal,
+      totalProfit: (maternityStats.totalProfit + influencerStats.totalProfit + corporateStats.totalProfit + editStats.totalProfit) - studioExpensesTotal,
       studioExpensesTotal,
     };
 
@@ -148,6 +153,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       { name: 'Maternity', revenue: maternityStats.totalRevenue, color: '#f472b6' },
       { name: 'Influencer', revenue: influencerStats.totalRevenue, color: '#60a5fa' },
       { name: 'Corporate', revenue: corporateStats.totalRevenue, color: '#4ade80' },
+      { name: 'Edits', revenue: editStats.totalRevenue, color: '#a78bfa' },
       { name: 'Leads (Booked)', revenue: leadStats.totalRevenue, color: '#3b82f6' },
     ];
 
@@ -160,6 +166,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       ...maternities.map(m => safeToObject(m, 'Maternity')),
       ...influencers.map(i => safeToObject(i, 'Influencer')),
       ...corporateEvents.map(c => safeToObject(c, 'Corporate')),
+      ...edits.map(e => safeToObject(e, 'Edits')),
     ];
 
     const leadNotifications = leads
@@ -187,10 +194,11 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       });
 
     const deliveryNotifications = allRecords
-      .filter(r => r?.deliveryDeadline && r.status !== 'Completed' && r.status !== 'Cancelled')
+      .filter(r => (r?.deliveryDeadline || r?.deadline) && r.status !== 'Completed' && r.status !== 'Done' && r.status !== 'Delivered' && r.status !== 'Cancelled')
       .map(r => {
         try {
-          const deadline = new Date(r.deliveryDeadline);
+          const deadlineVal = r.deliveryDeadline || r.deadline;
+          const deadline = new Date(deadlineVal);
           if (isNaN(deadline.getTime())) return null;
 
           deadline.setHours(0, 0, 0, 0);
@@ -207,7 +215,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
             id: r._id,
             clientName: r.clientName || 'Unknown Client',
             type: r.type,
-            deadline: r.deliveryDeadline,
+            deadline: deadlineVal,
             daysRemaining: diffDays,
             priority,
           };
@@ -267,6 +275,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       Maternity: '#f472b6',
       Influencer: '#60a5fa',
       Corporate: '#4ade80',
+      Edits: '#a78bfa',
       Lead: '#3b82f6',
     };
 
@@ -292,28 +301,28 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
 
       if (!isCancelled) {
         // ── shoot / event ──
-        const shootISO = toISO(r.shootDateAndTime ?? r.eventDateAndTime);
+        const shootISO = toISO(r.shootDateAndTime ?? r.eventDateAndTime ?? r.receivedDate);
         if (shootISO) {
           calendarEvents.push({
             id: `${_id}-shoot`,
             title: `${clientName}`,
             start: shootISO,
-            backgroundColor: status === 'Completed' ? '#475569' : color, // Gray out completed
-            borderColor: status === 'Completed' ? '#475569' : color,
+            backgroundColor: (status === 'Completed' || status === 'Done' || status === 'Delivered') ? '#475569' : color, // Gray out completed/done/delivered
+            borderColor: (status === 'Completed' || status === 'Done' || status === 'Delivered') ? '#475569' : color,
             allDay: false,
             extendedProps: { type, status, recordId: _id, isDeadline: false },
           });
         }
 
         // ── delivery deadline ──
-        const deadlineISO = toISO(r.deliveryDeadline);
+        const deadlineISO = toISO(r.deliveryDeadline ?? r.deadline);
         if (deadlineISO) {
           calendarEvents.push({
             id: `${_id}-deadline`,
             title: `${clientName} (D)`,
             start: deadlineISO,
-            backgroundColor: status === 'Completed' ? '#475569' : '#ef4444',
-            borderColor: status === 'Completed' ? '#475569' : '#ef4444',
+            backgroundColor: (status === 'Completed' || status === 'Done' || status === 'Delivered') ? '#475569' : '#ef4444',
+            borderColor: (status === 'Completed' || status === 'Done' || status === 'Delivered') ? '#475569' : '#ef4444',
             allDay: true,
             extendedProps: { type, status, recordId: _id, isDeadline: true },
           });
@@ -321,7 +330,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       }
 
       // 2. Recently Completed / Cancelled (last 7 days)
-      if (status === 'Completed' || status === 'Cancelled') {
+      if (status === 'Completed' || status === 'Done' || status === 'Delivered' || status === 'Cancelled') {
         const updateDate = new Date(updatedAt);
         if (updateDate >= sevenDaysAgo && updateDate <= todayMax) {
           recentlyCompleted.push({
@@ -359,9 +368,9 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     // ── upcoming week data ───────────────────────────────────────────────
 
     const upcomingShoots = allRecords
-      .filter(r => (r?.shootDateAndTime || r?.eventDateAndTime) && r.status !== 'Cancelled')
+      .filter(r => (r?.shootDateAndTime || r?.eventDateAndTime || r?.receivedDate) && r.status !== 'Cancelled')
       .map(r => {
-        const date = new Date(r.shootDateAndTime ?? r.eventDateAndTime);
+        const date = new Date(r.shootDateAndTime ?? r.eventDateAndTime ?? r.receivedDate);
         if (isNaN(date.getTime())) return null;
         const diffDays = Math.ceil((date.getTime() - today.getTime()) / 86_400_000);
         // Show everything from today onwards
@@ -370,7 +379,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
             id: r._id,
             clientName: r.clientName || 'Unknown Client',
             type: r.type,
-            date: r.shootDateAndTime ?? r.eventDateAndTime,
+            date: r.shootDateAndTime ?? r.eventDateAndTime ?? r.receivedDate,
             daysRemaining: diffDays,
           };
         }
@@ -380,9 +389,9 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       .sort((a: any, b: any) => (a.daysRemaining ?? 0) - (b.daysRemaining ?? 0));
 
     const upcomingDeadlines = allRecords
-      .filter(r => r?.deliveryDeadline && r.status !== 'Cancelled')
+      .filter(r => (r?.deliveryDeadline || r?.deadline) && r.status !== 'Cancelled')
       .map(r => {
-        const date = new Date(r.deliveryDeadline);
+        const date = new Date(r.deliveryDeadline ?? r.deadline);
         if (isNaN(date.getTime())) return null;
         const diffDays = Math.ceil((date.getTime() - today.getTime()) / 86_400_000);
         // Show all upcoming deadlines
@@ -391,7 +400,7 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
             id: r._id,
             clientName: r.clientName || 'Unknown Client',
             type: r.type,
-            date: r.deliveryDeadline,
+            date: r.deliveryDeadline ?? r.deadline,
             daysRemaining: diffDays,
           };
         }

@@ -10,7 +10,8 @@ export const createEdit = async (req: AuthRequest, res: Response): Promise<void>
     sanitizeCommonBody(
       req.body,
       ['receivedDate', 'deadline'],
-      ['status', 'priority']
+      ['status', 'priority', 'package'],
+      ['extras', 'payments']
     );
 
     const edit = await Edit.create({
@@ -28,7 +29,17 @@ export const createEdit = async (req: AuthRequest, res: Response): Promise<void>
 export const getEdits = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const edits = await Edit.find({ user: req.user?.id }).sort({ deadline: 1 });
-    res.status(200).json({ success: true, count: edits.length, data: edits });
+    
+    const summary = {
+      totalRecords: edits.length,
+      totalRevenue: edits.reduce((sum, e) => sum + (e.total || 0), 0),
+      totalReceived: edits.reduce((sum, e) => sum + (e.advance || 0), 0),
+      totalDue: edits.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+      totalExpenses: edits.reduce((sum, e) => sum + (e.expenses || 0), 0),
+      totalProfit: edits.reduce((sum, e) => sum + (e.profit || 0), 0),
+    };
+
+    res.status(200).json({ success: true, count: edits.length, summary, data: edits });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -54,7 +65,8 @@ export const updateEdit = async (req: AuthRequest, res: Response): Promise<void>
     sanitizeCommonBody(
       req.body,
       ['receivedDate', 'deadline'],
-      ['status', 'priority']
+      ['status', 'priority', 'package'],
+      ['extras', 'payments']
     );
 
     const edit = await Edit.findOneAndUpdate(

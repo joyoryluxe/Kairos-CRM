@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback,useMemo  } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import {
   Plus,
   Trash2,
   Pencil,
+  Layers,
 } from "lucide-react";
 
 import StatCard from "@/components/StatCard";
@@ -338,12 +339,12 @@ export default function DashboardOverviewPage() {
     let end: Date | null = new Date();
     end.setHours(23, 59, 59, 999);
 
-   // "Last Day" = yesterday 00:00 → today 23:59:59
-if (type === "day") {
-  start = new Date();
-  start.setDate(start.getDate() - 1);
-  start.setHours(0, 0, 0, 0);
-} else if (type === "week") {
+    // "Last Day" = yesterday 00:00 → today 23:59:59
+    if (type === "day") {
+      start = new Date();
+      start.setDate(start.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+    } else if (type === "week") {
       start = new Date();
       start.setDate(now.getDate() - 7);
       start.setHours(0, 0, 0, 0);
@@ -351,10 +352,10 @@ if (type === "day") {
       start = new Date();
       start.setDate(now.getDate() - 30);
       start.setHours(0, 0, 0, 0);
-      } else if (type === "quarter") {
-  start = new Date();
-  start.setDate(now.getDate() - 120); // ~4 months
-  start.setHours(0, 0, 0, 0);
+    } else if (type === "quarter") {
+      start = new Date();
+      start.setDate(now.getDate() - 120); // ~4 months
+      start.setHours(0, 0, 0, 0);
 
     } else if (type === "year") {
       start = new Date();
@@ -378,11 +379,11 @@ if (type === "day") {
   // const { startDate, endDate } = getDateRange(filterType, customRange.start, customRange.end);
 
 
-// WITH this:
-const { startDate, endDate } = useMemo(
-  () => getDateRange(filterType, customRange.start, customRange.end),
-  [filterType, customRange.start, customRange.end]
-);
+  // WITH this:
+  const { startDate, endDate } = useMemo(
+    () => getDateRange(filterType, customRange.start, customRange.end),
+    [filterType, customRange.start, customRange.end]
+  );
 
   const { data: userData } = useQuery({ queryKey: ["user-me"], queryFn: getMe });
   const { data, isLoading, isError, error } = useQuery({
@@ -473,7 +474,7 @@ const { startDate, endDate } = useMemo(
 
   const renderEventContent = useCallback((info: any) => {
     const { isDeadline, type } = info.event.extendedProps;
-    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : "🏢";
+    const icon = isDeadline ? "🚩" : type === "Maternity" ? "🤱" : type === "Influencer" ? "📣" : type === "Edits" || type === "Edit" ? "🎞️" : "🏢";
     const backgroundColor = info.event.backgroundColor || "#94a3b8";
     const eventBg = isDeadline ? "rgba(239, 68, 68, 0.25)" : `${backgroundColor}${Math.round(0.25 * 255).toString(16).padStart(2, '0')}`;
 
@@ -625,10 +626,10 @@ const { startDate, endDate } = useMemo(
         alignItems: "center",
         justifyContent: "space-between",
         gap: "1rem",
-         overflow: "visible",
+        overflow: "visible",
 
-    position: "relative",
-    zIndex: 20,
+        position: "relative",
+        zIndex: 20,
         background: "rgba(30, 41, 59, 0.4)",
         backdropFilter: "blur(12px)",
         border: "1px solid rgba(255, 255, 255, 0.05)",
@@ -646,7 +647,7 @@ const { startDate, endDate } = useMemo(
               day: "Last Day",
               week: "Last Week",
               month: "Last Month",
-                quarter: "Last Quarter",  // ← changed
+              quarter: "Last Quarter",  // ← changed
 
               // year: "Last Year"
             };
@@ -679,87 +680,87 @@ const { startDate, endDate } = useMemo(
         </div>
 
         {/* Custom Calendar Filter Option */}
-<div
-  style={{
-    position: "relative",
-    width: isMobile ? "100%" : "auto",
-    overflow: "visible",
-    zIndex: 9999,
-  }}
->          <button
-            onClick={() => setIsCustomOpen(!isCustomOpen)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              padding: "0.5rem 1.25rem",
-              fontSize: "0.85rem",
-              fontWeight: 800,
-              borderRadius: "10px",
-              cursor: "pointer",
-              background: filterType === "custom" ? "var(--color-primary)" : "rgba(255, 255, 255, 0.03)",
-              color: filterType === "custom" ? "#ffffff" : "#94a3b8",
-              border: filterType === "custom" ? "1px solid var(--color-primary)" : "1px solid rgba(255, 255, 255, 0.05)",
-              boxShadow: filterType === "custom" ? "0 4px 12px var(--color-primary-glow)" : "none",
-              transition: "all 0.2s ease",
-              width: isMobile ? "100%" : "auto"
-            }}
-            className={filterType === "custom" ? "" : "filter-preset-btn"}
-          >
+        <div
+          style={{
+            position: "relative",
+            width: isMobile ? "100%" : "auto",
+            overflow: "visible",
+            zIndex: 9999,
+          }}
+        >          <button
+          onClick={() => setIsCustomOpen(!isCustomOpen)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
+            padding: "0.5rem 1.25rem",
+            fontSize: "0.85rem",
+            fontWeight: 800,
+            borderRadius: "10px",
+            cursor: "pointer",
+            background: filterType === "custom" ? "var(--color-primary)" : "rgba(255, 255, 255, 0.03)",
+            color: filterType === "custom" ? "#ffffff" : "#94a3b8",
+            border: filterType === "custom" ? "1px solid var(--color-primary)" : "1px solid rgba(255, 255, 255, 0.05)",
+            boxShadow: filterType === "custom" ? "0 4px 12px var(--color-primary-glow)" : "none",
+            transition: "all 0.2s ease",
+            width: isMobile ? "100%" : "auto"
+          }}
+          className={filterType === "custom" ? "" : "filter-preset-btn"}
+        >
             <Calendar size={16} />
             <span>
-              {filterType === "custom" && customRange.start && customRange.end 
-                ? `${formatDateOnly(customRange.start)} - ${formatDateOnly(customRange.end)}` 
+              {filterType === "custom" && customRange.start && customRange.end
+                ? `${formatDateOnly(customRange.start)} - ${formatDateOnly(customRange.end)}`
                 : "Custom Range"}
             </span>
           </button>
 
 
 
-      {isCustomOpen && (
-  <div
-    style={{
-      position: "absolute",
-      top: isMobile ? "calc(100% + 0.75rem)" : "calc(100% + 0.85rem)",
-      right: isMobile ? "auto" : 0,
-      left: isMobile ? 0 : "auto",
+          {isCustomOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: isMobile ? "calc(100% + 0.75rem)" : "calc(100% + 0.85rem)",
+                right: isMobile ? "auto" : 0,
+                left: isMobile ? 0 : "auto",
 
-      zIndex: 99999,
+                zIndex: 99999,
 
-      width: isMobile ? "100%" : "340px",
-      minWidth: isMobile ? "100%" : "340px",
-      maxWidth: "calc(100vw - 2rem)",
+                width: isMobile ? "100%" : "340px",
+                minWidth: isMobile ? "100%" : "340px",
+                maxWidth: "calc(100vw - 2rem)",
 
-      background: "rgba(15, 23, 42, 0.98)",
-      backdropFilter: "blur(24px)",
-      WebkitBackdropFilter: "blur(24px)",
+                background: "rgba(15, 23, 42, 0.98)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
 
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: "1.5rem",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "1.5rem",
 
-      padding: "1.25rem",
+                padding: "1.25rem",
 
-      boxShadow:
-        "0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03)",
+                boxShadow:
+                  "0 25px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03)",
 
-      display: "flex",
-      flexDirection: "column",
-      gap: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem",
 
-      overflow: "visible",
+                overflow: "visible",
 
-      animation: "dropdownFade 0.22s ease",
+                animation: "dropdownFade 0.22s ease",
 
-      boxSizing: "border-box",
-    }}
-  >
-
-
+                boxSizing: "border-box",
+              }}
+            >
 
 
 
-              
+
+
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#f8fafc", textTransform: "uppercase" }}>Select Date Range</span>
                 <button onClick={() => setIsCustomOpen(false)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center" }}>
@@ -865,7 +866,7 @@ const { startDate, endDate } = useMemo(
 
 
 
-          
+
         </div>
       </div>
 
@@ -948,7 +949,7 @@ const { startDate, endDate } = useMemo(
                   width: "42px", height: "42px", borderRadius: "12px", background: activeTab === 'shoots' ? "rgba(99, 102, 241, 0.1)" : "rgba(239, 68, 68, 0.1)",
                   display: "flex", alignItems: "center", justifyContent: "center", color: activeTab === 'shoots' ? "#818cf8" : "#f87171", flexShrink: 0
                 }}>
-                  {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={22} /> : item.type === 'Influencer' ? <Megaphone size={22} /> : <Building2 size={22} />) : <Flag size={22} />}
+                  {activeTab === 'shoots' ? (item.type === 'Maternity' ? <Baby size={22} /> : item.type === 'Influencer' ? <Megaphone size={22} /> : item.type === 'Edits' || item.type === 'Edit' ? <Layers size={22} /> : <Building2 size={22} />) : <Flag size={22} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 800, fontSize: "1rem", color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.clientName}</div>

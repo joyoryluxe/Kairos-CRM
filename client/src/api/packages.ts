@@ -1,7 +1,7 @@
 import api from "./axios";
 import type { ApiResponse } from "./types";
 
-export type PackageCategory = "Maternity" | "Influencer" | "Corporate" | "General";
+export type PackageCategory = "Maternity" | "Influencer" | "Corporate" | "General" | "Edits";
 
 export type Package = {
   _id: string;

@@ -5,6 +5,17 @@ export type EditType = string;
 export type EditStatus = 'Pending' | 'In Progress' | 'Done' | 'Delivered';
 export type EditPriority = 'Low' | 'Medium' | 'High';
 
+export interface IExtra {
+  description: string;
+  amount: number;
+}
+
+export interface IPayment {
+  amount: number;
+  date: string;
+  note?: string;
+}
+
 export type Edit = {
   _id: string;
   title: string;
@@ -16,6 +27,19 @@ export type Edit = {
   deadline: string;
   notes?: string;
   photoClipCount: number;
+  
+  package?: string;
+  packagePrice?: number;
+  total?: number;
+  extrasTotal?: number;
+  advance?: number;
+  balance?: number;
+  expenses?: number;
+  expenseNote?: string;
+  profit?: number;
+  extras?: IExtra[];
+  payments?: IPayment[];
+
   user: string;
   createdAt: string;
   updatedAt: string;
@@ -23,10 +47,10 @@ export type Edit = {
 
 export type EditInput = Omit<Edit, "_id" | "user" | "createdAt" | "updatedAt">;
 
-export async function getEdits(params?: Record<string, any>): Promise<Edit[]> {
-  const res = await api.get<ApiResponse<Edit[]>>("/edits", { params });
+export async function getEdits(params?: Record<string, any>): Promise<{ data: Edit[], summary: any }> {
+  const res = await api.get<any>("/edits", { params });
   if (!res.data.success) throw new Error(res.data.message || "Failed to load edits");
-  return res.data.data;
+  return { data: res.data.data, summary: res.data.summary || {} };
 }
 
 export async function getEditById(id: string): Promise<Edit> {
