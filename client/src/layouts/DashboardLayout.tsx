@@ -1,6 +1,6 @@
 import { useNavigate, Outlet, NavLink, useLocation } from "react-router-dom";
 import logoImage from "../Kairos Logo.png";
-import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package, Users, FileText, Receipt } from "lucide-react";
+import { Baby, Megaphone, Building2, LogOut, LayoutDashboard, Bell, BellRing, UserCircle, Menu, X as CloseIcon, Package, Users, FileText, Receipt, Scroll } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getDashboardOverview } from "@/api/dashboard";
@@ -68,6 +68,7 @@ export default function DashboardLayout() {
     { name: "Edits", icon: FileText, path: "/dashboard/edits" },
     { name: "Invoices", icon: Receipt, path: "/dashboard/invoices" },
     { name: "Packages", icon: Package, path: "/dashboard/packages" },
+    { name: "Terms & Conditions", icon: Scroll, path: "/dashboard/terms-conditions" },
   ];
 
   return (

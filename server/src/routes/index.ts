@@ -12,6 +12,7 @@ import leadRoutes from "./leadRoutes";
 import editRoutes from "./editRoutes";
 import suggestionRoutes from "./suggestionRoutes";
 import invoiceRoutes from "./invoiceRoutes";
+import termsConditionRoutes from "./termsConditionRoutes";
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use("/leads", leadRoutes);
 router.use("/edits", editRoutes);
 router.use("/suggestions", suggestionRoutes);
 router.use("/invoices", invoiceRoutes);
+router.use("/terms-conditions", termsConditionRoutes);
 
 export default router;

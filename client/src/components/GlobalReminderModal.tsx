@@ -84,6 +84,11 @@ function injectStyles() {
       padding: 0;
       transition: all 0.3s ease;
     }
+    @media print {
+      .kairos-reminder-container {
+        display: none !important;
+      }
+    }
     .kairos-banner-wrapper {
       pointer-events: all;
       width: 100%;
@@ -486,7 +491,7 @@ export default function GlobalReminderModal({ notifications }: { notifications: 
     };
   }, [notifications, location.pathname, openToast]);
 
-  if (!visible || !sorted.length) return null;
+  if (!visible || !sorted.length || location.pathname.includes("/invoices")) return null;
 
   const current = sorted[index];
 

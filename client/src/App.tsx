@@ -12,6 +12,8 @@ import CorporatePage from "./pages/CorporatePage";
 import CorporateFormPage from "./pages/CorporateFormPage";
 import DashboardOverviewPage from "./pages/DashboardOverviewPage";
 import PackagesPage from "./pages/PackagesPage";
+import TermsConditionsPage from "./pages/TermsConditionsPage";
+import TermsConditionFormPage from "./pages/TermsConditionFormPage";
 import ProfilePage from "./pages/ProfilePage";
 import LeadsPage from "./pages/LeadsPage";
 import LeadFormPage from "./pages/LeadFormPage";
@@ -44,6 +46,10 @@ function App() {
         <Route path="corporate/:id/edit" element={<CorporateFormPage />} />
         {/* Packages */}
         <Route path="packages" element={<PackagesPage />} />
+        {/* Terms & Conditions */}
+        <Route path="terms-conditions" element={<TermsConditionsPage />} />
+        <Route path="terms-conditions/new" element={<TermsConditionFormPage />} />
+        <Route path="terms-conditions/:id/edit" element={<TermsConditionFormPage />} />
         {/* Leads */}
         <Route path="leads" element={<LeadsPage />} />
         <Route path="leads/new" element={<LeadFormPage />} />

@@ -10,7 +10,9 @@ import {
   type InvoiceItem
 } from "@/api/invoice";
 import { getMe } from "@/api/auth";
+import { getTermsConditions } from "@/api/termsConditions";
 import logoImage from "../Kairos Logo.png";
+import AutocompleteInput from "@/components/AutocompleteInput";
 import {
   ArrowLeft,
   Save,
@@ -150,56 +152,87 @@ const PAPER_STYLES = `
   }
   @media screen and (max-width: 768px) {
     .invoice-paper {
-      padding: 1.5rem;
+      padding: 1rem;
     }
     .invoice-grid-2 {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+      gap: 0.4rem;
     }
+
     .invoice-client-info-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+      gap: 0.5rem;
     }
     .invoice-table-header {
-      display: none;
+      font-size: 0.5rem;
+      gap: 0.5rem;
     }
     .invoice-table-row {
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 1.25rem 1rem;
-      margin-bottom: 1rem;
-      background: #f8fafc;
-      position: relative;
+      gap: 0.5rem;
     }
     .invoice-grid-4 {
-      grid-template-columns: 1fr;
       gap: 0.5rem;
     }
     .invoice-row-total {
-      text-align: left;
-      padding-top: 0.5rem;
-      border-top: 1px dashed #cbd5e1;
-      font-size: 1rem;
+      font-size: 0.8rem;
     }
     .mobile-label {
-      display: block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.25rem;
+      display: none;
+    }
+    .invoice-paper label {
+      font-size: 0.55rem;
+    }
+    .invoice-paper input, .invoice-paper textarea {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.5rem;
+    }
+    /* Reduce inline styled text sizes for preview mode */
+    .invoice-paper div[style] {
+      /* This is a bit of a hack, but without adding classes everywhere it's the safest way to ensure preview text shrinks */
+    }
+    .preview-shrink {
+      font-size: 0.45rem !important;
+      padding: 0.3rem 0.4rem !important;
+    }
+    .header-shrink h2 {
+      font-size: 1.5rem !important;
+    }
+    .header-shrink div {
+      font-size: 0.7rem !important;
     }
   }
 
   @media print {
     @page {
-      margin: 0;
+      size: A4;
+      margin: 12mm 10mm;
     }
+
+    /* Remove browser-injected header/footer (URL, date, page number) */
+    /* Safari/WebKit: use margin on @page to push content away from edges */
+    /* All browsers: hide running headers/footers by zeroing page margin decorations */
+
+    html {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+
     html,
-    body,
+    body {
+      background: white !important;
+      color: #0f172a !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+
     #root,
     .layout-wrapper,
     .main-content,
@@ -219,7 +252,8 @@ const PAPER_STYLES = `
       top: 0 !important;
       left: 0 !important;
     }
-    
+
+    /* Hide everything that is NOT the invoice content */
     .sidebar,
     .header,
     .mobile-only,
@@ -227,13 +261,18 @@ const PAPER_STYLES = `
     button,
     .btn,
     a,
-    header {
+    header,
+    nav,
+    footer {
       display: none !important;
+      visibility: hidden !important;
     }
 
+    /* Invoice container — full white page, no extra padding/background */
     .invoice-paper-container {
       background: white !important;
-      padding: 1.6cm !important;
+      padding: 0 !important;
+      margin: 0 !important;
       min-height: auto !important;
       color: #0f172a !important;
       width: 100% !important;
@@ -242,9 +281,11 @@ const PAPER_STYLES = `
       display: block !important;
     }
 
+    /* Invoice paper card — flat, no shadow, full width */
     .invoice-paper {
       box-shadow: none !important;
-      padding: 0 !important;
+      border-radius: 0 !important;
+      padding: 1.5rem 2rem !important;
       margin: 0 !important;
       width: 100% !important;
       max-width: 100% !important;
@@ -257,7 +298,7 @@ const PAPER_STYLES = `
     .invoice-paper h1, .invoice-paper h2, .invoice-paper h3, .invoice-paper h4 {
       color: #0f172a !important;
     }
-    
+
     .invoice-table-header {
       border-bottom: 2px solid #0f172a !important;
       color: #0f172a !important;
@@ -266,10 +307,17 @@ const PAPER_STYLES = `
     .invoice-table-row {
       border-bottom: 1px solid #cbd5e1 !important;
       page-break-inside: avoid;
+      break-inside: avoid;
       display: grid !important;
     }
     .payment-section {
       border-top: 2px dashed #cbd5e1 !important;
+    }
+
+    /* Ensure QR image prints */
+    .qr-image {
+      display: block !important;
+      -webkit-print-color-adjust: exact !important;
     }
   }
 `;
@@ -319,7 +367,7 @@ export default function InvoiceFormPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [issuedDate, setIssuedDate] = useState(new Date().toISOString().split("T")[0]);
-  
+
   const [items, setItems] = useState<InvoiceItem[]>([
     { description: "", quantity: 1, price: 0 }
   ]);
@@ -331,6 +379,7 @@ export default function InvoiceFormPage() {
   const [scannerImage, setScannerImage] = useState(DEFAULT_BANK_DETAILS.scannerImage);
 
   const [terms, setTerms] = useState<string[]>(DEFAULT_TERMS);
+  const [selectedTermsCategory, setSelectedTermsCategory] = useState<string>("Custom");
   const [notes, setNotes] = useState("");
 
   // Queries & Mutations
@@ -338,6 +387,11 @@ export default function InvoiceFormPage() {
     queryKey: ["invoice", id],
     queryFn: () => getInvoiceById(id!),
     enabled: isEdit,
+  });
+
+  const { data: termsConfig } = useQuery({
+    queryKey: ["terms-conditions"],
+    queryFn: () => getTermsConditions(),
   });
 
   const { data: allInvoicesResult } = useQuery({
@@ -377,6 +431,21 @@ export default function InvoiceFormPage() {
       setNotes(invoice.notes || "");
     }
   }, [isEdit, invoice]);
+
+  // Reactive effect to detect if current terms match a category preset or are Custom
+  useEffect(() => {
+    if (termsConfig) {
+      const termsStr = terms.map(t => t.trim()).filter(Boolean).join("\n");
+      const matchingPreset = termsConfig.find(tc => 
+        (tc.terms || []).map(t => t.trim()).filter(Boolean).join("\n") === termsStr
+      );
+      if (matchingPreset) {
+        setSelectedTermsCategory(matchingPreset.category);
+      } else {
+        setSelectedTermsCategory("Custom");
+      }
+    }
+  }, [terms, termsConfig]);
 
   const createMutation = useMutation({
     mutationFn: createInvoice,
@@ -463,6 +532,44 @@ export default function InvoiceFormPage() {
     setTerms(updated);
   };
 
+  const handleSelectFullRecord = (record: any) => {
+    // ── Client Info ──────────────────────────────────────────
+    if (record.clientPhone) setClientPhone(record.clientPhone);
+    if (record.clientEmail) setClientEmail(record.clientEmail);
+
+    // ── Service Items ─────────────────────────────────────────
+    if (Array.isArray(record.items) && record.items.length > 0) {
+      setItems(record.items.map((item: any) => ({
+        description: item.description || "",
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+      })));
+    }
+
+    // ── Payment Details ───────────────────────────────────────
+    if (record.paymentDetails) {
+      if (record.paymentDetails.bankAccount) setBankAccount(record.paymentDetails.bankAccount);
+      if (record.paymentDetails.upi) setUpi(record.paymentDetails.upi);
+      if (record.paymentDetails.ifscCode) setIfscCode(record.paymentDetails.ifscCode);
+      if (record.paymentDetails.branchName) setBranchName(record.paymentDetails.branchName);
+      if (record.paymentDetails.scannerImage) setScannerImage(record.paymentDetails.scannerImage);
+    }
+
+    // ── Terms & Conditions ────────────────────────────────────
+    if (record.termsAndConditions) {
+      const parsedTerms = record.termsAndConditions
+        .split("\n")
+        .map((t: string) => t.trim())
+        .filter(Boolean);
+      if (parsedTerms.length > 0) setTerms(parsedTerms);
+    }
+
+    // ── Notes ─────────────────────────────────────────────────
+    if (record.notes) setNotes(record.notes);
+
+    // NOTE: issuedDate is intentionally kept as today's date for a new invoice
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -506,84 +613,118 @@ export default function InvoiceFormPage() {
     <>
       <style>{PAPER_STYLES}</style>
       <div className="invoice-paper-container">
-        
+
         {/* Sticky Preview Banner */}
         {isPreview ? (
-          <div className="no-print" style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 100,
-            background: "rgba(15, 23, 42, 0.85)",
-            backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "16px",
-            padding: "1rem 1.5rem",
-            marginBottom: "2rem",
-            maxWidth: "850px",
-            margin: "0 auto 2rem auto",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <div style={{ background: "rgba(99, 102, 241, 0.15)", padding: "0.5rem", borderRadius: "8px" }}>
+          <div
+            className="no-print"
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 100,
+              background: "rgba(15, 23, 42, 0.85)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: window.innerWidth <= 768 ? "12px" : "16px",
+              padding: window.innerWidth <= 768 ? "0.85rem" : "1rem 1.5rem",
+              marginBottom: "1rem",
+              maxWidth: "850px",
+              margin: "0 auto 1rem auto",
+              display: "flex",
+              flexDirection: window.innerWidth <= 768 ? "column" : "row",
+              justifyContent: "space-between",
+              alignItems: window.innerWidth <= 768 ? "flex-start" : "center",
+              gap: window.innerWidth <= 768 ? "0.55rem" : "1rem",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: window.innerWidth <= 768 ? "1.95rem" : "0.75rem",
+                width: "100%"
+              }}
+            >              <div style={{ background: "rgba(99, 102, 241, 0.15)", padding: "0.5rem", borderRadius: "8px" }}>
                 <Receipt size={20} color="var(--color-primary)" />
               </div>
               <div>
-                <div style={{ color: "white", fontWeight: 700, fontSize: "0.95rem" }}>Invoice Client Preview</div>
-                <div style={{ color: "#94a3b8", fontSize: "0.75rem" }}>This is how the client will view the invoice document.</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: window.innerWidth <= 768 ? "0.82rem" : "0.95rem",
+                      lineHeight: 1.2
+                    }}
+                  >
+                    Invoice Client Preview
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#94a3b8",
+                      fontSize: window.innerWidth <= 768 ? "0.65rem" : "0.75rem",
+                      lineHeight: 1.3,
+                      marginTop: "0.2rem"
+                    }}
+                  >
+                    This is how the client will view the invoice document.
+                  </div>
+                </div>
+                {/* <div style={{ color: "#94a3b8", fontSize: "0.75rem" }}>This is how the client will view the invoice document.</div> */}
               </div>
             </div>
-<div
-  style={{
-    display: "flex",
-    gap: "0.75rem",
-    flexWrap: "wrap",
-  }}
->             <button
-  type="button"
-  onClick={() => setIsPreview(false)}
-  style={{
-    background: "transparent",
-    color: "#94a3b8",
-    padding: window.innerWidth <= 768 ? "0.5rem 0.9rem" : "0.6rem 1.2rem",
-    borderRadius: "10px",
-    fontWeight: window.innerWidth <= 768 ? 500 : 600,
-    border: "1px solid rgba(255, 255, 255, 0.1)",
-    cursor: "pointer",
-    fontSize: window.innerWidth <= 768 ? "0.72rem" : "0.85rem",
-    transition: "all 0.2s",
-    lineHeight: 1.2,
-    whiteSpace: "nowrap"
-  }}
->
-  Back to Edit
-</button>
-             <button
-  type="button"
-  onClick={() => window.print()}
-  style={{
-    background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-    color: "white",
-    padding: window.innerWidth <= 768 ? "0.5rem 1rem" : "0.6rem 1.5rem",
-    borderRadius: "10px",
-    fontWeight: window.innerWidth <= 768 ? 600 : 700,
-    border: "none",
-    cursor: "pointer",
-    fontSize: window.innerWidth <= 768 ? "0.72rem" : "0.85rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.4rem",
-    boxShadow: "0 4px 14px rgba(99, 102, 241, 0.4)",
-    lineHeight: 1.2,
-    whiteSpace: "nowrap"
-  }}
->
-  <Download size={window.innerWidth <= 768 ? 13 : 16} />
-  Print / Save PDF
-</button>
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                width: window.innerWidth <= 768 ? "100%" : "auto",
+                justifyContent: window.innerWidth <= 768 ? "space-between" : "flex-end"
+              }}
+            >             <button
+              type="button"
+              onClick={() => setIsPreview(false)}
+              style={{
+                background: "transparent",
+                color: "#94a3b8",
+                padding: window.innerWidth <= 768 ? "0.5rem 0.9rem" : "0.6rem 1.2rem",
+                borderRadius: "10px",
+                fontWeight: window.innerWidth <= 768 ? 500 : 600,
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                cursor: "pointer",
+                fontSize: window.innerWidth <= 768 ? "0.72rem" : "0.85rem",
+                transition: "all 0.2s",
+                lineHeight: 1.2,
+                whiteSpace: "nowrap"
+              }}
+            >
+                Back to Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{
+                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                  color: "white",
+                  padding: window.innerWidth <= 768 ? "0.5rem 1rem" : "0.6rem 1.5rem",
+                  borderRadius: "10px",
+                  fontWeight: window.innerWidth <= 768 ? 600 : 700,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: window.innerWidth <= 768 ? "0.72rem" : "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.4rem",
+                  boxShadow: "0 4px 14px rgba(99, 102, 241, 0.4)",
+                  lineHeight: 1.2,
+                  whiteSpace: "nowrap"
+                }}
+              >
+                <Download size={window.innerWidth <= 768 ? 13 : 16} />
+                Print / Save PDF
+              </button>
             </div>
           </div>
         ) : (
@@ -605,27 +746,60 @@ export default function InvoiceFormPage() {
         )}
 
         <form onSubmit={handleSubmit} className="invoice-paper">
-          
+
           {/* Paper Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "2rem", marginBottom: "3rem" }}>
-            <div>
-              <img src={logoImage} alt="Kairos CRM Logo" style={{ maxHeight: "60px", width: "auto", marginBottom: "1rem" }} />
-              <div style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: "1.4" }}>
-                {/* <strong>KAIROS CRM Studio</strong><br /> */}
-                {studioEmail}<br /><br/>
+          <div
+            className="paper-header-container"
+            style={{
+              display: "flex",
+              flexDirection: window.innerWidth <= 768 ? "row" : "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: window.innerWidth <= 768 ? "0.8rem" : "2rem",
+              marginBottom: window.innerWidth <= 768 ? "1.5rem" : "3rem",
+            }}
+          >          <div
+            className="header-shrink"
+            style={{
+              flex: 1,
+              minWidth: 0
+            }}
+          >
+              <img
+                src={logoImage}
+                alt="Kairos CRM Logo"
+                style={{
+                  maxHeight: window.innerWidth <= 768 ? "42px" : "60px",
+                  width: "auto",
+                  marginBottom: window.innerWidth <= 768 ? "0.5rem" : "1rem"
+                }}
+              />
+              <div
+                style={{
+                  fontSize: window.innerWidth <= 768 ? "0.62rem" : "0.85rem",
+                  color: "#64748b",
+                  lineHeight: 1.5
+                }}
+              >                {/* <strong>KAIROS CRM Studio</strong><br /> */}
+                {studioEmail}<br /><br />
                 {studioPhone}
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#6366f1", margin: 0, letterSpacing: "-0.02em" }}>INVOICE</h2>
-              <div style={{ marginTop: "0.5rem" }}>
+            <div
+              className="header-shrink"
+              style={{
+                textAlign: "right",
+                flexShrink: 0
+              }}
+            >              <h2 style={{ fontSize: window.innerWidth <= 768 ? "1.5rem" : "2rem", fontWeight: 800, color: "#6366f1", margin: 0, letterSpacing: "-0.02em" }}>INVOICE</h2>
+              <div style={{ marginTop: "0.3rem" }}>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#64748b" }}>Invoice ID: </span>
                 <span style={{ fontSize: "1rem", fontWeight: 800, color: "#0f172a" }}>{previewInvoiceNumber}</span>
               </div>
-              <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", alignItems: "center" }}>      
-            <label style={{ margin: 0 }}>Issued Date</label>
+              <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <label style={{ margin: 0 }}>Issued Date</label>
                 {isPreview ? (
-                  <div style={{ padding: "0.4rem 0.4rem", fontSize: "1rem", fontWeight: 800, color: "#0f172a", textAlign: "right" }}>
+                  <div className="preview-shrink" style={{ padding: "0.4rem 0.4rem", fontSize: "1rem", fontWeight: 800, color: "#0f172a", textAlign: "right" }}>
                     {formatDate(issuedDate)}
                   </div>
                 ) : (
@@ -650,17 +824,33 @@ export default function InvoiceFormPage() {
               <div>
                 <label> CLIENT NAME</label>
                 {isPreview ? (
-                  <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a", minHeight: "38px" }}>
                     {clientName || "—"}
                   </div>
                 ) : (
-                  <input required placeholder="Manually write ..." value={clientName} onChange={e => setClientName(e.target.value)} />
+                  <AutocompleteInput
+                    model="invoice"
+                    field="clientName"
+                    required
+                    value={clientName}
+                    onChange={(v: string) => setClientName(v)}
+                    onSelectFullRecord={handleSelectFullRecord}
+                    placeholder="Type to search past clients..."
+                    inputStyle={{
+                      background: "#f8fafc",
+                      color: "#0f172a",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "6px",
+                      padding: "0.6rem 0.8rem",
+                      fontSize: "0.9rem",
+                    }}
+                  />
                 )}
               </div>
               <div>
                 <label>Phone Number</label>
                 {isPreview ? (
-                  <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
                     {clientPhone || "—"}
                   </div>
                 ) : (
@@ -670,7 +860,7 @@ export default function InvoiceFormPage() {
               <div>
                 <label>EMAIL ADDRESS</label>
                 {isPreview ? (
-                  <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
                     {clientEmail || "—"}
                   </div>
                 ) : (
@@ -712,7 +902,7 @@ export default function InvoiceFormPage() {
                       </button>
                     )}
                     {isPreview ? (
-                      <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>
+                      <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>
                         {item.description}
                       </div>
                     ) : (
@@ -723,7 +913,7 @@ export default function InvoiceFormPage() {
                 <div>
                   <span className="mobile-label">Quantity</span>
                   {isPreview ? (
-                    <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", textAlign: "right", color: "#0f172a" }}>
+                    <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", textAlign: "right", color: "#0f172a" }}>
                       {item.quantity}
                     </div>
                   ) : (
@@ -733,7 +923,7 @@ export default function InvoiceFormPage() {
                 <div>
                   <span className="mobile-label">Price (₹)</span>
                   {isPreview ? (
-                    <div style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", textAlign: "right", color: "#0f172a" }}>
+                    <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", textAlign: "right", color: "#0f172a" }}>
                       {formatCurrency(item.price)}
                     </div>
                   ) : (
@@ -777,21 +967,21 @@ export default function InvoiceFormPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <div>
                     <label>Bank Account Number</label>
-                    <div style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{bankAccount || "—"}</div>
+                    <div className="preview-shrink" style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{bankAccount || "—"}</div>
                   </div>
                   <div>
                     <label>UPI ID</label>
-                    <div style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{upi || "—"}</div>
+                    <div className="preview-shrink" style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{upi || "—"}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <div>
                     <label>IFSC Code</label>
-                    <div style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{ifscCode || "—"}</div>
+                    <div className="preview-shrink" style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{ifscCode || "—"}</div>
                   </div>
                   <div>
                     <label>Branch Name</label>
-                    <div style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{branchName || "—"}</div>
+                    <div className="preview-shrink" style={{ padding: "0.2rem 0.5rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a" }}>{branchName || "—"}</div>
                   </div>
                 </div>
               </div>
@@ -846,14 +1036,42 @@ export default function InvoiceFormPage() {
               </ol>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {termsConfig && termsConfig.length > 0 && (
+                  <div style={{ marginBottom: "1rem", maxWidth: "320px" }}>
+                    <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.35rem", display: "block" }}>
+                      Load Preset Terms by Category
+                    </label>
+                    <select 
+                      style={{ background: "#f8fafc", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.5rem 0.75rem", fontSize: "0.85rem", width: "100%", outline: "none", cursor: "pointer" }}
+                      onChange={e => {
+                        const selectedCat = e.target.value;
+                        setSelectedTermsCategory(selectedCat);
+                        if (selectedCat !== "Custom") {
+                          const found = termsConfig.find(tc => tc.category === selectedCat);
+                          if (found) {
+                            setTerms(found.terms || []);
+                          }
+                        }
+                      }}
+                      value={selectedTermsCategory}
+                    >
+                      <option value="Custom">Custom</option>
+                      {termsConfig.map(tc => (
+                        <option key={tc._id} value={tc.category}>
+                          {tc.category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {terms.map((term, index) => (
                   <div key={index} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     <span style={{ fontWeight: 700, color: "#64748b", minWidth: "24px" }}>{index + 1}.</span>
-                    <input 
-                      required 
-                      placeholder={`Term ${index + 1}`} 
-                      value={term} 
-                      onChange={e => handleTermChange(index, e.target.value)} 
+                    <input
+                      required
+                      placeholder={`Term ${index + 1}`}
+                      value={term}
+                      onChange={e => handleTermChange(index, e.target.value)}
                       style={{ flex: 1 }}
                     />
                     <button type="button" onClick={() => handleRemoveTerm(index)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "0.25rem" }} title="Delete Term">
@@ -869,7 +1087,7 @@ export default function InvoiceFormPage() {
           </div>
 
           {/* Action Row */}
-          {!isPreview && (
+          {/* {!isPreview && (
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "1.5rem", marginTop: "3rem", borderTop: "2px solid #f1f5f9", paddingTop: "2rem" }}>
               {isEdit && (
                 <button
@@ -908,8 +1126,116 @@ export default function InvoiceFormPage() {
                 <span>{isPending ? "Generating..." : isEdit ? "Update Invoice" : "Create & Issue"}</span>
               </button>
             </div>
-          )}
+          )} */}
+{/* Action Row */}
+{!isPreview && (
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: window.innerWidth <= 768 ? "0.75rem" : "1rem",
+      marginTop: "3rem",
+      borderTop: "2px solid #f1f5f9",
+      paddingTop: "2rem"
+    }}
+  >
+    {/* Left Side */}
+    <div
+      style={{
+        display: "flex",
+        gap: window.innerWidth <= 768 ? "0.5rem" : "1rem",
+        flex: window.innerWidth <= 768 ? "1 1 100%" : "1",
+      }}
+    >
+      {isEdit && (
+        <button
+          type="button"
+          onClick={() => setIsPreview(true)}
+          style={{
+            background: "var(--bg-surface-3)",
+            color: "var(--text-primary)",
+            padding: window.innerWidth <= 768 ? "0.75rem 1rem" : "1rem 1.5rem",
+            borderRadius: "12px",
+            fontWeight: 600,
+            border: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+            flex: 1,
+            minWidth: 0,
+            fontSize: window.innerWidth <= 768 ? "0.82rem" : "0.95rem",
+            whiteSpace: "nowrap"
+          }}
+        >
+          <FileText size={window.innerWidth <= 768 ? 16 : 20} />
+          <span>Preview Invoice</span>
+        </button>
+      )}
 
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard/invoices")}
+        style={{
+          background: "transparent",
+          border: "1px solid #e2e8f0",
+          color: "#64748b",
+          fontWeight: 700,
+          padding: window.innerWidth <= 768 ? "0.75rem 1rem" : "1rem 1.5rem",
+          borderRadius: "12px",
+          cursor: "pointer",
+          flex: 1,
+          minWidth: 0,
+          fontSize: window.innerWidth <= 768 ? "0.82rem" : "0.95rem",
+          whiteSpace: "nowrap"
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+
+    {/* Submit Button */}
+    <button
+      type="submit"
+      disabled={isPending}
+      style={{
+        background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+        color: "white",
+        padding: window.innerWidth <= 768 ? "0.85rem 1rem" : "1rem 2rem",
+        borderRadius: "12px",
+        fontWeight: 600,
+        border: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.6rem",
+        cursor: "pointer",
+        boxShadow: "0 10px 20px rgba(99, 102, 241, 0.2)",
+        transition: "all 0.3s",
+        width: window.innerWidth <= 768 ? "100%" : "auto",
+        fontSize: window.innerWidth <= 768 ? "0.85rem" : "0.95rem",
+        whiteSpace: "nowrap"
+      }}
+    >
+      {isPending ? (
+        <Clock size={window.innerWidth <= 768 ? 16 : 20} />
+      ) : (
+        <Save size={window.innerWidth <= 768 ? 16 : 20} />
+      )}
+
+      <span>
+        {isPending
+          ? "Generating..."
+          : isEdit
+          ? "Update Invoice"
+          : "Create & Issue"}
+      </span>
+    </button>
+  </div>
+)}
         </form>
       </div>
       <style>{`

@@ -5,6 +5,7 @@ import Influencer from '../models/Influencer';
 import CorporateEvent from '../models/CorporateEvent';
 import Lead from '../models/Lead';
 import Edit from '../models/Edit';
+import Invoice from '../models/Invoice';
 
 const modelMap: Record<string, any> = {
   maternity: Maternity,
@@ -12,6 +13,7 @@ const modelMap: Record<string, any> = {
   corporate: CorporateEvent,
   lead: Lead,
   edit: Edit,
+  invoice: Invoice,
 };
 
 export const getFieldSuggestions = async (req: AuthRequest, res: Response): Promise<void> => {
