@@ -2,6 +2,7 @@
 
 
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/authenticate';
 import Maternity from '../models/Maternity';
 import Influencer from '../models/Influencer';
 import CorporateEvent from '../models/CorporateEvent';
@@ -54,7 +55,7 @@ const safeToObject = (doc: any, type: string) => {
 
 // ── controller ─────────────────────────────────────────────────────────────
 
-export const getDashboardOverview = async (req: Request, res: Response) => {
+export const getDashboardOverview = async (req: AuthRequest, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
     const start = startDate ? new Date(startDate as string) : null;
@@ -70,15 +71,15 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
       return true;
     };
 
-    const query = {};
+    const userQuery = req.user ? { user: req.user.id } : {};
 
     const [allMaternities, allInfluencers, allCorporateEvents, allStudioExpenses, allLeads, allEdits] = await Promise.all([
-      Maternity.find(query),
-      Influencer.find(query),
-      CorporateEvent.find(query),
-      StudioExpense.find(query),
-      Lead.find(query),
-      Edit.find(query),
+      Maternity.find({}),
+      Influencer.find({}),
+      CorporateEvent.find({}),
+      StudioExpense.find({}),
+      Lead.find(userQuery),
+      Edit.find(userQuery),
     ]);
 
     // Filter by date range — timestamps (createdAt/updatedAt) exist at runtime via
@@ -101,7 +102,6 @@ export const getDashboardOverview = async (req: Request, res: Response) => {
     const matchesFilter = (doc: any, shootField: string) => {
       if (!isFiltered) return true;
       if (isInRange(doc.createdAt)) return true;
-      if (isInRange(doc.updatedAt)) return true;
       if (isInRange(doc[shootField])) return true;
       if (Array.isArray(doc.payments) && doc.payments.some((p: any) => isInRange(p.date))) return true;
       return false;
