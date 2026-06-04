@@ -286,6 +286,36 @@ select:focus {
   animation: bounce 1s infinite;
 }
 
+/* ─── Record Card Styling ────────────────────────────────────────────────── */
+.record-card, .record-card-hover {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.record-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.record-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.record-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* ─── Responsive Breakpoints ─────────────────────────────────────────────── */
 :root {
   --breakpoint-sm: 640px;
@@ -440,6 +470,45 @@ select:focus {
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden;
+  }
+
+  .card {
+    padding: 1rem !important;
+    border-radius: var(--radius-md) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  .record-card, .record-card-hover {
+    padding: 1rem !important;
+  }
+
+  .record-card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+  }
+
+  .record-card-title-group {
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .record-card-actions {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .record-card-actions button,
+  .record-card-actions a {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .animate-fade-up {
+    padding: 0 !important;
   }
 
   .grid-responsive {

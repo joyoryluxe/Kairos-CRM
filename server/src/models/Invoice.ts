@@ -3,7 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IInvoiceItem {
   description: string;
   quantity: number;
-  price: number;
+  price: number | string;
+  priceType?: 'flat' | 'percentage';
   total: number;
 }
 
@@ -15,6 +16,7 @@ export interface IInvoice extends Document {
   issuedDate: Date;
   items: IInvoiceItem[];
   subTotal: number;
+  discount: number;
   totalAmount: number;
   paymentDetails: {
     bankAccount: string;
@@ -33,8 +35,9 @@ const InvoiceItemSchema = new Schema<IInvoiceItem>(
   {
     description: { type: String, required: true },
     quantity: { type: Number, required: true, min: 0, default: 1 },
-    price: { type: Number, required: true, min: 0, default: 0 },
-    total: { type: Number, required: true, min: 0, default: 0 },
+    price: { type: Schema.Types.Mixed, required: true, default: '' },
+    priceType: { type: String, enum: ['flat', 'percentage'], default: 'flat' },
+    total: { type: Number, required: true, default: 0 },
   },
   { _id: false }
 );
@@ -48,6 +51,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     issuedDate: { type: Date, default: Date.now },
     items: { type: [InvoiceItemSchema], default: [] },
     subTotal: { type: Number, default: 0 },
+    discount: { type: Number, min: 0, max: 100, default: 0 },
     totalAmount: { type: Number, default: 0 },
     paymentDetails: {
       bankAccount: { type: String, default: '' },
@@ -64,16 +68,28 @@ const InvoiceSchema = new Schema<IInvoice>(
 
 // Pre-save hook to calculate item totals, subTotal, and totalAmount
 InvoiceSchema.pre('save', function (next) {
-  // 1. Calculate individual item totals
+  // 1. Calculate individual item totals with percentage and negative support
+  let runningSubtotal = 0;
   this.items.forEach(item => {
-    item.total = (item.quantity || 0) * (item.price || 0);
+    const qty = item.quantity || 0;
+    const priceNum = parseFloat(String(item.price || '0')) || 0;
+    const type = (item as any).priceType || 'flat';
+    
+    let resolvedPrice = 0;
+    if (type === 'percentage') {
+      resolvedPrice = (runningSubtotal * priceNum) / 100;
+    } else {
+      resolvedPrice = priceNum;
+    }
+    
+    item.total = qty * resolvedPrice;
+    runningSubtotal += item.total;
   });
 
-  // 2. Calculate subTotal
-  this.subTotal = this.items.reduce((sum, item) => sum + (item.total || 0), 0);
-
-  // 3. Total amount is currently equal to subTotal
-  this.totalAmount = this.subTotal;
+  // 2. Calculate subTotal and totalAmount
+  this.subTotal = runningSubtotal;
+  const discountPercent = this.discount || 0;
+  this.totalAmount = this.subTotal - (this.subTotal * discountPercent) / 100;
 
   next();
 });
@@ -85,11 +101,25 @@ InvoiceSchema.pre('findOneAndUpdate', function (next) {
 
   let items = update.items ?? update['$set']?.items;
   if (items) {
+    let runningSubtotal = 0;
     items.forEach((item: any) => {
-      item.total = (item.quantity || 0) * (item.price || 0);
+      const qty = item.quantity || 0;
+      const priceNum = parseFloat(String(item.price || '0')) || 0;
+      const type = item.priceType || 'flat';
+      
+      let resolvedPrice = 0;
+      if (type === 'percentage') {
+        resolvedPrice = (runningSubtotal * priceNum) / 100;
+      } else {
+        resolvedPrice = priceNum;
+      }
+      
+      item.total = qty * resolvedPrice;
+      runningSubtotal += item.total;
     });
-    const subTotal = items.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
-    const totalAmount = subTotal;
+    const subTotal = runningSubtotal;
+    const discount = update.discount !== undefined ? update.discount : (update['$set']?.discount !== undefined ? update['$set']?.discount : 0);
+    const totalAmount = subTotal - (subTotal * discount) / 100;
 
     this.setUpdate({
       ...update,
@@ -97,6 +127,7 @@ InvoiceSchema.pre('findOneAndUpdate', function (next) {
         ...(update['$set'] || {}),
         items,
         subTotal,
+        discount,
         totalAmount
       }
     });

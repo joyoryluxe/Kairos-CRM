@@ -58,7 +58,7 @@ const PAPER_STYLES = `
     margin-bottom: 0.35rem;
     display: block;
   }
-  .invoice-paper input, .invoice-paper textarea {
+  .invoice-paper input, .invoice-paper textarea, .invoice-paper select {
     background: #f8fafc;
     color: #0f172a;
     border: 1px solid #cbd5e1;
@@ -68,11 +68,46 @@ const PAPER_STYLES = `
     width: 100%;
     outline: none;
     transition: all 0.2s;
+    box-sizing: border-box;
   }
   .invoice-paper input:focus, .invoice-paper textarea:focus {
     border-color: #6366f1;
     background: #ffffff;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+  .price-input-group {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .price-input-group:focus-within {
+    border-color: #6366f1;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+  .price-input-group input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0.6rem 0.5rem !important;
+    text-align: right;
+    width: 100%;
+    outline: none;
+  }
+  .price-input-group select {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #475569;
+    font-weight: 700;
+    outline: none;
+    padding: 0.6rem 0.5rem !important;
+    cursor: pointer;
+    text-align: center;
   }
 
   .invoice-paper input[type="number"]::-webkit-inner-spin-button,
@@ -159,23 +194,57 @@ const PAPER_STYLES = `
     }
 
     .invoice-client-info-grid {
-      gap: 0.5rem;
+      grid-template-columns: 1fr !important;
+      gap: 1rem !important;
     }
     .invoice-table-header {
-      font-size: 0.5rem;
-      gap: 0.5rem;
+      display: none !important;
     }
     .invoice-table-row {
-      gap: 0.5rem;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.75rem !important;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem !important;
+      margin-bottom: 1rem !important;
+      align-items: start !important;
     }
-    .invoice-grid-4 {
-      gap: 0.5rem;
+    .invoice-table-row > div:nth-child(1) {
+      grid-column: span 2;
+    }
+    .invoice-table-row > div:nth-child(2) {
+      grid-column: span 1;
+    }
+    .invoice-table-row > div:nth-child(3) {
+      grid-column: span 1;
+    }
+    .invoice-table-row > div:nth-child(4) {
+      grid-column: span 2;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 0.75rem;
+      margin-top: 0.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .invoice-row-total {
-      font-size: 0.8rem;
+      text-align: right;
+      padding-right: 0;
+      font-size: 1rem !important;
     }
     .mobile-label {
-      display: none;
+      display: block !important;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+    .invoice-table-row > div:nth-child(4) .mobile-label {
+      margin-bottom: 0;
     }
     .invoice-paper label {
       font-size: 0.55rem;
@@ -192,11 +261,28 @@ const PAPER_STYLES = `
       font-size: 0.45rem !important;
       padding: 0.3rem 0.4rem !important;
     }
-    .header-shrink h2 {
-      font-size: 1.5rem !important;
-    }
     .header-shrink div {
       font-size: 0.7rem !important;
+    }
+    .invoice-action-row {
+      flex-direction: column-reverse !important;
+      align-items: stretch !important;
+      gap: 0.75rem !important;
+    }
+    .invoice-action-left {
+      flex-direction: column !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+    }
+    .invoice-action-submit {
+      width: 100% !important;
+      padding: 0.85rem 1rem !important;
+      font-size: 0.85rem !important;
+    }
+    .invoice-action-btn-preview, .invoice-action-btn-cancel {
+      width: 100% !important;
+      padding: 0.85rem 1rem !important;
+      font-size: 0.85rem !important;
     }
   }
 
@@ -320,6 +406,38 @@ const PAPER_STYLES = `
       -webkit-print-color-adjust: exact !important;
     }
   }
+
+  .invoice-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 3rem;
+    border-top: 2px solid #f1f5f9;
+    padding-top: 2rem;
+  }
+  .invoice-action-left {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+  }
+  .invoice-action-submit {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+    transition: all 0.3s;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
 `;
 
 const DEFAULT_TERMS = [
@@ -342,6 +460,17 @@ const formatCurrency = (value: number | undefined) =>
     currency: "INR",
     minimumFractionDigits: 0,
   }).format(value || 0);
+
+const formatPrice = (price: string | number | undefined, priceType: string | undefined) => {
+  if (price === undefined || price === null || price === "") return "";
+  const priceStr = String(price).trim();
+  if (priceType === "percentage") {
+    return priceStr + "%";
+  }
+  const numeric = parseFloat(priceStr);
+  if (isNaN(numeric)) return priceStr;
+  return formatCurrency(numeric);
+};
 
 const formatDate = (iso: string | undefined) => {
   if (!iso) return "N/A";
@@ -367,9 +496,10 @@ export default function InvoiceFormPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [issuedDate, setIssuedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [discount, setDiscount] = useState<string>("");
 
   const [items, setItems] = useState<InvoiceItem[]>([
-    { description: "", quantity: 1, price: 0 }
+    { description: "", quantity: 1, price: "", priceType: "flat" }
   ]);
 
   const [bankAccount, setBankAccount] = useState(DEFAULT_BANK_DETAILS.bankAccount);
@@ -415,7 +545,15 @@ export default function InvoiceFormPage() {
       if (invoice.issuedDate) {
         setIssuedDate(new Date(invoice.issuedDate).toISOString().split("T")[0]);
       }
-      setItems(invoice.items || [{ description: "", quantity: 1, price: 0 }]);
+      if (invoice.items && invoice.items.length > 0) {
+        setItems(invoice.items.map(item => ({
+          ...item,
+          price: item.price === 0 ? "" : (item.price ?? ""),
+          priceType: item.priceType || "flat"
+        })));
+      } else {
+        setItems([{ description: "", quantity: 1, price: "", priceType: "flat" }]);
+      }
       if (invoice.paymentDetails) {
         setBankAccount(invoice.paymentDetails.bankAccount || "");
         setUpi(invoice.paymentDetails.upi || "");
@@ -429,6 +567,7 @@ export default function InvoiceFormPage() {
         setTerms([]);
       }
       setNotes(invoice.notes || "");
+      setDiscount(invoice.discount !== undefined ? String(invoice.discount) : "");
     }
   }, [isEdit, invoice]);
 
@@ -436,7 +575,7 @@ export default function InvoiceFormPage() {
   useEffect(() => {
     if (termsConfig) {
       const termsStr = terms.map(t => t.trim()).filter(Boolean).join("\n");
-      const matchingPreset = termsConfig.find(tc => 
+      const matchingPreset = termsConfig.find(tc =>
         (tc.terms || []).map(t => t.trim()).filter(Boolean).join("\n") === termsStr
       );
       if (matchingPreset) {
@@ -463,10 +602,41 @@ export default function InvoiceFormPage() {
     },
   });
 
+  // Helper to resolve raw price strings (like percentages) into numeric values
+  const resolveInvoiceItems = (itemsList: InvoiceItem[]) => {
+    let runningSubtotal = 0;
+    return itemsList.map((item) => {
+      const qty = typeof item.quantity === "number" ? item.quantity : (parseFloat(item.quantity) || 0);
+      const priceNum = parseFloat(String(item.price ?? "")) || 0;
+      const type = item.priceType || "flat";
+      
+      let resolvedPrice = 0;
+      if (type === "percentage") {
+        resolvedPrice = (runningSubtotal * priceNum) / 100;
+      } else {
+        resolvedPrice = priceNum;
+      }
+      
+      const resolvedTotal = qty * resolvedPrice;
+      runningSubtotal += resolvedTotal;
+      
+      return {
+        ...item,
+        resolvedPrice,
+        resolvedTotal
+      };
+    });
+  };
+
+  const resolvedItems = resolveInvoiceItems(items);
+
   // Calculate Subtotal/Total dynamically on frontend
-  const calculatedTotal = items.reduce((sum, item) => {
-    return sum + (item.quantity || 0) * (item.price || 0);
+  const calculatedSubTotal = resolvedItems.reduce((sum, item) => {
+    return sum + item.resolvedTotal;
   }, 0);
+  const discountNum = parseFloat(String(discount || "")) || 0;
+  const calculatedDiscountAmount = (calculatedSubTotal * discountNum) / 100;
+  const calculatedTotal = calculatedSubTotal - calculatedDiscountAmount;
 
   // Generate preview of Invoice Number based on existing records
   const previewInvoiceNumber = (() => {
@@ -492,7 +662,7 @@ export default function InvoiceFormPage() {
 
   // Item Table Mutators
   const handleAddItem = () => {
-    setItems([...items, { description: "", quantity: 1, price: 0 }]);
+    setItems([...items, { description: "", quantity: 1, price: "", priceType: "flat" }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -507,9 +677,17 @@ export default function InvoiceFormPage() {
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const updated = items.map((item, i) => {
       if (i === index) {
+        let updatedValue = value;
+        if (field === "quantity") {
+          updatedValue = value === "" ? "" : (parseFloat(value) || 0);
+        } else if (field === "price") {
+          updatedValue = value;
+        } else if (field === "priceType") {
+          updatedValue = value;
+        }
         return {
           ...item,
-          [field]: field === "description" ? value : parseFloat(value) || 0
+          [field]: updatedValue
         };
       }
       return item;
@@ -542,7 +720,8 @@ export default function InvoiceFormPage() {
       setItems(record.items.map((item: any) => ({
         description: item.description || "",
         quantity: item.quantity || 1,
-        price: item.price || 0,
+        price: item.price === 0 ? "" : (item.price ?? ""),
+        priceType: item.priceType || "flat",
       })));
     }
 
@@ -566,6 +745,7 @@ export default function InvoiceFormPage() {
 
     // ── Notes ─────────────────────────────────────────────────
     if (record.notes) setNotes(record.notes);
+    setDiscount(record.discount !== undefined ? String(record.discount) : "");
 
     // NOTE: issuedDate is intentionally kept as today's date for a new invoice
   };
@@ -587,6 +767,7 @@ export default function InvoiceFormPage() {
       clientPhone: clientPhone || undefined,
       issuedDate: new Date(issuedDate).toISOString(),
       items,
+      discount: parseFloat(String(discount || "")) || 0,
       paymentDetails: {
         bankAccount,
         upi,
@@ -835,7 +1016,8 @@ export default function InvoiceFormPage() {
                     value={clientName}
                     onChange={(v: string) => setClientName(v)}
                     onSelectFullRecord={handleSelectFullRecord}
-                    placeholder="Type to search past clients..."
+                    placeholder=""
+                    showIcon={false}
                     inputStyle={{
                       background: "#f8fafc",
                       color: "#0f172a",
@@ -886,12 +1068,12 @@ export default function InvoiceFormPage() {
             <div className="invoice-table-header">
               <span>Service Details</span>
               <span style={{ textAlign: "right" }}>Quantity</span>
-              <span style={{ textAlign: "right" }}>Price (₹)</span>
+              <span style={{ textAlign: "right" }}>Price</span>
               <span style={{ textAlign: "right" }}>Total (₹)</span>
             </div>
 
             {/* Table Rows */}
-            {items.map((item, index) => (
+            {resolvedItems.map((item, index) => (
               <div key={index} className="invoice-table-row">
                 <div>
                   <span className="mobile-label">Service Details</span>
@@ -917,23 +1099,38 @@ export default function InvoiceFormPage() {
                       {item.quantity}
                     </div>
                   ) : (
-                    <input required type="number" min="1" placeholder="Qty" style={{ textAlign: "right" }} value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} />
+                    <input required type="number" min="1" placeholder="Qty" style={{ textAlign: "right", width: "100%", boxSizing: "border-box" }} value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} />
                   )}
                 </div>
                 <div>
-                  <span className="mobile-label">Price (₹)</span>
+                  <span className="mobile-label">Price</span>
                   {isPreview ? (
                     <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", textAlign: "right", color: "#0f172a" }}>
-                      {formatCurrency(item.price)}
+                      {formatPrice(item.price, item.priceType)}
                     </div>
                   ) : (
-                    <input required type="number" min="0" placeholder="Price" style={{ textAlign: "right" }} value={item.price} onChange={e => handleItemChange(index, "price", e.target.value)} />
+                    <div className="price-input-group">
+                      <input
+                        required
+                        type="text"
+                        placeholder="Price"
+                        value={item.price}
+                        onChange={e => handleItemChange(index, "price", e.target.value)}
+                      />
+                      <select
+                        value={item.priceType || "flat"}
+                        onChange={e => handleItemChange(index, "priceType", e.target.value)}
+                      >
+                        <option value="flat">₹</option>
+                        <option value="percentage">%</option>
+                      </select>
+                    </div>
                   )}
                 </div>
                 <div>
                   <span className="mobile-label">Total Amount (₹)</span>
                   <div className="invoice-row-total">
-                    {formatCurrency((item.quantity || 0) * (item.price || 0))}
+                    {formatCurrency(item.resolvedTotal)}
                   </div>
                 </div>
               </div>
@@ -946,10 +1143,59 @@ export default function InvoiceFormPage() {
               </button>
             )}
 
-            {/* Total Amount Display (No Subtotal) */}
+            {/* Total & Discount Display */}
             <div style={{ marginTop: "2rem", borderTop: "2px solid #e2e8f0", paddingTop: "1.5rem", display: "flex", justifyContent: "flex-end" }}>
-              <div style={{ width: "250px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.2rem" }}>
+              <div style={{ width: "280px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                
+                {/* Sub Total (Only show if discount exists or we are in edit mode) */}
+                {((parseFloat(discount) || 0) > 0 || !isPreview) && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.95rem", color: "#475569" }}>
+                    <span style={{ fontWeight: 600 }}>Sub Total:</span>
+                    <span style={{ fontWeight: 600, color: "#0f172a" }}>{formatCurrency(calculatedSubTotal)}</span>
+                  </div>
+                )}
+
+                {/* Discount (%) Field / Display */}
+                {isPreview ? (
+                  (parseFloat(discount) || 0) > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.95rem", color: "#475569" }}>
+                      <span style={{ fontWeight: 600 }}>Discount({parseFloat(discount || "0").toFixed(2)}%):</span>
+                      <span style={{ fontWeight: 400, color: "#334155", fontSize: "0.60rem" }}>(-){formatCurrency(calculatedDiscountAmount)}</span>
+                    </div>
+                  )
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.95rem", color: "#475569" }}>
+                    <span style={{ fontWeight: 600 }}>Discount (%):</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      {(parseFloat(discount) || 0) > 0 && (
+                        <span style={{ fontWeight: 400, color: "#334155", fontSize: "0.60rem" }}>
+                          (-{formatCurrency(calculatedDiscountAmount)})
+                        </span>
+                      )}
+                      <div style={{ width: "120px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={discount}
+                          onChange={e => setDiscount(e.target.value)}
+                          placeholder=""
+                          style={{
+                            textAlign: "right",
+                            padding: "0.35rem 0.5rem",
+                            fontSize: "0.9rem",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1"
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total Amount */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "1.2rem", borderTop: (((parseFloat(discount) || 0) > 0) || !isPreview) ? "1px solid #e2e8f0" : "none", paddingTop: (((parseFloat(discount) || 0) > 0) || !isPreview) ? "0.75rem" : "0" }}>
                   <span style={{ fontWeight: 800, color: "#0f172a" }}>Total Amount:</span>
                   <span style={{ fontWeight: 800, color: "#6366f1" }}>{formatCurrency(calculatedTotal)}</span>
                 </div>
@@ -1041,7 +1287,7 @@ export default function InvoiceFormPage() {
                     <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.35rem", display: "block" }}>
                       Load Preset Terms by Category
                     </label>
-                    <select 
+                    <select
                       style={{ background: "#f8fafc", color: "#0f172a", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "0.5rem 0.75rem", fontSize: "0.85rem", width: "100%", outline: "none", cursor: "pointer" }}
                       onChange={e => {
                         const selectedCat = e.target.value;
@@ -1127,115 +1373,83 @@ export default function InvoiceFormPage() {
               </button>
             </div>
           )} */}
-{/* Action Row */}
-{!isPreview && (
-  <div
-    style={{
-      display: "flex",
-      flexWrap: "wrap",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: window.innerWidth <= 768 ? "0.75rem" : "1rem",
-      marginTop: "3rem",
-      borderTop: "2px solid #f1f5f9",
-      paddingTop: "2rem"
-    }}
-  >
-    {/* Left Side */}
-    <div
-      style={{
-        display: "flex",
-        gap: window.innerWidth <= 768 ? "0.5rem" : "1rem",
-        flex: window.innerWidth <= 768 ? "1 1 100%" : "1",
-      }}
-    >
-      {isEdit && (
-        <button
-          type="button"
-          onClick={() => setIsPreview(true)}
-          style={{
-            background: "var(--bg-surface-3)",
-            color: "var(--text-primary)",
-            padding: window.innerWidth <= 768 ? "0.75rem 1rem" : "1rem 1.5rem",
-            borderRadius: "12px",
-            fontWeight: 600,
-            border: "1px solid var(--border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            cursor: "pointer",
-            flex: 1,
-            minWidth: 0,
-            fontSize: window.innerWidth <= 768 ? "0.82rem" : "0.95rem",
-            whiteSpace: "nowrap"
-          }}
-        >
-          <FileText size={window.innerWidth <= 768 ? 16 : 20} />
-          <span>Preview Invoice</span>
-        </button>
-      )}
+          {/* Action Row */}
+          {!isPreview && (
+            <div className="invoice-action-row">
+              {/* Left Side */}
+              <div className="invoice-action-left">
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIsPreview(true)}
+                    className="invoice-action-btn-preview"
+                    style={{
+                      background: "var(--bg-surface-3)",
+                      color: "var(--text-primary)",
+                      padding: "1rem 1.5rem",
+                      borderRadius: "12px",
+                      fontWeight: 600,
+                      border: "1px solid var(--border)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem",
+                      cursor: "pointer",
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: "0.95rem",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    <FileText size={20} />
+                    <span>Preview Invoice</span>
+                  </button>
+                )}
 
-      <button
-        type="button"
-        onClick={() => navigate("/dashboard/invoices")}
-        style={{
-          background: "transparent",
-          border: "1px solid #e2e8f0",
-          color: "#64748b",
-          fontWeight: 700,
-          padding: window.innerWidth <= 768 ? "0.75rem 1rem" : "1rem 1.5rem",
-          borderRadius: "12px",
-          cursor: "pointer",
-          flex: 1,
-          minWidth: 0,
-          fontSize: window.innerWidth <= 768 ? "0.82rem" : "0.95rem",
-          whiteSpace: "nowrap"
-        }}
-      >
-        Cancel
-      </button>
-    </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/dashboard/invoices")}
+                  className="invoice-action-btn-cancel"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #e2e8f0",
+                    color: "#64748b",
+                    fontWeight: 700,
+                    padding: "1rem 1.5rem",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: "0.95rem",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
 
-    {/* Submit Button */}
-    <button
-      type="submit"
-      disabled={isPending}
-      style={{
-        background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-        color: "white",
-        padding: window.innerWidth <= 768 ? "0.85rem 1rem" : "1rem 2rem",
-        borderRadius: "12px",
-        fontWeight: 600,
-        border: "none",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "0.6rem",
-        cursor: "pointer",
-        boxShadow: "0 10px 20px rgba(99, 102, 241, 0.2)",
-        transition: "all 0.3s",
-        width: window.innerWidth <= 768 ? "100%" : "auto",
-        fontSize: window.innerWidth <= 768 ? "0.85rem" : "0.95rem",
-        whiteSpace: "nowrap"
-      }}
-    >
-      {isPending ? (
-        <Clock size={window.innerWidth <= 768 ? 16 : 20} />
-      ) : (
-        <Save size={window.innerWidth <= 768 ? 16 : 20} />
-      )}
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isPending}
+                className="invoice-action-submit"
+              >
+                {isPending ? (
+                  <Clock size={20} />
+                ) : (
+                  <Save size={20} />
+                )}
 
-      <span>
-        {isPending
-          ? "Generating..."
-          : isEdit
-          ? "Update Invoice"
-          : "Create & Issue"}
-      </span>
-    </button>
-  </div>
-)}
+                <span>
+                  {isPending
+                    ? "Generating..."
+                    : isEdit
+                      ? "Update Invoice"
+                      : "Create & Issue"}
+                </span>
+              </button>
+            </div>
+          )}
         </form>
       </div>
       <style>{`

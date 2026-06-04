@@ -1241,31 +1241,41 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
 
+  const hasAddress = record.address && (
+    record.address.street?.trim() ||
+    record.address.city?.trim() ||
+    record.address.state?.trim() ||
+    record.address.zipCode?.trim()
+  );
+
   return (
     <div
+      className="record-card"
       style={{ padding: "1.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", transition: "box-shadow 0.2s", boxShadow: "var(--shadow-xs)" }}
       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
       onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-xs)")}
     >
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ background: "var(--color-primary-glow)", padding: "0.4rem", borderRadius: "50%" }}>
-            <User size={20} color="var(--color-primary)" />
+      <div className="record-card-header">
+        <div className="record-card-title-group">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+            <div style={{ background: "var(--color-primary-glow)", padding: "0.4rem", borderRadius: "50%", flexShrink: 0 }}>
+              <User size={20} color="var(--color-primary)" />
+            </div>
+            <h3 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{record.clientName}</h3>
           </div>
-          <h3 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 600 }}>{record.clientName}</h3>
-          <span style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600, background: record.status === "Completed" ? "var(--color-success-light)" : record.status === "Confirmed" ? "var(--color-warning-light)" : "var(--bg-surface-3)" }}>
+          <span style={{ padding: "0.25rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600, flexShrink: 0, background: record.status === "Completed" ? "var(--color-success-light)" : record.status === "Confirmed" ? "var(--color-warning-light)" : "var(--bg-surface-3)" }}>
             {record.status ?? "Pending"}
           </span>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="record-card-actions">
           <button type="button" className="btn" onClick={onEdit} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Edit size={16} /> Edit</button>
           <button type="button" className="btn btn-danger" onClick={onDelete} disabled={isDeleting} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Trash2 size={16} /> Delete</button>
         </div>
       </div>
 
       {/* Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
+      <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
         {/* Contact Info */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
@@ -1278,13 +1288,13 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
           )}
 
           {/* ── Address + WhatsApp button side by side ── */}
-          {record.address && (
+          {hasAddress && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>
               <MapPin size={14} style={{ marginTop: 2, flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
-                {record.address.street && <div>{record.address.street}</div>}
-                {(record.address.city || record.address.state || record.address.zipCode) && (
-                  <div>{[record.address.city, record.address.state, record.address.zipCode].filter(Boolean).join(", ")}</div>
+                {record.address?.street && <div>{record.address?.street}</div>}
+                {(record.address?.city || record.address?.state || record.address?.zipCode) && (
+                  <div>{[record.address?.city, record.address?.state, record.address?.zipCode].filter(Boolean).join(", ")}</div>
                 )}
               </div>
               {/* WhatsApp share button */}
@@ -1364,8 +1374,8 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
           )}
 
           {/* Fallback: no address — show pill button */}
-          {!record.address && (
-            <div style={{ marginTop: "0.35rem" }}>
+          {!hasAddress && (
+            <div style={{ marginTop: "0.35rem", display: "flex", gap: "0.5rem" }}>
               <a
                 href={whatsappHref}
                 target="_blank"

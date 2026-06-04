@@ -1442,29 +1442,39 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(record))}`;
 
+  const hasAddress = record.address && (
+    record.address.street?.trim() ||
+    record.address.city?.trim() ||
+    record.address.state?.trim() ||
+    record.address.zipCode?.trim()
+  );
+
   return (
     <div style={{ padding: "1.5rem", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", transition: "all 0.2s" }}
-      className="record-card-hover"
+      className="record-card record-card-hover"
     >
       {/* Card Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ background: "var(--color-primary-glow)", padding: "0.4rem", borderRadius: "var(--radius-md)" }}>
-            <Building2 size={20} color="var(--color-primary)" />
+      <div className="record-card-header">
+        <div className="record-card-title-group">
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+            <div style={{ background: "var(--color-primary-glow)", padding: "0.4rem", borderRadius: "var(--radius-md)", flexShrink: 0 }}>
+              <Building2 size={20} color="var(--color-primary)" />
+            </div>
+            <h3 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{record.clientName}</h3>
           </div>
-          <h3 style={{ fontSize: "1.2rem", margin: 0, fontWeight: 700 }}>{record.clientName}</h3>
           <span style={{
             padding: "0.25rem 0.75rem",
             borderRadius: "999px",
             fontSize: "0.75rem",
             fontWeight: 700,
+            flexShrink: 0,
             background: record.status === 'Completed' ? 'var(--color-success-light)' : record.status === 'Confirmed' ? 'var(--color-warning-light)' : 'var(--bg-surface-3)',
             color: record.status === 'Completed' ? 'var(--color-success)' : record.status === 'Confirmed' ? 'var(--color-warning)' : 'var(--text-secondary)'
           }}>
             {record.status}
           </span>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="record-card-actions">
           <button type="button" className="btn" onClick={onEdit} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Edit size={16} /> Edit</button>
           <button type="button" className="btn btn-danger" onClick={onDelete} disabled={isDeleting} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><Trash2 size={16} /> Delete</button>
         </div>
@@ -1478,48 +1488,23 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
             <Phone size={14} /> <span>{record.phoneNumber}</span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
-            <MapPin size={14} style={{ marginTop: 2, flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              {record.address?.street && <div>{record.address.street}</div>}
-              {(record.address?.city || record.address?.state || record.address?.zipCode) && (
-                <div>{[record.address?.city, record.address?.state, record.address?.zipCode].filter(Boolean).join(", ")}</div>
-              )}
-            </div>
+          {hasAddress ? (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", color: "var(--text-muted)", fontSize: "0.9rem" }}>
+              <MapPin size={14} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                {record.address?.street && <div>{record.address.street}</div>}
+                {(record.address?.city || record.address?.state || record.address?.zipCode) && (
+                  <div>{[record.address?.city, record.address?.state, record.address?.zipCode].filter(Boolean).join(", ")}</div>
+                )}
+              </div>
 
-            {/* WhatsApp share button */}
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Share on WhatsApp"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                flexShrink: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                backgroundColor: "#25D36620",
-                color: "#25D366",
-                border: "1px solid #25D36640",
-                cursor: "pointer",
-                transition: "all 0.15s",
-                textDecoration: "none",
-              }}
-            >
-              <WhatsAppIcon size={15} />
-            </a>
-
-            {/* Quick Pay Button */}
-            {calculatedBalance > 0 && (
-              <button
-                type="button"
-                title="Quick Full Payment"
-                onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
-                disabled={isUpdating}
+              {/* WhatsApp share button */}
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Share on WhatsApp"
+                onClick={(e) => e.stopPropagation()}
                 style={{
                   flexShrink: 0,
                   display: "inline-flex",
@@ -1528,21 +1513,105 @@ function RecordCard({ record, onEdit, onDelete, isDeleting, onQuickPay, isUpdati
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
-                  backgroundColor: "rgba(52, 211, 153, 0.15)",
-                  color: "#10b981",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
+                  backgroundColor: "#25D36620",
+                  color: "#25D366",
+                  border: "1px solid #25D36640",
                   cursor: "pointer",
                   transition: "all 0.15s",
+                  textDecoration: "none",
                 }}
               >
-                {isUpdating ? (
-                  <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
-                ) : (
-                  <CreditCard size={15} />
-                )}
-              </button>
-            )}
-          </div>
+                <WhatsAppIcon size={15} />
+              </a>
+
+              {/* Quick Pay Button */}
+              {calculatedBalance > 0 && (
+                <button
+                  type="button"
+                  title="Quick Full Payment"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "12px", height: "12px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={15} />
+                  )}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.35rem" }}>
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Share on WhatsApp"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.25rem 0.6rem",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "#25D36620",
+                  color: "#25D366",
+                  border: "1px solid #25D36640",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  textDecoration: "none",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                }}
+              >
+                <WhatsAppIcon size={13} /> Share on WhatsApp
+              </a>
+
+              {/* Quick Pay Button */}
+              {calculatedBalance > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onQuickPay(); }}
+                  disabled={isUpdating}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "var(--radius-md)",
+                    backgroundColor: "rgba(52, 211, 153, 0.15)",
+                    color: "#10b981",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin" style={{ width: "10px", height: "10px", border: "2px solid #10b981", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  ) : (
+                    <CreditCard size={13} />
+                  )}
+                  Quick Pay
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Financial Overview */}

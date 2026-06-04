@@ -15,6 +15,7 @@ interface AutocompleteInputProps {
   inputStyle?: React.CSSProperties;
   inputClassName?: string;
   onSelectFullRecord?: (record: any) => void;
+  showIcon?: boolean;
 }
 
 export default function AutocompleteInput({
@@ -29,6 +30,7 @@ export default function AutocompleteInput({
   inputStyle,
   inputClassName,
   onSelectFullRecord,
+  showIcon = true,
 }: AutocompleteInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -107,12 +109,14 @@ export default function AutocompleteInput({
           placeholder={placeholder}
           required={required}
           autoComplete="off"
-          style={{ width: "100%", paddingRight: "2.5rem", ...inputStyle }}
+          style={{ width: "100%", paddingRight: showIcon ? "2.5rem" : "0.8rem", ...inputStyle }}
           className={inputClassName}
         />
-        <div style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
-          {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-        </div>
+        {showIcon && (
+          <div style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none", display: "flex", alignItems: "center" }}>
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+          </div>
+        )}
       </div>
 
       {isOpen && suggestions.length > 0 && (

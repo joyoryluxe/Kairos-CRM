@@ -198,6 +198,7 @@ export default function InvoicesPage() {
             {records.map((invoice: Invoice) => (
               <div
                 key={invoice._id}
+                className="record-card"
                 style={{
                   padding: "1.5rem",
                   border: "1px solid var(--border)",
@@ -211,21 +212,23 @@ export default function InvoicesPage() {
                 onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--border-strong)"}
                 onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--border)"}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <div style={{ background: "var(--color-primary-glow)", padding: "0.5rem", borderRadius: "10px" }}>
-                      <Receipt size={22} color="var(--color-primary)" />
-                    </div>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--color-primary)" }}>{invoice.invoiceNumber}</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>•</span>
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{formatDate(invoice.issuedDate)}</span>
+                <div className="record-card-header">
+                  <div className="record-card-title-group">
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                      <div style={{ background: "var(--color-primary-glow)", padding: "0.5rem", borderRadius: "10px", flexShrink: 0 }}>
+                        <Receipt size={22} color="var(--color-primary)" />
                       </div>
-                      <h3 style={{ fontSize: "1.25rem", margin: "0.2rem 0 0 0", fontWeight: 700 }}>{invoice.clientName}</h3>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--color-primary)", flexShrink: 0 }}>{invoice.invoiceNumber}</span>
+                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", flexShrink: 0 }}>•</span>
+                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", flexShrink: 0 }}>{formatDate(invoice.issuedDate)}</span>
+                        </div>
+                        <h3 style={{ fontSize: "1.25rem", margin: "0.2rem 0 0 0", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{invoice.clientName}</h3>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <div className="record-card-actions">
                     <button type="button" className="btn btn-ghost" onClick={() => navigate(`/dashboard/invoices/${invoice._id}/edit?preview=true`)} style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-primary)", padding: "0.5rem 1rem", borderRadius: "8px" }}>
                       <Download size={16} /> Download
                     </button>

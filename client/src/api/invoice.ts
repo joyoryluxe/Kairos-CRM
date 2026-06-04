@@ -4,7 +4,8 @@ import type { ApiResponse } from "./types";
 export type InvoiceItem = {
   description: string;
   quantity: number;
-  price: number;
+  price: number | string;
+  priceType?: 'flat' | 'percentage';
   total?: number; // Auto-calculated by backend
 };
 
@@ -17,6 +18,7 @@ export type Invoice = {
   issuedDate: string;
   items: InvoiceItem[];
   subTotal: number;
+  discount?: number;
   totalAmount: number;
   paymentDetails: {
     bankAccount: string;
