@@ -140,8 +140,8 @@ const EditsPage: React.FC = () => {
   }, [filterType, customRange]);
 
   const { data: response, isLoading, isError } = useQuery({
-    queryKey: ["edits"],
-    queryFn: () => getEdits(),
+    queryKey: ["edits", updatedStart, updatedEnd],
+    queryFn: () => getEdits({ dateFrom: updatedStart, dateTo: updatedEnd }),
   });
 
   const edits = response?.data || [];
@@ -236,24 +236,13 @@ const EditsPage: React.FC = () => {
         matchesDeadline = isWithinInterval(date, { start, end });
       }
 
-      let matchesUpdated = true;
-      if (updatedStart || updatedEnd) {
-        const dateStr = edit.updatedAt || edit.createdAt || edit.receivedDate;
-        if (dateStr) {
-          const date = parseISO(dateStr);
-          const start = updatedStart ? startOfDay(parseISO(updatedStart)) : new Date(0);
-          const end = updatedEnd ? endOfDay(parseISO(updatedEnd)) : new Date(8640000000000000);
-          matchesUpdated = isWithinInterval(date, { start, end });
-        }
-      }
-
       const matchesMinItems = minItems === "" || edit.photoClipCount >= minItems;
       const matchesMaxItems = maxItems === "" || edit.photoClipCount <= maxItems;
 
       return matchesSearch && matchesStatus && matchesPriority && matchesType &&
-        matchesReceived && matchesDeadline && matchesUpdated && matchesMinItems && matchesMaxItems;
+        matchesReceived && matchesDeadline && matchesMinItems && matchesMaxItems;
     });
-  }, [edits, searchTerm, statusFilter, priorityFilter, typeFilter, receivedDateStart, receivedDateEnd, deadlineStart, deadlineEnd, updatedStart, updatedEnd, minItems, maxItems]);
+  }, [edits, searchTerm, statusFilter, priorityFilter, typeFilter, receivedDateStart, receivedDateEnd, deadlineStart, deadlineEnd, minItems, maxItems]);
 
   const handleExport = () => {
     if (!filteredEdits || filteredEdits.length === 0) return;
@@ -539,13 +528,11 @@ const EditsPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid-responsive stat-cards-row" style={{
+      <div className="grid-responsive" style={{
         display: "grid",
-        gridTemplateColumns: "repeat(6, minmax(220px, 1fr))",
+        gridTemplateColumns: "repeat(6, 1fr)",
         gap: "1.5rem",
-        marginBottom: "2.5rem",
-        overflowX: "auto",
-        paddingBottom: "0.5rem"
+        marginBottom: "2.5rem"
       }}>
         <StatCard
           title="Total Records"

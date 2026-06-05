@@ -23,7 +23,12 @@ const toISO = (value: any): string | null => {
   return isNaN(d.getTime()) ? null : d.toISOString();
 };
 
-const calcStats = (records: any[] = []) =>
+const calcStats = (
+  records: any[] = [],
+  shootField: string,
+  start: Date | null,
+  end: Date | null
+) =>
   records.reduce(
     (acc, curr) => {
       try {
@@ -31,12 +36,36 @@ const calcStats = (records: any[] = []) =>
         const advance = Number(curr.advance) || 0;
         const balance = Number(curr.balance) || total - advance || 0;
         const expenses = Number(curr.expenses) || 0;
-        
-        acc.totalRevenue += total;
-        acc.totalAdvance += advance;
-        acc.totalBalance += balance;
-        acc.totalExpenses += expenses;
-        acc.totalProfit += (total - expenses);
+        const profit = Number(curr.profit) || total - expenses || 0;
+
+        const isFiltered = !!(start || end);
+
+        let matchesShoot = true;
+        let rangeReceived = advance;
+
+        if (isFiltered) {
+          const isInRange = (dateVal: any) => {
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
+            if (isNaN(d.getTime())) return false;
+            if (start && d < start) return false;
+            if (end && d > end) return false;
+            return true;
+          };
+
+          matchesShoot = isInRange(curr[shootField]);
+
+          const paymentsInRange = (curr.payments || []).filter((p: any) => isInRange(p.date));
+          rangeReceived = paymentsInRange.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+        }
+
+        if (matchesShoot) {
+          acc.totalRevenue += total;
+          acc.totalExpenses += expenses;
+          acc.totalBalance += balance;
+          acc.totalProfit += profit;
+        }
+        acc.totalAdvance += rangeReceived;
       } catch (e) {
         console.error('Error calculating record stats:', e);
       }
@@ -101,7 +130,6 @@ export const getDashboardOverview = async (req: AuthRequest, res: Response) => {
     // const corporateEvents = isFiltered
     const matchesFilter = (doc: any, shootField: string) => {
       if (!isFiltered) return true;
-      if (isInRange(doc.createdAt)) return true;
       if (isInRange(doc[shootField])) return true;
       if (Array.isArray(doc.payments) && doc.payments.some((p: any) => isInRange(p.date))) return true;
       return false;
@@ -124,10 +152,10 @@ export const getDashboardOverview = async (req: AuthRequest, res: Response) => {
 
     // ── financial totals ──────────────────────────────────────────────────
 
-    const maternityStats = calcStats(maternities);
-    const influencerStats = calcStats(influencers);
-    const corporateStats = calcStats(corporateEvents);
-    const editStats = calcStats(edits);
+    const maternityStats = calcStats(maternities, 'shootDateAndTime', start, end);
+    const influencerStats = calcStats(influencers, 'shootDateAndTime', start, end);
+    const corporateStats = calcStats(corporateEvents, 'eventDateAndTime', start, end);
+    const editStats = calcStats(edits, 'receivedDate', start, end);
 
     // Only count revenue/profit for Booked leads
     const bookedLeads = leads.filter(l => l.status === 'Booked');

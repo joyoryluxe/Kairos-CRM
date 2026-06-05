@@ -316,7 +316,7 @@ export default function EditFormPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <label style={labelStyle}>Client Name</label>
                   <AutocompleteInput
-                    model="client" field="name" required
+                    model="edit" field="clientName" required
                     value={form.clientName}
                     onChange={(v: string) => setForm(f => ({ ...f, clientName: v }))}
                     onSelectFullRecord={handleSelectFullRecord}

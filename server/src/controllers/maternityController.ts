@@ -207,7 +207,6 @@ export const getMaternities = async (req: AuthRequest, res: Response): Promise<v
       const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
 
       filter.$or = [
-        { createdAt: { $gte: start, $lte: end } },
         { shootDateAndTime: { $gte: start, $lte: end } },
         { "payments.date": { $gte: start, $lte: end } }
       ];
@@ -216,14 +215,52 @@ export const getMaternities = async (req: AuthRequest, res: Response): Promise<v
     const maternities = await Maternity.find(filter).sort({ createdAt: -1 });
 
     // Summary calculation based on FILTERED data
-    const summary = {
-      total: maternities.length,
-      totalRevenue: maternities.reduce((sum, e) => sum + (e.total || 0), 0),
-      totalReceived: maternities.reduce((sum, e) => sum + (e.advance || 0), 0),
-      totalDue: maternities.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
-      totalExpenses: maternities.reduce((sum, e) => sum + (e.expenses || 0), 0),
-      totalProfit: maternities.reduce((sum, e) => sum + (e.profit || 0), 0),
-    };
+    let summary;
+    if (dateFrom || dateTo) {
+      const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
+      const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
+
+      // Filter records to count for shoot-based fields
+      const shootMatched = maternities.filter(e => {
+        if (!e.shootDateAndTime) return false;
+        const shootDate = new Date(e.shootDateAndTime);
+        return shootDate >= start && shootDate <= end;
+      });
+
+      // Calculate received amount from payments falling in the range
+      let totalReceived = 0;
+      maternities.forEach(e => {
+        if (Array.isArray(e.payments)) {
+          e.payments.forEach(p => {
+            if (p.date) {
+              const pDate = new Date(p.date);
+              if (pDate >= start && pDate <= end) {
+                totalReceived += (p.amount || 0);
+              }
+            }
+          });
+        }
+      });
+
+      summary = {
+        total: shootMatched.length,
+        totalRevenue: shootMatched.reduce((sum, e) => sum + (e.total || 0), 0),
+        totalReceived,
+        totalDue: shootMatched.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+        totalExpenses: shootMatched.reduce((sum, e) => sum + (e.expenses || 0), 0),
+        totalProfit: shootMatched.reduce((sum, e) => sum + (e.profit || 0), 0),
+      };
+    } else {
+      // No date filter active, use full values
+      summary = {
+        total: maternities.length,
+        totalRevenue: maternities.reduce((sum, e) => sum + (e.total || 0), 0),
+        totalReceived: maternities.reduce((sum, e) => sum + (e.advance || 0), 0),
+        totalDue: maternities.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+        totalExpenses: maternities.reduce((sum, e) => sum + (e.expenses || 0), 0),
+        totalProfit: maternities.reduce((sum, e) => sum + (e.profit || 0), 0),
+      };
+    }
 
     res.status(200).json({ success: true, summary, data: maternities });
   } catch (error: any) {

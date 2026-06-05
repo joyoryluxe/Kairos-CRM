@@ -633,7 +633,7 @@ export default function MaternityFormPage() {
                   type="number"
                   value={extra.amount}
                   onChange={(e) => updateExtra(i, "amount", e.target.valueAsNumber || 0)}
-                  placeholder="0"
+                  placeholder=""
                   style={{ width: "100%", paddingLeft: "1.75rem" }}
                 />
               </div>
