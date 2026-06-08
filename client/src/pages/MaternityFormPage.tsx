@@ -128,7 +128,7 @@ export default function MaternityFormPage() {
     queryKey: ["packages", "Maternity"],
     queryFn: () => getActivePackages("Maternity"),
   });
-  const { data: existingRecord, isSuccess } = useQuery({
+  const { data: existingRecord, isSuccess } = useQuery({    
     queryKey: ["maternity", id],
     queryFn: () => getMaternityById(id!),
     enabled: isEdit,
@@ -636,7 +636,7 @@ export default function MaternityFormPage() {
                   placeholder=""
                   style={{ width: "100%", paddingLeft: "1.75rem" }}
                 />
-              </div>
+              </div>  
               <button type="button" onClick={() => removeExtra(i)} style={{ background: "var(--color-danger-glow)", border: "none", borderRadius: "var(--radius-md)", padding: "0.5rem", cursor: "pointer", color: "var(--color-danger)", lineHeight: 0 }}>
                 <X size={16} />
               </button>
