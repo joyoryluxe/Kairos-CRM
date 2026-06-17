@@ -25,9 +25,9 @@ const toISO = (value: any): string | null => {
 
 const calcStats = (
   records: any[] = [],
-  shootField: string,
-  start: Date | null,
-  end: Date | null
+  shootField?: string,
+  start?: Date | null,
+  end?: Date | null
 ) =>
   records.reduce(
     (acc, curr) => {
@@ -38,34 +38,11 @@ const calcStats = (
         const expenses = Number(curr.expenses) || 0;
         const profit = Number(curr.profit) || total - expenses || 0;
 
-        const isFiltered = !!(start || end);
-
-        let matchesShoot = true;
-        let rangeReceived = advance;
-
-        if (isFiltered) {
-          const isInRange = (dateVal: any) => {
-            if (!dateVal) return false;
-            const d = new Date(dateVal);
-            if (isNaN(d.getTime())) return false;
-            if (start && d < start) return false;
-            if (end && d > end) return false;
-            return true;
-          };
-
-          matchesShoot = isInRange(curr[shootField]);
-
-          const paymentsInRange = (curr.payments || []).filter((p: any) => isInRange(p.date));
-          rangeReceived = paymentsInRange.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-        }
-
-        if (matchesShoot) {
-          acc.totalRevenue += total;
-          acc.totalExpenses += expenses;
-          acc.totalBalance += balance;
-          acc.totalProfit += profit;
-        }
-        acc.totalAdvance += rangeReceived;
+        acc.totalRevenue += total;
+        acc.totalAdvance += advance;
+        acc.totalBalance += balance;
+        acc.totalExpenses += expenses;
+        acc.totalProfit += profit;
       } catch (e) {
         console.error('Error calculating record stats:', e);
       }
@@ -130,9 +107,7 @@ export const getDashboardOverview = async (req: AuthRequest, res: Response) => {
     // const corporateEvents = isFiltered
     const matchesFilter = (doc: any, shootField: string) => {
       if (!isFiltered) return true;
-      if (isInRange(doc[shootField])) return true;
-      if (Array.isArray(doc.payments) && doc.payments.some((p: any) => isInRange(p.date))) return true;
-      return false;
+      return isInRange(doc[shootField]);
     };
 
     const maternities = allMaternities.filter(m => matchesFilter(m, 'shootDateAndTime'));

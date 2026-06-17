@@ -100,61 +100,24 @@ export const getCorporateEvents = async (req: AuthRequest, res: Response): Promi
       const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
       const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
 
-      filter.$or = [
-        { eventDateAndTime: { $gte: start, $lte: end } },
-        { "payments.date": { $gte: start, $lte: end } }
-      ];
+      filter.eventDateAndTime = {
+        ...(filter.eventDateAndTime || {}),
+        $gte: start,
+        $lte: end
+      };
     }
 
     const corporateEvents = await CorporateEvent.find(filter).sort({ createdAt: -1 });
 
     // Summary calculation based on FILTERED data
-    let summary;
-    if (dateFrom || dateTo) {
-      const start = dateFrom ? new Date(dateFrom as string) : new Date(0);
-      const end = dateTo ? new Date(dateTo as string) : new Date(8640000000000000);
-
-      // Filter records to count for event-based fields
-      const eventMatched = corporateEvents.filter(e => {
-        if (!e.eventDateAndTime) return false;
-        const eventDate = new Date(e.eventDateAndTime);
-        return eventDate >= start && eventDate <= end;
-      });
-
-      // Calculate received amount from payments falling in the range
-      let totalReceived = 0;
-      corporateEvents.forEach(e => {
-        if (Array.isArray(e.payments)) {
-          e.payments.forEach(p => {
-            if (p.date) {
-              const pDate = new Date(p.date);
-              if (pDate >= start && pDate <= end) {
-                totalReceived += (p.amount || 0);
-              }
-            }
-          });
-        }
-      });
-
-      summary = {
-        total: eventMatched.length,
-        totalRevenue: eventMatched.reduce((sum, e) => sum + (e.total || 0), 0),
-        totalReceived,
-        totalDue: eventMatched.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
-        totalExpenses: eventMatched.reduce((sum, e) => sum + (e.expenses || 0), 0),
-        totalProfit: eventMatched.reduce((sum, e) => sum + (e.profit || 0), 0),
-      };
-    } else {
-      // No date filter active, use full values
-      summary = {
-        total: corporateEvents.length,
-        totalRevenue: corporateEvents.reduce((sum, e) => sum + (e.total || 0), 0),
-        totalReceived: corporateEvents.reduce((sum, e) => sum + (e.advance || 0), 0),
-        totalDue: corporateEvents.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
-        totalExpenses: corporateEvents.reduce((sum, e) => sum + (e.expenses || 0), 0),
-        totalProfit: corporateEvents.reduce((sum, e) => sum + (e.profit || 0), 0),
-      };
-    }
+    const summary = {
+      total: corporateEvents.length,
+      totalRevenue: corporateEvents.reduce((sum, e) => sum + (e.total || 0), 0),
+      totalReceived: corporateEvents.reduce((sum, e) => sum + (e.advance || 0), 0),
+      totalDue: corporateEvents.reduce((sum, e) => sum + Math.max(e.balance || 0, 0), 0),
+      totalExpenses: corporateEvents.reduce((sum, e) => sum + (e.expenses || 0), 0),
+      totalProfit: corporateEvents.reduce((sum, e) => sum + (e.profit || 0), 0),
+    };
 
     res.status(200).json({ success: true, summary, data: corporateEvents });
   } catch (error: any) {
