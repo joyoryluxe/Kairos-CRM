@@ -13,6 +13,7 @@ export interface IInvoice extends Document {
   clientName: string;
   clientEmail?: string;
   clientPhone?: string;
+  gstNumber?: string;
   issuedDate: Date;
   items: IInvoiceItem[];
   subTotal: number;
@@ -48,6 +49,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     clientName: { type: String, required: true, trim: true },
     clientEmail: { type: String, lowercase: true, trim: true },
     clientPhone: { type: String, trim: true },
+    gstNumber: { type: String, trim: true },
     issuedDate: { type: Date, default: Date.now },
     items: { type: [InvoiceItemSchema], default: [] },
     subTotal: { type: Number, default: 0 },

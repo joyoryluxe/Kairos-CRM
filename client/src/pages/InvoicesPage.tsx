@@ -86,6 +86,7 @@ export default function InvoicesPage() {
       "Client Name": invoice.clientName,
       "Client Phone": invoice.clientPhone || "-",
       "Client Email": invoice.clientEmail || "-",
+      "GST Number": invoice.gstNumber || "-",
       "Issued Date": invoice.issuedDate ? new Date(invoice.issuedDate).toLocaleDateString("en-IN") : "-",
       "Items Count": invoice.items?.length || 0,
       "Total Amount": invoice.totalAmount || 0,

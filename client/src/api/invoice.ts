@@ -15,6 +15,7 @@ export type Invoice = {
   clientName: string;
   clientEmail?: string;
   clientPhone?: string;
+  gstNumber?: string;
   issuedDate: string;
   items: InvoiceItem[];
   subTotal: number;

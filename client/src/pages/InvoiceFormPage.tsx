@@ -125,7 +125,7 @@ const PAPER_STYLES = `
   }
   .invoice-client-info-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
   }
   .invoice-grid-4 {
@@ -495,6 +495,7 @@ export default function InvoiceFormPage() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [gstNumber, setGstNumber] = useState("");
   const [issuedDate, setIssuedDate] = useState(new Date().toISOString().split("T")[0]);
   const [discount, setDiscount] = useState<string>("");
 
@@ -542,6 +543,7 @@ export default function InvoiceFormPage() {
       setClientName(invoice.clientName);
       setClientEmail(invoice.clientEmail || "");
       setClientPhone(invoice.clientPhone || "");
+      setGstNumber(invoice.gstNumber || "");
       if (invoice.issuedDate) {
         setIssuedDate(new Date(invoice.issuedDate).toISOString().split("T")[0]);
       }
@@ -714,6 +716,7 @@ export default function InvoiceFormPage() {
     // ── Client Info ──────────────────────────────────────────
     if (record.clientPhone) setClientPhone(record.clientPhone);
     if (record.clientEmail) setClientEmail(record.clientEmail);
+    if (record.gstNumber) setGstNumber(record.gstNumber);
 
     // ── Service Items ─────────────────────────────────────────
     if (Array.isArray(record.items) && record.items.length > 0) {
@@ -765,6 +768,7 @@ export default function InvoiceFormPage() {
       clientName,
       clientEmail: clientEmail || undefined,
       clientPhone: clientPhone || undefined,
+      gstNumber: gstNumber || undefined,
       issuedDate: new Date(issuedDate).toISOString(),
       items,
       discount: parseFloat(String(discount || "")) || 0,
@@ -1005,7 +1009,7 @@ export default function InvoiceFormPage() {
               <div>
                 <label> CLIENT NAME</label>
                 {isPreview ? (
-                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", fontWeight: 600, color: "#0f172a", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.85rem", color: "#475569", minHeight: "38px" }}>
                     {clientName || "—"}
                   </div>
                 ) : (
@@ -1032,7 +1036,7 @@ export default function InvoiceFormPage() {
               <div>
                 <label>Phone Number</label>
                 {isPreview ? (
-                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.85rem", color: "#475569", minHeight: "38px" }}>
                     {clientPhone || "—"}
                   </div>
                 ) : (
@@ -1042,13 +1046,25 @@ export default function InvoiceFormPage() {
               <div>
                 <label>EMAIL ADDRESS</label>
                 {isPreview ? (
-                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.95rem", color: "#475569", minHeight: "38px" }}>
+                  <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.85rem", color: "#475569", minHeight: "38px" }}>
                     {clientEmail || "—"}
                   </div>
                 ) : (
                   <input type="email" placeholder="client@example.com" value={clientEmail} onChange={e => setClientEmail(e.target.value)} />
                 )}
               </div>
+              {(!isPreview || gstNumber) && (
+                <div>
+                  <label>GST NUMBER</label>
+                  {isPreview ? (
+                    <div className="preview-shrink" style={{ padding: "0.6rem 0.8rem", fontSize: "0.85rem", color: "#475569", minHeight: "38px" }}>
+                      {gstNumber}
+                    </div>
+                  ) : (
+                    <input placeholder="GSTIN (optional)..." value={gstNumber} onChange={e => setGstNumber(e.target.value)} />
+                  )}
+                </div>
+              )}
             </div>
             {!isPreview && (
               <div style={{ marginTop: "1.5rem" }}>
