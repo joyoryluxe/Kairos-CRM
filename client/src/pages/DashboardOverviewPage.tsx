@@ -22,7 +22,10 @@ import {
   Trash2,
   Pencil,
   Layers,
+  Download,
 } from "lucide-react";
+
+import { exportDashboardToExcel, exportLedgerToExcel } from "@/utils/exportDashboardToExcel";
 
 import StatCard from "@/components/StatCard";
 import {
@@ -293,6 +296,12 @@ export default function DashboardOverviewPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
   const [activeTab, setActiveTab] = useState<'shoots' | 'deadlines'>('shoots');
 
+  const handleExport = () => {
+    if (!data) return;
+    const dateStr = new Date().toISOString().split('T')[0];
+    exportDashboardToExcel(data, `Dashboard_Overview_${dateStr}`);
+  };
+
   // Parse Google Calendar feedback parameters from URL on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -331,6 +340,11 @@ export default function DashboardOverviewPage() {
   const [customRange, setCustomRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [tempRange, setTempRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [isCustomOpen, setIsCustomOpen] = useState(false);
+
+  // Studio Ledger local filters
+  const [ledgerSearch, setLedgerSearch] = useState("");
+  const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState("all");
+  const [ledgerMonthFilter, setLedgerMonthFilter] = useState("all");
 
   // Helper to calculate start/end date ISO strings for query
   const getDateRange = (type: string, startStr?: string, endStr?: string) => {
@@ -392,6 +406,66 @@ export default function DashboardOverviewPage() {
   });
 
   const expensesData = data?.studioExpenses || [];
+
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set<string>(["Rent", "Electricity", "Equipment", "Staff", "Marketing", "Other"]);
+    expensesData.forEach((exp: any) => {
+      if (exp.category) {
+        cats.add(exp.category);
+      }
+    });
+    return Array.from(cats);
+  }, [expensesData]);
+
+  const uniqueMonths = useMemo(() => {
+    const months = new Set<string>();
+    expensesData.forEach((exp: any) => {
+      if (exp.date) {
+        const d = new Date(exp.date);
+        const label = d.toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+        months.add(label);
+      }
+    });
+    return Array.from(months);
+  }, [expensesData]);
+
+  const monthFilteredExpenses = useMemo(() => {
+    return expensesData.filter((expense: any) => {
+      if (ledgerMonthFilter === "all") return true;
+      if (!expense.date) return false;
+      const d = new Date(expense.date);
+      const label = d.toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+      return label === ledgerMonthFilter;
+    });
+  }, [expensesData, ledgerMonthFilter]);
+
+  const categoryTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    monthFilteredExpenses.forEach((exp: any) => {
+      const cat = exp.category || "Other";
+      totals[cat] = (totals[cat] || 0) + (exp.amount || 0);
+    });
+    return totals;
+  }, [monthFilteredExpenses]);
+
+  const filteredExpenses = useMemo(() => {
+    return expensesData.filter((expense: any) => {
+      const matchesSearch = !ledgerSearch || 
+        (expense.notes && expense.notes.toLowerCase().includes(ledgerSearch.toLowerCase())) ||
+        (expense.category && expense.category.toLowerCase().includes(ledgerSearch.toLowerCase()));
+      
+      const matchesCategory = ledgerCategoryFilter === "all" || expense.category === ledgerCategoryFilter;
+      
+      let matchesMonth = true;
+      if (ledgerMonthFilter !== "all" && expense.date) {
+        const d = new Date(expense.date);
+        const label = d.toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+        matchesMonth = label === ledgerMonthFilter;
+      }
+      
+      return matchesSearch && matchesCategory && matchesMonth;
+    });
+  }, [expensesData, ledgerSearch, ledgerCategoryFilter, ledgerMonthFilter]);
 
   const createExpenseMutation = useMutation({
     mutationFn: createStudioExpense,
@@ -579,7 +653,37 @@ export default function DashboardOverviewPage() {
             <p style={{ color: "#64748b", fontSize: isMobile ? "0.95rem" : "1.1rem", fontWeight: 500, marginTop: "0.25rem" }}>Unified intelligence across all studio modules.</p>
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: isMobile ? "center" : "flex-end", gap: "0.75rem", flex: "1 1 auto" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: isMobile ? "center" : "flex-end", gap: "0.75rem", flex: "1 1 auto", alignItems: "center" }}>
+            <button
+              onClick={handleExport}
+              style={{
+                flex: isMobile ? "1 1 auto" : "0 0 auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.6rem",
+                padding: "0.75rem 1.25rem",
+                borderRadius: "14px",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                color: "#f8fafc",
+                cursor: "pointer",
+                fontWeight: 700,
+                boxSizing: "border-box",
+                whiteSpace: "nowrap",
+                transition: "all 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+              }}
+            >
+              <Download size={18} style={{ flexShrink: 0 }} />
+              <span>Export Excel</span>
+            </button>
+
             {isConnected ? (
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", width: isMobile ? "100%" : "auto" }}>
                 <div style={{
@@ -1068,16 +1172,181 @@ export default function DashboardOverviewPage() {
           title="Studio Ledger"
           icon={<CreditCard size={22} color="#ef4444" />}
           action={
-            <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} style={{
-              display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem",
-              borderRadius: "12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444",
-              border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", flexShrink: 0
-            }}>
-              <Plus size={16} /> New Entry
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => {
+                  const dateStr = new Date().toISOString().split('T')[0];
+                  exportLedgerToExcel(expensesData, `Studio_Ledger_${dateStr}`);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.6rem 1.25rem",
+                  borderRadius: "12px",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  color: "#f8fafc",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                }}
+              >
+                <Download size={16} /> Export
+              </button>
+              <button onClick={() => { resetExpenseForm(); setIsExpenseModalOpen(true); }} style={{
+                display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.25rem",
+                borderRadius: "12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444",
+                border: "1px solid rgba(239, 68, 68, 0.2)", fontWeight: 800, cursor: "pointer", flexShrink: 0
+              }}>
+                <Plus size={16} /> New Entry
+              </button>
+            </div>
           }
         >
-          <div style={{ overflowX: "auto", background: "rgba(15, 23, 42, 0.2)", borderRadius: "1.25rem", border: "1px solid rgba(255,255,255,0.05)", width: "100%", maxWidth: "100%", boxSizing: "border-box" }} className="custom-scrollbar">
+          {/* Category-wise Summary Row */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+            gap: "0.75rem",
+            marginBottom: "1.5rem",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
+            {Object.entries(categoryTotals).map(([cat, total]) => {
+              const catColors: Record<string, string> = {
+                Rent: "#ef4444",
+                Electricity: "#fbbf24",
+                Equipment: "#3b82f6",
+                Staff: "#10b981",
+                Marketing: "#8b5cf6",
+                Other: "#94a3b8"
+              };
+              const color = catColors[cat] || "#94a3b8";
+              return (
+                <div key={cat} style={{
+                  background: "rgba(30, 41, 59, 0.4)",
+                  border: "1px solid rgba(255, 255, 255, 0.05)",
+                  borderLeft: `4px solid ${color}`,
+                  borderRadius: "12px",
+                  padding: "0.75rem 1rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                  minWidth: "120px",
+                  boxSizing: "border-box",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                }}>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.03em" }}>{cat}</span>
+                  <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "#f8fafc" }}>{formatCurrency(total)}</span>
+                </div>
+              );
+            })}
+            {Object.keys(categoryTotals).length === 0 && (
+              <div style={{
+                gridColumn: "1 / -1",
+                padding: "1rem",
+                textAlign: "center",
+                background: "rgba(255, 255, 255, 0.01)",
+                border: "1px dashed rgba(255, 255, 255, 0.05)",
+                borderRadius: "12px",
+                color: "#64748b",
+                fontSize: "0.9rem",
+                fontWeight: 600
+              }}>
+                No expense categories to summarize in this date range.
+              </div>
+            )}
+          </div>
+
+          {/* Search & Filter Controls */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            marginBottom: "1.25rem",
+            width: "100%",
+            boxSizing: "border-box"
+          }}>
+            <input
+              type="text"
+              placeholder="Search memo/notes..."
+              value={ledgerSearch}
+              onChange={(e) => setLedgerSearch(e.target.value)}
+              style={{
+                flex: "2 1 200px",
+                padding: "0.6rem 1rem",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(15, 23, 42, 0.3)",
+                color: "#f8fafc",
+                fontSize: "0.85rem",
+                outline: "none",
+                transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => e.target.style.borderColor = "var(--color-primary)"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(255, 255, 255, 0.08)"}
+            />
+            <select
+              value={ledgerCategoryFilter}
+              onChange={(e) => setLedgerCategoryFilter(e.target.value)}
+              style={{
+                flex: "1 1 150px",
+                padding: "0.6rem 1rem",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(15, 23, 42, 0.3)",
+                color: "#f8fafc",
+                fontSize: "0.85rem",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="all">All Categories</option>
+              {uniqueCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={ledgerMonthFilter}
+              onChange={(e) => setLedgerMonthFilter(e.target.value)}
+              style={{
+                flex: "1 1 150px",
+                padding: "0.6rem 1rem",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(15, 23, 42, 0.3)",
+                color: "#f8fafc",
+                fontSize: "0.85rem",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="all">All Months</option>
+              {uniqueMonths.map(month => (
+                <option key={month} value={month}>{month}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{
+            overflowY: "auto",
+            overflowX: "auto",
+            maxHeight: "385px",
+            background: "rgba(15, 23, 42, 0.2)",
+            borderRadius: "1.25rem",
+            border: "1px solid rgba(255, 255, 255, 0.05)",
+            width: "100%",
+            maxWidth: "100%",
+            boxSizing: "border-box"
+          }} className="custom-scrollbar">
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "550px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", textAlign: "left" }}>
@@ -1089,7 +1358,7 @@ export default function DashboardOverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {expensesData?.map((expense: StudioExpense) => (
+                {filteredExpenses?.map((expense: StudioExpense) => (
                   <tr key={expense._id} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                     <td style={{ padding: "1.25rem", color: "#f8fafc", fontWeight: 600 }}>{new Date(expense.date).toLocaleDateString("en-IN")}</td>
                     <td style={{ padding: "1.25rem" }}>
@@ -1300,6 +1569,14 @@ export default function DashboardOverviewPage() {
         }
         .filter-preset-btn:active {
           transform: translateY(0);
+        }
+
+        select {
+          color-scheme: dark !important;
+        }
+        select option {
+          background-color: #1e293b !important;
+          color: #f8fafc !important;
         }
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
